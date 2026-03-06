@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
+
 <meta charset="UTF-8">
 
 <title>Conferência de Manifestos</title>
@@ -206,6 +208,8 @@ Físico<br>
 
 </div>
 
+<div id="resumoErros"></div>
+
 <h3>Detalhamento por NF</h3>
 
 <div class="filtro">
@@ -226,7 +230,6 @@ onkeyup="filtrarTabela()"
 <th>NF</th>
 <th>Manifesto</th>
 <th>Emitido</th>
-<th>Apontada na Capa</th>
 <th>AWB</th>
 <th>Status</th>
 </tr>
@@ -294,11 +297,28 @@ awb:l["Nº AWB"] || ""
 }
 
 document.getElementById("totalEmitido").innerText=emitido.length
-document.getElementById("totalFisico").innerText=manifesto.length
+
+let capa=document.getElementById("capa").files[0]
+
+if(capa){
+
+let textoCapa=await lerPDF(capa)
+
+let coletado=textoCapa.match(/COLETADO.*?(\d+)/i)
+
+if(coletado){
+
+document.getElementById("totalFisico").innerText=coletado[1]
+
+}
+
+}
 
 cruzar()
 
-document.getElementById("status").innerText="Conferência concluída com sucesso."
+calcularResumo()
+
+document.getElementById("status").innerText="Conferência concluída"
 
 }
 
@@ -337,7 +357,6 @@ tr.innerHTML=`
 <td>${nf}</td>
 <td>${noManifesto?"SIM":"NAO"}</td>
 <td>${emi?"SIM":"NAO"}</td>
-<td>-</td>
 <td>${awb}</td>
 <td class="${status=="OK"?"ok":"erro"}">${status}</td>
 
@@ -356,6 +375,60 @@ Status:status
 })
 
 })
+
+}
+
+function calcularResumo(){
+
+let faltando=[]
+
+emitido.forEach(e=>{
+
+if(!manifesto.includes(e.nf)){
+
+faltando.push(e.nf)
+
+}
+
+})
+
+let totalEmitido=emitido.length
+
+let totalErro=faltando.length
+
+let porcentagem=0
+
+if(totalEmitido>0){
+
+porcentagem=((totalErro/totalEmitido)*100).toFixed(2)
+
+}
+
+let html=""
+
+if(totalErro>0){
+
+html+=`<p class="erro">⚠ ${totalErro} NF(s) emitidas não constam no Romaneio</p>`
+
+html+=`<p>Erro: ${porcentagem}% do total emitido</p>`
+
+html+="<p><b>NFs faltando:</b><br>"
+
+faltando.forEach(n=>{
+
+html+=n+"<br>"
+
+})
+
+html+="</p>"
+
+}else{
+
+html=`<p class="ok">✔ Nenhuma divergência encontrada</p>`
+
+}
+
+document.getElementById("resumoErros").innerHTML=html
 
 }
 
@@ -413,7 +486,7 @@ const linhas=document.querySelectorAll("#tabelaResultado tbody tr")
 linhas.forEach(l=>{
 
 const nf=l.children[0].textContent
-const awb=l.children[4].textContent
+const awb=l.children[3].textContent
 
 if(
 nf.toUpperCase().includes(filtro) ||
@@ -443,4 +516,5 @@ XLSX.writeFile(wb,"conferencia.xlsx")
 </script>
 
 </body>
+
 </html>
