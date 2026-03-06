@@ -1,314 +1,639 @@
 <!DOCTYPE html>
-
-<html lang="pt">
-
+<html lang="pt-BR">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conferência de Manifestos</title>
 
-<meta charset="UTF-8">
-<title>Conferência Manifestos</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #eef2f7;
+      color: #1f2937;
+    }
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    .wrapper {
+      max-width: 980px;
+      margin: 30px auto;
+      padding: 24px;
+    }
 
-<style>
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      padding: 32px;
+    }
 
-body{
-font-family:Arial;
-background:#eef2f7;
-text-align:center;
-padding:40px;
-}
+    h1 {
+      margin: 0 0 8px;
+      text-align: center;
+      color: #003a8f;
+      font-size: 32px;
+    }
 
-.container{
-background:white;
-padding:40px;
-width:800px;
-margin:auto;
-border-radius:10px;
-box-shadow:0 5px 20px rgba(0,0,0,0.1);
-}
+    .subtitle {
+      text-align: center;
+      margin-bottom: 28px;
+      color: #4b5563;
+      font-size: 15px;
+    }
 
-button{
-background:#0074D9;
-color:white;
-border:none;
-padding:12px 25px;
-font-size:16px;
-border-radius:6px;
-cursor:pointer;
-margin-top:20px;
-}
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
 
-button:hover{
-background:#005bb5;
-}
+    .upload-box {
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 18px;
+      background: #f9fafb;
+      text-align: left;
+    }
 
-table{
-width:100%;
-margin-top:30px;
-border-collapse:collapse;
-}
+    .upload-box label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #111827;
+    }
 
-th{
-background:#003A8F;
-color:white;
-padding:10px;
-}
+    .upload-box small {
+      display: block;
+      margin-top: 8px;
+      color: #6b7280;
+    }
 
-td{
-border:1px solid #ddd;
-padding:8px;
-}
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+    }
 
-</style>
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 24px 0 10px;
+    }
 
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 14px 22px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .primary {
+      background: #0074d9;
+      color: #fff;
+    }
+
+    .primary:hover {
+      background: #005bb5;
+    }
+
+    .success {
+      background: #16a34a;
+      color: #fff;
+    }
+
+    .success:hover {
+      background: #15803d;
+    }
+
+    .secondary {
+      background: #64748b;
+      color: #fff;
+    }
+
+    .secondary:hover {
+      background: #475569;
+    }
+
+    .status {
+      margin-top: 12px;
+      text-align: center;
+      font-weight: 700;
+      color: #003a8f;
+      min-height: 24px;
+    }
+
+    .summary {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .summary-card {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .summary-card .label {
+      display: block;
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+
+    .summary-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    thead {
+      background: #003a8f;
+      color: #fff;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      border: 1px solid #e5e7eb;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    .tag-ok {
+      color: #166534;
+      font-weight: 700;
+    }
+
+    .tag-warn {
+      color: #b45309;
+      font-weight: 700;
+    }
+
+    .tag-error {
+      color: #b91c1c;
+      font-weight: 700;
+    }
+  </style>
 </head>
-
 <body>
-
-<div class="container">
-
-<h2>Conferência de Manifestos</h2>
-
-<p><b>Upload Manifestos PDF</b></p>
-<input type="file" id="manifestos" multiple>
-
-<p><b>Upload Planilha EDI</b></p>
-<input type="file" id="edi">
-
-<br>
-
-<button onclick="processar()">PROCESSAR</button>
-
-<p id="status"></p>
-
-<table id="tabela">
-
-<thead>
-<tr>
-<th>NF</th>
-<th>Manifesto</th>
-<th>Emitido</th>
-<th>AWB</th>
-<th>Status</th>
-</tr>
-</thead>
-
-<tbody></tbody>
-
-</table>
-
-<button onclick="baixarExcel()">Baixar Excel</button>
-
-</div>
-
-<script>
-
-let manifestoNF=[]
-let ediNF=[]
-let resultado=[]
-
-async function lerManifestos(files){
-
-manifestoNF=[]
-
-for(let file of files){
-
-let url = URL.createObjectURL(file)
-
-let pdf = await pdfjsLib.getDocument(url).promise
-
-for(let i=1;i<=pdf.numPages;i++){
-
-let page = await pdf.getPage(i)
-
-let viewport = page.getViewport({scale:2})
-
-let canvas = document.createElement("canvas")
-
-let context = canvas.getContext("2d")
-
-canvas.width = viewport.width
-canvas.height = viewport.height
-
-await page.render({
-canvasContext:context,
-viewport:viewport
-}).promise
-
-let { data:{ text } } = await Tesseract.recognize(canvas,"por")
-
-let encontrados = text.match(/\d{7,9}/g)
-
-if(encontrados){
-
-encontrados.forEach(nf=>{
-manifestoNF.push(nf)
-})
-
-}
-
-}
-
-}
-
-}
-
-function lerEDI(file){
-
-return new Promise((resolve)=>{
-
-let reader=new FileReader()
-
-reader.onload=function(e){
-
-let data=new Uint8Array(e.target.result)
-
-let workbook=XLSX.read(data,{type:"array"})
-
-let sheet=workbook.Sheets[workbook.SheetNames[0]]
-
-let json=XLSX.utils.sheet_to_json(sheet)
-
-ediNF=[]
-
-json.forEach(linha=>{
-
-let nf=linha.Numero || linha.NF || linha.NFe
-
-let awb=linha["Nº AWB"] || linha["N° AWB"] || linha.AWB
-
-if(nf){
-
-ediNF.push({
-nf:String(nf),
-awb:awb
-})
-
-}
-
-})
-
-resolve()
-
-}
-
-reader.readAsArrayBuffer(file)
-
-})
-
-}
-
-async function processar(){
-
-document.getElementById("status").innerText="Lendo manifesto (OCR)..."
-
-let manifestos=document.getElementById("manifestos").files
-let edi=document.getElementById("edi").files[0]
-
-await lerManifestos(manifestos)
-
-document.getElementById("status").innerText="Lendo EDI..."
-
-await lerEDI(edi)
-
-resultado=[]
-
-let mapaEDI={}
-
-ediNF.forEach(item=>{
-mapaEDI[item.nf]=item.awb
-})
-
-manifestoNF.forEach(nf=>{
-
-if(mapaEDI[nf]){
-
-resultado.push({
-NF:nf,
-Manifesto:"SIM",
-Emitido:"SIM",
-AWB:mapaEDI[nf],
-Status:"OK"
-})
-
-}else{
-
-resultado.push({
-NF:nf,
-Manifesto:"SIM",
-Emitido:"NÃO",
-AWB:"",
-Status:"NÃO EMITIDA"
-})
-
-}
-
-})
-
-ediNF.forEach(item=>{
-
-if(!manifestoNF.includes(item.nf)){
-
-resultado.push({
-NF:item.nf,
-Manifesto:"NÃO",
-Emitido:"SIM",
-AWB:item.awb,
-Status:"VOLUME A MAIS"
-})
-
-}
-
-})
-
-mostrarTabela()
-
-document.getElementById("status").innerText="Conferência concluída"
-
-}
-
-function mostrarTabela(){
-
-let tbody=document.querySelector("#tabela tbody")
-
-tbody.innerHTML=""
-
-resultado.forEach(r=>{
-
-let linha=`
-<tr>
-<td>${r.NF}</td>
-<td>${r.Manifesto}</td>
-<td>${r.Emitido}</td>
-<td>${r.AWB || ""}</td>
-<td>${r.Status}</td>
-</tr>
-`
-
-tbody.innerHTML+=linha
-
-})
-
-}
-
-function baixarExcel(){
-
-let ws=XLSX.utils.json_to_sheet(resultado)
-
-let wb=XLSX.utils.book_new()
-
-XLSX.utils.book_append_sheet(wb,ws,"Resultado")
-
-XLSX.writeFile(wb,"conferencia_manifestos.xlsx")
-
-}
-
-</script>
-
+  <div class="wrapper">
+    <div class="card">
+      <h1>Conferência de Manifestos</h1>
+      <div class="subtitle">
+        Cruzamento de Manifesto PDF + EDI Excel + Capa / Conferência Física
+      </div>
+
+      <div class="grid">
+        <div class="upload-box">
+          <label for="manifestos">Upload Manifestos (PDF)</label>
+          <input type="file" id="manifestos" accept="application/pdf" multiple />
+          <small>Você pode selecionar vários manifestos.</small>
+        </div>
+
+        <div class="upload-box">
+          <label for="edi">Upload Planilha EDI (Excel)</label>
+          <input type="file" id="edi" accept=".xls,.xlsx,.csv" />
+          <small>O sistema vai procurar as colunas <b>Numero</b> e <b>Nº AWB</b>.</small>
+        </div>
+
+        <div class="upload-box">
+          <label for="capa">Upload Capa / Conferência Física</label>
+          <input type="file" id="capa" accept="application/pdf,image/*" />
+          <small>Use a capa com as falhas encontradas ou a conferência física.</small>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" onclick="processar()">PROCESSAR CONFERÊNCIA</button>
+        <button class="success" onclick="baixarExcel()">Baixar Excel</button>
+        <button class="secondary" onclick="limparTela()">Limpar</button>
+      </div>
+
+      <div class="status" id="status">Aguardando arquivos...</div>
+
+      <div class="summary">
+        <div class="summary-card">
+          <span class="label">NFs no Manifesto</span>
+          <span class="value" id="totalManifesto">0</span>
+        </div>
+        <div class="summary-card">
+          <span class="label">NFs no EDI</span>
+          <span class="value" id="totalEDI">0</span>
+        </div>
+        <div class="summary-card">
+          <span class="label">NFs na Capa</span>
+          <span class="value" id="totalCapa">0</span>
+        </div>
+        <div class="summary-card">
+          <span class="label">Divergências</span>
+          <span class="value" id="totalDivergencias">0</span>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="tabela">
+          <thead>
+            <tr>
+              <th>NF</th>
+              <th>Manifesto</th>
+              <th>Emitido</th>
+              <th>Capa</th>
+              <th>AWB</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
+
+    let manifestoNF = [];
+    let ediNF = [];
+    let capaNF = [];
+    let resultado = [];
+
+    function normalizarNumero(valor) {
+      if (valor === null || valor === undefined) return "";
+      return String(valor).replace(/\D/g, "").trim();
+    }
+
+    function unicos(lista) {
+      return [...new Set(lista.filter(Boolean))];
+    }
+
+    function atualizarStatus(msg) {
+      document.getElementById("status").innerText = msg;
+    }
+
+    function atualizarResumo() {
+      document.getElementById("totalManifesto").innerText = manifestoNF.length;
+      document.getElementById("totalEDI").innerText = ediNF.length;
+      document.getElementById("totalCapa").innerText = capaNF.length;
+
+      const divergencias = resultado.filter(r => r.Status !== "OK").length;
+      document.getElementById("totalDivergencias").innerText = divergencias;
+    }
+
+    async function extrairTextoDePDF(file) {
+      const paginasTexto = [];
+      const url = URL.createObjectURL(file);
+
+      try {
+        const pdf = await pdfjsLib.getDocument(url).promise;
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          atualizarStatus(`Lendo PDF: ${file.name} - página ${i}/${pdf.numPages}...`);
+
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const textoDireto = textContent.items.map(item => item.str).join(" ").trim();
+
+          if (textoDireto.length > 30) {
+            paginasTexto.push(textoDireto);
+            continue;
+          }
+
+          const viewport = page.getViewport({ scale: 2 });
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+
+          await page.render({
+            canvasContext: context,
+            viewport: viewport
+          }).promise;
+
+          atualizarStatus(`Aplicando OCR: ${file.name} - página ${i}/${pdf.numPages}...`);
+
+          const ocr = await Tesseract.recognize(canvas, "por");
+          paginasTexto.push(ocr.data.text || "");
+        }
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+
+      return paginasTexto.join("\n");
+    }
+
+    async function extrairTextoDeImagem(file) {
+      atualizarStatus(`Aplicando OCR na imagem: ${file.name}...`);
+      const { data } = await Tesseract.recognize(file, "por");
+      return data.text || "";
+    }
+
+    function extrairNFsDoManifesto(texto) {
+      const encontrados = texto.match(/\b\d{7,9}\b/g) || [];
+      return unicos(encontrados.map(normalizarNumero));
+    }
+
+    function extrairNFsDaCapa(texto) {
+      const encontrados = texto.match(/\b\d{7,9}\b/g) || [];
+      return unicos(encontrados.map(normalizarNumero));
+    }
+
+    async function lerManifestos(files) {
+      manifestoNF = [];
+
+      for (const file of files) {
+        const texto = await extrairTextoDePDF(file);
+        const nfs = extrairNFsDoManifesto(texto);
+        manifestoNF.push(...nfs);
+      }
+
+      manifestoNF = unicos(manifestoNF);
+    }
+
+    function identificarColuna(linha, nomesPossiveis) {
+      const chaves = Object.keys(linha || {});
+      for (const chave of chaves) {
+        const chaveLimpa = chave.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        for (const nome of nomesPossiveis) {
+          if (chaveLimpa.includes(nome)) {
+            return chave;
+          }
+        }
+      }
+      return null;
+    }
+
+    function lerEDI(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet);
+
+            ediNF = [];
+
+            if (!json.length) {
+              resolve();
+              return;
+            }
+
+            const colNF = identificarColuna(json[0], ["numero", "nf", "nfe"]);
+            const colAWB = identificarColuna(json[0], ["awb"]);
+
+            json.forEach(linha => {
+              const nf = normalizarNumero(colNF ? linha[colNF] : "");
+              const awb = normalizarNumero(colAWB ? linha[colAWB] : "");
+
+              if (nf) {
+                ediNF.push({
+                  nf,
+                  awb
+                });
+              }
+            });
+
+            const mapa = new Map();
+            ediNF.forEach(item => {
+              if (!mapa.has(item.nf)) {
+                mapa.set(item.nf, item);
+              }
+            });
+
+            ediNF = [...mapa.values()];
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        };
+
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    async function lerCapa(file) {
+      capaNF = [];
+
+      if (!file) return;
+
+      const nome = (file.name || "").toLowerCase();
+      let texto = "";
+
+      if (nome.endsWith(".pdf")) {
+        texto = await extrairTextoDePDF(file);
+      } else {
+        texto = await extrairTextoDeImagem(file);
+      }
+
+      capaNF = extrairNFsDaCapa(texto);
+    }
+
+    function montarResultado() {
+      resultado = [];
+
+      const mapaEDI = {};
+      ediNF.forEach(item => {
+        mapaEDI[item.nf] = item.awb || "";
+      });
+
+      const setManifesto = new Set(manifestoNF);
+      const setCapa = new Set(capaNF);
+      const setEDI = new Set(ediNF.map(item => item.nf));
+
+      const todasNF = unicos([
+        ...manifestoNF,
+        ...ediNF.map(item => item.nf),
+        ...capaNF
+      ]).sort();
+
+      todasNF.forEach(nf => {
+        const noManifesto = setManifesto.has(nf);
+        const noEDI = setEDI.has(nf);
+        const naCapa = setCapa.has(nf);
+        const awb = mapaEDI[nf] || "";
+
+        let status = "OK";
+
+        if (noManifesto && noEDI && naCapa) {
+          status = "OK";
+        } else if (noManifesto && !noEDI && naCapa) {
+          status = "NÃO EMITIDA";
+        } else if (noManifesto && noEDI && !naCapa) {
+          status = "NÃO RECEBIDA / NÃO CONSTA NA CAPA";
+        } else if (noManifesto && !noEDI && !naCapa) {
+          status = "NÃO EMITIDA E NÃO CONSTA NA CAPA";
+        } else if (!noManifesto && noEDI && naCapa) {
+          status = "VOLUME A MAIS";
+        } else if (!noManifesto && noEDI && !naCapa) {
+          status = "EMITIDA MAS NÃO ESTÁ NO MANIFESTO E NEM NA CAPA";
+        } else if (noManifesto && !noEDI) {
+          status = "NÃO EMITIDA";
+        } else if (!noManifesto && noEDI) {
+          status = "VOLUME A MAIS";
+        } else if (!noManifesto && !noEDI && naCapa) {
+          status = "SOMENTE NA CAPA";
+        }
+
+        resultado.push({
+          NF: nf,
+          Manifesto: noManifesto ? "SIM" : "NÃO",
+          Emitido: noEDI ? "SIM" : "NÃO",
+          Capa: naCapa ? "SIM" : "NÃO",
+          AWB: awb,
+          Status: status
+        });
+      });
+    }
+
+    function classeStatus(status) {
+      if (status === "OK") return "tag-ok";
+      if (status.includes("A MAIS") || status.includes("SOMENTE")) return "tag-warn";
+      return "tag-error";
+    }
+
+    function mostrarTabela() {
+      const tbody = document.querySelector("#tabela tbody");
+      tbody.innerHTML = "";
+
+      resultado.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item.NF || ""}</td>
+          <td>${item.Manifesto}</td>
+          <td>${item.Emitido}</td>
+          <td>${item.Capa}</td>
+          <td>${item.AWB || ""}</td>
+          <td class="${classeStatus(item.Status)}">${item.Status}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function processar() {
+      try {
+        const manifestos = document.getElementById("manifestos").files;
+        const edi = document.getElementById("edi").files[0];
+        const capa = document.getElementById("capa").files[0];
+
+        if (!manifestos.length) {
+          alert("Selecione pelo menos um manifesto PDF.");
+          return;
+        }
+
+        if (!edi) {
+          alert("Selecione a planilha EDI.");
+          return;
+        }
+
+        atualizarStatus("Lendo manifestos...");
+        await lerManifestos(manifestos);
+
+        atualizarStatus("Lendo planilha EDI...");
+        await lerEDI(edi);
+
+        if (capa) {
+          atualizarStatus("Lendo capa / conferência física...");
+          await lerCapa(capa);
+        } else {
+          capaNF = [];
+        }
+
+        atualizarStatus("Cruzando informações...");
+        montarResultado();
+        mostrarTabela();
+        atualizarResumo();
+
+        atualizarStatus("Conferência concluída com sucesso.");
+      } catch (erro) {
+        console.error(erro);
+        atualizarStatus("Erro ao processar os arquivos.");
+        alert("Ocorreu um erro no processamento. Verifique os arquivos e tente novamente.");
+      }
+    }
+
+    function baixarExcel() {
+      if (!resultado.length) {
+        alert("Nenhum resultado para exportar.");
+        return;
+      }
+
+      const wb = XLSX.utils.book_new();
+
+      const wsResultado = XLSX.utils.json_to_sheet(resultado);
+      XLSX.utils.book_append_sheet(wb, wsResultado, "Conferencia");
+
+      const resumo = [
+        { Indicador: "NFs no Manifesto", Valor: manifestoNF.length },
+        { Indicador: "NFs no EDI", Valor: ediNF.length },
+        { Indicador: "NFs na Capa", Valor: capaNF.length },
+        { Indicador: "Divergências", Valor: resultado.filter(r => r.Status !== "OK").length }
+      ];
+      const wsResumo = XLSX.utils.json_to_sheet(resumo);
+      XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo");
+
+      const falhas = resultado.filter(r => r.Status !== "OK");
+      const wsFalhas = XLSX.utils.json_to_sheet(falhas);
+      XLSX.utils.book_append_sheet(wb, wsFalhas, "Falhas");
+
+      XLSX.writeFile(wb, "conferencia_manifestos.xlsx");
+    }
+
+    function limparTela() {
+      document.getElementById("manifestos").value = "";
+      document.getElementById("edi").value = "";
+      document.getElementById("capa").value = "";
+
+      manifestoNF = [];
+      ediNF = [];
+      capaNF = [];
+      resultado = [];
+
+      document.querySelector("#tabela tbody").innerHTML = "";
+      document.getElementById("totalManifesto").innerText = "0";
+      document.getElementById("totalEDI").innerText = "0";
+      document.getElementById("totalCapa").innerText = "0";
+      document.getElementById("totalDivergencias").innerText = "0";
+      atualizarStatus("Tela limpa.");
+    }
+  </script>
 </body>
-
 </html>
