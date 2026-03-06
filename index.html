@@ -10,9 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -22,45 +20,56 @@
     }
 
     .wrapper {
-      max-width: 980px;
-      margin: 30px auto;
-      padding: 24px;
+      max-width: 1180px;
+      margin: 28px auto;
+      padding: 20px;
     }
 
     .card {
-      background: #fff;
-      border-radius: 14px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-      padding: 32px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+      padding: 28px;
     }
 
-    h1 {
-      margin: 0 0 8px;
-      text-align: center;
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      width: 120px;
+      max-height: 60px;
+      object-fit: contain;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
       color: #003a8f;
-      font-size: 32px;
+      font-size: 30px;
     }
 
-    .subtitle {
-      text-align: center;
-      margin-bottom: 28px;
-      color: #4b5563;
-      font-size: 15px;
+    .title-wrap p {
+      margin: 6px 0 0;
+      color: #6b7280;
+      font-size: 14px;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 18px;
-      margin-bottom: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
     }
 
     .upload-box {
-      border: 1px solid #d1d5db;
-      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #dbe3ee;
+      border-radius: 14px;
       padding: 18px;
-      background: #f9fafb;
-      text-align: left;
     }
 
     .upload-box label {
@@ -74,100 +83,138 @@
       display: block;
       margin-top: 8px;
       color: #6b7280;
+      line-height: 1.4;
     }
 
     input[type="file"] {
       width: 100%;
       padding: 10px;
+      border: 1px solid #cfd8e3;
+      border-radius: 10px;
       background: #fff;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
     }
 
     .actions {
+      margin-top: 22px;
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
       justify-content: center;
-      margin: 24px 0 10px;
     }
 
     button {
       border: none;
       border-radius: 10px;
       padding: 14px 22px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       cursor: pointer;
-      transition: 0.2s;
+      transition: 0.2s ease;
     }
 
-    .primary {
+    .btn-primary {
       background: #0074d9;
       color: #fff;
     }
 
-    .primary:hover {
+    .btn-primary:hover {
       background: #005bb5;
     }
 
-    .success {
+    .btn-success {
       background: #16a34a;
       color: #fff;
     }
 
-    .success:hover {
+    .btn-success:hover {
       background: #15803d;
     }
 
-    .secondary {
+    .btn-secondary {
       background: #64748b;
       color: #fff;
     }
 
-    .secondary:hover {
+    .btn-secondary:hover {
       background: #475569;
     }
 
     .status {
-      margin-top: 12px;
+      margin-top: 18px;
       text-align: center;
       font-weight: 700;
       color: #003a8f;
-      min-height: 24px;
+      min-height: 22px;
+    }
+
+    .alert-box {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 12px;
+      font-weight: 700;
+      text-align: left;
+      white-space: pre-line;
+      border: 1px solid transparent;
+      display: none;
+    }
+
+    .alert-ok {
+      background: #ecfdf5;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+
+    .alert-warn {
+      background: #fff7ed;
+      color: #9a3412;
+      border-color: #fed7aa;
+    }
+
+    .alert-error {
+      background: #fef2f2;
+      color: #991b1b;
+      border-color: #fecaca;
     }
 
     .summary {
-      margin-top: 22px;
+      margin-top: 20px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 14px;
     }
 
     .summary-card {
       background: #f8fafc;
       border: 1px solid #e5e7eb;
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 16px;
       text-align: center;
     }
 
     .summary-card .label {
-      display: block;
       font-size: 13px;
       color: #6b7280;
-      margin-bottom: 6px;
+      display: block;
+      margin-bottom: 7px;
     }
 
     .summary-card .value {
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 700;
       color: #111827;
     }
 
+    .section-title {
+      margin-top: 28px;
+      margin-bottom: 10px;
+      font-size: 20px;
+      color: #003a8f;
+      text-align: left;
+    }
+
     .table-wrap {
       overflow-x: auto;
-      margin-top: 24px;
+      margin-top: 10px;
     }
 
     table {
@@ -184,8 +231,8 @@
     }
 
     th, td {
-      padding: 12px 10px;
       border: 1px solid #e5e7eb;
+      padding: 11px 10px;
       text-align: center;
       font-size: 14px;
     }
@@ -208,56 +255,87 @@
       color: #b91c1c;
       font-weight: 700;
     }
+
+    ul.list-box {
+      margin: 10px 0 0;
+      padding-left: 20px;
+      text-align: left;
+      color: #374151;
+    }
+
+    .muted {
+      color: #6b7280;
+      font-size: 13px;
+      text-align: left;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="card">
-      <h1>Conferência de Manifestos</h1>
-      <div class="subtitle">
-        Cruzamento de Manifesto PDF + EDI Excel + Capa / Conferência Física
+
+      <div class="topbar">
+        <img src="logo-azulcargo.png" alt="Logo Azul Cargo" class="logo" onerror="this.style.display='none'">
+        <div class="title-wrap">
+          <h1>Conferência de Manifestos</h1>
+          <p>Manifesto PDF escaneado + EDI Excel + Capa / conferência física</p>
+        </div>
       </div>
 
       <div class="grid">
         <div class="upload-box">
           <label for="manifestos">Upload Manifestos (PDF)</label>
           <input type="file" id="manifestos" accept="application/pdf" multiple />
-          <small>Você pode selecionar vários manifestos.</small>
+          <small>
+            Use um ou vários manifestos. O sistema vai extrair as NFs da coluna NFe via OCR.
+          </small>
         </div>
 
         <div class="upload-box">
           <label for="edi">Upload Planilha EDI (Excel)</label>
           <input type="file" id="edi" accept=".xls,.xlsx,.csv" />
-          <small>O sistema vai procurar as colunas <b>Numero</b> e <b>Nº AWB</b>.</small>
+          <small>
+            O sistema procura automaticamente as colunas <b>Numero</b> (NF) e <b>Nº AWB</b>.
+          </small>
         </div>
 
         <div class="upload-box">
           <label for="capa">Upload Capa / Conferência Física</label>
           <input type="file" id="capa" accept="application/pdf,image/*" />
-          <small>Use a capa com as falhas encontradas ou a conferência física.</small>
+          <small>
+            A capa é usada para buscar os totais físicos e as NFs citadas em <b>Falhas Encontradas</b>.
+          </small>
         </div>
       </div>
 
       <div class="actions">
-        <button class="primary" onclick="processar()">PROCESSAR CONFERÊNCIA</button>
-        <button class="success" onclick="baixarExcel()">Baixar Excel</button>
-        <button class="secondary" onclick="limparTela()">Limpar</button>
+        <button class="btn-primary" onclick="processar()">PROCESSAR CONFERÊNCIA</button>
+        <button class="btn-success" onclick="baixarExcel()">Baixar Excel</button>
+        <button class="btn-secondary" onclick="limparTela()">Limpar</button>
       </div>
 
-      <div class="status" id="status">Aguardando arquivos...</div>
+      <div id="status" class="status">Aguardando arquivos...</div>
+
+      <div id="alerta" class="alert-box"></div>
 
       <div class="summary">
         <div class="summary-card">
-          <span class="label">NFs no Manifesto</span>
+          <span class="label">Total Manifesto</span>
           <span class="value" id="totalManifesto">0</span>
         </div>
         <div class="summary-card">
-          <span class="label">NFs no EDI</span>
-          <span class="value" id="totalEDI">0</span>
+          <span class="label">Total Emitido</span>
+          <span class="value" id="totalEmitido">0</span>
         </div>
         <div class="summary-card">
-          <span class="label">NFs na Capa</span>
-          <span class="value" id="totalCapa">0</span>
+          <span class="label">Total Físico (Capa)</span>
+          <span class="value" id="totalFisico">0</span>
+        </div>
+        <div class="summary-card">
+          <span class="label">Falhas na Capa</span>
+          <span class="value" id="totalFalhasCapa">0</span>
         </div>
         <div class="summary-card">
           <span class="label">Divergências</span>
@@ -265,14 +343,22 @@
         </div>
       </div>
 
+      <div class="section-title">Resumo das diferenças</div>
+      <div id="resumoListas"></div>
+      <div class="muted">
+        O sistema trata a capa como fonte de <b>total físico</b> e de <b>NFs apontadas em Falhas Encontradas</b>.
+        Se a capa não tiver a lista completa de todas as NFs recebidas, a conferência física por NF será feita pelas falhas apontadas.
+      </div>
+
+      <div class="section-title">Detalhamento por NF</div>
       <div class="table-wrap">
-        <table id="tabela">
+        <table id="tabelaResultado">
           <thead>
             <tr>
               <th>NF</th>
               <th>Manifesto</th>
               <th>Emitido</th>
-              <th>Capa</th>
+              <th>Apontada na Capa</th>
               <th>AWB</th>
               <th>Status</th>
             </tr>
@@ -280,6 +366,20 @@
           <tbody></tbody>
         </table>
       </div>
+
+      <div class="section-title">Falhas encontradas na capa</div>
+      <div class="table-wrap">
+        <table id="tabelaCapa">
+          <thead>
+            <tr>
+              <th>NF</th>
+              <th>Origem</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
     </div>
   </div>
 
@@ -287,49 +387,62 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
 
-    let manifestoNF = [];
-    let ediNF = [];
-    let capaNF = [];
+    let manifestoNFs = [];
+    let ediRows = [];
+    let capaInfo = {
+      romaneio: null,
+      coletado: null,
+      conferencia: null,
+      falhaNFs: []
+    };
     let resultado = [];
+
+    function setStatus(texto) {
+      document.getElementById("status").innerText = texto;
+    }
 
     function normalizarNumero(valor) {
       if (valor === null || valor === undefined) return "";
       return String(valor).replace(/\D/g, "").trim();
     }
 
-    function unicos(lista) {
+    function listaUnica(lista) {
       return [...new Set(lista.filter(Boolean))];
     }
 
-    function atualizarStatus(msg) {
-      document.getElementById("status").innerText = msg;
+    function normalizarTexto(txt) {
+      return (txt || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase();
     }
 
-    function atualizarResumo() {
-      document.getElementById("totalManifesto").innerText = manifestoNF.length;
-      document.getElementById("totalEDI").innerText = ediNF.length;
-      document.getElementById("totalCapa").innerText = capaNF.length;
+    async function extrairTextoArquivo(file) {
+      const nome = (file.name || "").toLowerCase();
 
-      const divergencias = resultado.filter(r => r.Status !== "OK").length;
-      document.getElementById("totalDivergencias").innerText = divergencias;
+      if (nome.endsWith(".pdf")) {
+        return await extrairTextoPDF(file);
+      }
+
+      return await extrairTextoImagem(file);
     }
 
-    async function extrairTextoDePDF(file) {
-      const paginasTexto = [];
+    async function extrairTextoPDF(file) {
+      const textos = [];
       const url = URL.createObjectURL(file);
 
       try {
         const pdf = await pdfjsLib.getDocument(url).promise;
 
         for (let i = 1; i <= pdf.numPages; i++) {
-          atualizarStatus(`Lendo PDF: ${file.name} - página ${i}/${pdf.numPages}...`);
+          setStatus(`Lendo ${file.name} - página ${i}/${pdf.numPages}...`);
 
           const page = await pdf.getPage(i);
           const textContent = await page.getTextContent();
           const textoDireto = textContent.items.map(item => item.str).join(" ").trim();
 
-          if (textoDireto.length > 30) {
-            paginasTexto.push(textoDireto);
+          if (textoDireto.length > 40) {
+            textos.push(textoDireto);
             continue;
           }
 
@@ -345,54 +458,74 @@
             viewport: viewport
           }).promise;
 
-          atualizarStatus(`Aplicando OCR: ${file.name} - página ${i}/${pdf.numPages}...`);
+          setStatus(`Aplicando OCR em ${file.name} - página ${i}/${pdf.numPages}...`);
 
           const ocr = await Tesseract.recognize(canvas, "por");
-          paginasTexto.push(ocr.data.text || "");
+          textos.push(ocr.data.text || "");
         }
       } finally {
         URL.revokeObjectURL(url);
       }
 
-      return paginasTexto.join("\n");
+      return textos.join("\n");
     }
 
-    async function extrairTextoDeImagem(file) {
-      atualizarStatus(`Aplicando OCR na imagem: ${file.name}...`);
-      const { data } = await Tesseract.recognize(file, "por");
-      return data.text || "";
+    async function extrairTextoImagem(file) {
+      setStatus(`Aplicando OCR em ${file.name}...`);
+      const ocr = await Tesseract.recognize(file, "por");
+      return ocr.data.text || "";
     }
 
-    function extrairNFsDoManifesto(texto) {
+    function extrairNFsManifesto(texto) {
       const encontrados = texto.match(/\b\d{7,9}\b/g) || [];
-      return unicos(encontrados.map(normalizarNumero));
+      return listaUnica(encontrados.map(normalizarNumero));
     }
 
-    function extrairNFsDaCapa(texto) {
-      const encontrados = texto.match(/\b\d{7,9}\b/g) || [];
-      return unicos(encontrados.map(normalizarNumero));
+    function extrairTotaisDaCapa(textoOriginal) {
+      const texto = normalizarTexto(textoOriginal);
+
+      const procurarNumeroDepois = (rotulo) => {
+        const idx = texto.indexOf(rotulo);
+        if (idx === -1) return null;
+
+        const trecho = texto.slice(idx, idx + 120);
+        const nums = trecho.match(/\b\d{1,6}\b/g);
+        return nums ? parseInt(nums[nums.length - 1], 10) : null;
+      };
+
+      const romaneio = procurarNumeroDepois("ROMANEIO");
+      const coletado = procurarNumeroDepois("COLETADO RIACHUELO");
+      const conferencia = procurarNumeroDepois("CONFERENCIA TIME PA");
+
+      return { romaneio, coletado, conferencia };
+    }
+
+    function extrairFalhasDaCapa(textoOriginal) {
+      const texto = normalizarTexto(textoOriginal);
+      const idx = texto.indexOf("FALHAS ENCONTRADAS");
+      const trecho = idx >= 0 ? texto.slice(idx) : texto;
+      const encontrados = trecho.match(/\b\d{7,9}\b/g) || [];
+      return listaUnica(encontrados.map(normalizarNumero));
     }
 
     async function lerManifestos(files) {
-      manifestoNF = [];
+      manifestoNFs = [];
 
       for (const file of files) {
-        const texto = await extrairTextoDePDF(file);
-        const nfs = extrairNFsDoManifesto(texto);
-        manifestoNF.push(...nfs);
+        const texto = await extrairTextoArquivo(file);
+        const nfs = extrairNFsManifesto(texto);
+        manifestoNFs.push(...nfs);
       }
 
-      manifestoNF = unicos(manifestoNF);
+      manifestoNFs = listaUnica(manifestoNFs);
     }
 
     function identificarColuna(linha, nomesPossiveis) {
       const chaves = Object.keys(linha || {});
       for (const chave of chaves) {
-        const chaveLimpa = chave.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const limpa = normalizarTexto(chave);
         for (const nome of nomesPossiveis) {
-          if (chaveLimpa.includes(nome)) {
-            return chave;
-          }
+          if (limpa.includes(nome)) return chave;
         }
       }
       return null;
@@ -402,43 +535,40 @@
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
-        reader.onload = function (e) {
+        reader.onload = function(e) {
           try {
             const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: "array" });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const wb = XLSX.read(data, { type: "array" });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
             const json = XLSX.utils.sheet_to_json(sheet);
 
-            ediNF = [];
+            ediRows = [];
 
             if (!json.length) {
               resolve();
               return;
             }
 
-            const colNF = identificarColuna(json[0], ["numero", "nf", "nfe"]);
-            const colAWB = identificarColuna(json[0], ["awb"]);
+            const colNF = identificarColuna(json[0], ["NUMERO", "NF", "NFE"]);
+            const colAWB = identificarColuna(json[0], ["AWB"]);
 
             json.forEach(linha => {
               const nf = normalizarNumero(colNF ? linha[colNF] : "");
               const awb = normalizarNumero(colAWB ? linha[colAWB] : "");
 
               if (nf) {
-                ediNF.push({
-                  nf,
-                  awb
-                });
+                ediRows.push({ nf, awb });
               }
             });
 
             const mapa = new Map();
-            ediNF.forEach(item => {
+            ediRows.forEach(item => {
               if (!mapa.has(item.nf)) {
                 mapa.set(item.nf, item);
               }
             });
 
-            ediNF = [...mapa.values()];
+            ediRows = [...mapa.values()];
             resolve();
           } catch (err) {
             reject(err);
@@ -451,64 +581,58 @@
     }
 
     async function lerCapa(file) {
-      capaNF = [];
+      capaInfo = {
+        romaneio: null,
+        coletado: null,
+        conferencia: null,
+        falhaNFs: []
+      };
 
       if (!file) return;
 
-      const nome = (file.name || "").toLowerCase();
-      let texto = "";
+      const texto = await extrairTextoArquivo(file);
+      const totais = extrairTotaisDaCapa(texto);
+      const falhas = extrairFalhasDaCapa(texto);
 
-      if (nome.endsWith(".pdf")) {
-        texto = await extrairTextoDePDF(file);
-      } else {
-        texto = await extrairTextoDeImagem(file);
-      }
-
-      capaNF = extrairNFsDaCapa(texto);
+      capaInfo = {
+        romaneio: totais.romaneio,
+        coletado: totais.coletado,
+        conferencia: totais.conferencia,
+        falhaNFs: falhas
+      };
     }
 
     function montarResultado() {
       resultado = [];
 
-      const mapaEDI = {};
-      ediNF.forEach(item => {
-        mapaEDI[item.nf] = item.awb || "";
+      const setManifesto = new Set(manifestoNFs);
+      const setEDI = new Set(ediRows.map(r => r.nf));
+      const setFalhasCapa = new Set(capaInfo.falhaNFs);
+
+      const mapaAWB = {};
+      ediRows.forEach(r => {
+        mapaAWB[r.nf] = r.awb || "";
       });
 
-      const setManifesto = new Set(manifestoNF);
-      const setCapa = new Set(capaNF);
-      const setEDI = new Set(ediNF.map(item => item.nf));
-
-      const todasNF = unicos([
-        ...manifestoNF,
-        ...ediNF.map(item => item.nf),
-        ...capaNF
+      const todas = listaUnica([
+        ...manifestoNFs,
+        ...ediRows.map(r => r.nf),
+        ...capaInfo.falhaNFs
       ]).sort();
 
-      todasNF.forEach(nf => {
+      todas.forEach(nf => {
         const noManifesto = setManifesto.has(nf);
         const noEDI = setEDI.has(nf);
-        const naCapa = setCapa.has(nf);
-        const awb = mapaEDI[nf] || "";
+        const naCapa = setFalhasCapa.has(nf);
 
         let status = "OK";
 
         if (noManifesto && noEDI && naCapa) {
-          status = "OK";
-        } else if (noManifesto && !noEDI && naCapa) {
-          status = "NÃO EMITIDA";
-        } else if (noManifesto && noEDI && !naCapa) {
-          status = "NÃO RECEBIDA / NÃO CONSTA NA CAPA";
-        } else if (noManifesto && !noEDI && !naCapa) {
-          status = "NÃO EMITIDA E NÃO CONSTA NA CAPA";
-        } else if (!noManifesto && noEDI && naCapa) {
-          status = "VOLUME A MAIS";
-        } else if (!noManifesto && noEDI && !naCapa) {
-          status = "EMITIDA MAS NÃO ESTÁ NO MANIFESTO E NEM NA CAPA";
+          status = "APONTADA NA CAPA";
         } else if (noManifesto && !noEDI) {
           status = "NÃO EMITIDA";
         } else if (!noManifesto && noEDI) {
-          status = "VOLUME A MAIS";
+          status = "FALTA NO MANIFESTO / A MAIS NO EMITIDO";
         } else if (!noManifesto && !noEDI && naCapa) {
           status = "SOMENTE NA CAPA";
         }
@@ -518,7 +642,7 @@
           Manifesto: noManifesto ? "SIM" : "NÃO",
           Emitido: noEDI ? "SIM" : "NÃO",
           Capa: naCapa ? "SIM" : "NÃO",
-          AWB: awb,
+          AWB: mapaAWB[nf] || "",
           Status: status
         });
       });
@@ -526,18 +650,19 @@
 
     function classeStatus(status) {
       if (status === "OK") return "tag-ok";
-      if (status.includes("A MAIS") || status.includes("SOMENTE")) return "tag-warn";
-      return "tag-error";
+      if (status.includes("CAPA")) return "tag-warn";
+      if (status.includes("FALTA") || status.includes("NÃO") || status.includes("A MAIS") || status.includes("SOMENTE")) return "tag-error";
+      return "";
     }
 
-    function mostrarTabela() {
-      const tbody = document.querySelector("#tabela tbody");
+    function preencherTabelaResultado() {
+      const tbody = document.querySelector("#tabelaResultado tbody");
       tbody.innerHTML = "";
 
       resultado.forEach(item => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${item.NF || ""}</td>
+          <td>${item.NF}</td>
           <td>${item.Manifesto}</td>
           <td>${item.Emitido}</td>
           <td>${item.Capa}</td>
@@ -548,6 +673,130 @@
       });
     }
 
+    function preencherTabelaCapa() {
+      const tbody = document.querySelector("#tabelaCapa tbody");
+      tbody.innerHTML = "";
+
+      if (!capaInfo.falhaNFs.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="2">Nenhuma NF de falha encontrada na capa.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      capaInfo.falhaNFs.forEach(nf => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${nf}</td>
+          <td>Falhas Encontradas</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function preencherResumo() {
+      const totalManifesto = manifestoNFs.length;
+      const totalEmitido = ediRows.length;
+      const totalFisico = capaInfo.conferencia ?? 0;
+      const totalFalhasCapa = capaInfo.falhaNFs.length;
+      const totalDivergencias = resultado.filter(r => r.Status !== "OK").length;
+
+      document.getElementById("totalManifesto").innerText = totalManifesto;
+      document.getElementById("totalEmitido").innerText = totalEmitido;
+      document.getElementById("totalFisico").innerText = totalFisico;
+      document.getElementById("totalFalhasCapa").innerText = totalFalhasCapa;
+      document.getElementById("totalDivergencias").innerText = totalDivergencias;
+
+      const faltamNoManifesto = ediRows
+        .map(r => r.nf)
+        .filter(nf => !manifestoNFs.includes(nf));
+
+      const faltamNoEDI = manifestoNFs
+        .filter(nf => !ediRows.map(r => r.nf).includes(nf));
+
+      const resumoDiv = document.getElementById("resumoListas");
+      resumoDiv.innerHTML = "";
+
+      const listas = [];
+
+      if (faltamNoManifesto.length) {
+        listas.push(`
+          <div><b>NFs emitidas que não estão no Manifesto:</b>
+            <ul class="list-box">${faltamNoManifesto.map(nf => `<li>${nf}</li>`).join("")}</ul>
+          </div>
+        `);
+      }
+
+      if (faltamNoEDI.length) {
+        listas.push(`
+          <div><b>NFs do Manifesto que não foram emitidas:</b>
+            <ul class="list-box">${faltamNoEDI.map(nf => `<li>${nf}</li>`).join("")}</ul>
+          </div>
+        `);
+      }
+
+      if (!listas.length) {
+        resumoDiv.innerHTML = "<div class='muted'>Nenhuma diferença de NF entre Manifesto e EDI.</div>";
+      } else {
+        resumoDiv.innerHTML = listas.join("");
+      }
+
+      montarAlerta(totalManifesto, totalEmitido, totalFisico, faltamNoManifesto, faltamNoEDI);
+    }
+
+    function montarAlerta(totalManifesto, totalEmitido, totalFisico, faltamNoManifesto, faltamNoEDI) {
+      const alerta = document.getElementById("alerta");
+      alerta.style.display = "block";
+
+      let mensagens = [];
+      let classe = "alert-ok";
+
+      if (totalManifesto === totalEmitido && totalEmitido === totalFisico) {
+        mensagens.push("✅ Totais batem: Manifesto, Emitido e Físico.");
+        if (!faltamNoManifesto.length && !faltamNoEDI.length) {
+          mensagens.push("Nenhuma diferença de NF entre Manifesto e EDI.");
+        }
+        classe = "alert-ok";
+      } else {
+        classe = "alert-error";
+
+        mensagens.push(`Manifesto: ${totalManifesto}`);
+        mensagens.push(`Emitido: ${totalEmitido}`);
+        mensagens.push(`Físico: ${totalFisico}`);
+
+        if (totalEmitido > totalManifesto) {
+          mensagens.push(`⚠ Falta(m) ${totalEmitido - totalManifesto} NF(s) no Manifesto em relação ao Emitido.`);
+        }
+
+        if (totalManifesto > totalEmitido) {
+          mensagens.push(`⚠ Falta(m) ${totalManifesto - totalEmitido} NF(s) no Emitido em relação ao Manifesto.`);
+        }
+
+        if (totalFisico > totalManifesto) {
+          mensagens.push(`⚠ Físico está ${totalFisico - totalManifesto} acima do Manifesto.`);
+        }
+
+        if (totalFisico < totalManifesto) {
+          mensagens.push(`⚠ Físico está ${totalManifesto - totalFisico} abaixo do Manifesto.`);
+        }
+
+        if (totalFisico > totalEmitido) {
+          mensagens.push(`⚠ Físico está ${totalFisico - totalEmitido} acima do Emitido.`);
+        }
+
+        if (totalFisico < totalEmitido) {
+          mensagens.push(`⚠ Físico está ${totalEmitido - totalFisico} abaixo do Emitido.`);
+        }
+
+        if (faltamNoManifesto.length || faltamNoEDI.length) {
+          classe = "alert-warn";
+        }
+      }
+
+      alerta.className = `alert-box ${classe}`;
+      alerta.innerText = mensagens.join("\n");
+    }
+
     async function processar() {
       try {
         const manifestos = document.getElementById("manifestos").files;
@@ -555,7 +804,7 @@
         const capa = document.getElementById("capa").files[0];
 
         if (!manifestos.length) {
-          alert("Selecione pelo menos um manifesto PDF.");
+          alert("Selecione pelo menos um Manifesto PDF.");
           return;
         }
 
@@ -564,29 +813,35 @@
           return;
         }
 
-        atualizarStatus("Lendo manifestos...");
+        setStatus("Lendo manifestos...");
         await lerManifestos(manifestos);
 
-        atualizarStatus("Lendo planilha EDI...");
+        setStatus("Lendo planilha EDI...");
         await lerEDI(edi);
 
         if (capa) {
-          atualizarStatus("Lendo capa / conferência física...");
+          setStatus("Lendo capa / conferência física...");
           await lerCapa(capa);
         } else {
-          capaNF = [];
+          capaInfo = {
+            romaneio: null,
+            coletado: null,
+            conferencia: 0,
+            falhaNFs: []
+          };
         }
 
-        atualizarStatus("Cruzando informações...");
+        setStatus("Cruzando informações...");
         montarResultado();
-        mostrarTabela();
-        atualizarResumo();
+        preencherTabelaResultado();
+        preencherTabelaCapa();
+        preencherResumo();
 
-        atualizarStatus("Conferência concluída com sucesso.");
-      } catch (erro) {
-        console.error(erro);
-        atualizarStatus("Erro ao processar os arquivos.");
-        alert("Ocorreu um erro no processamento. Verifique os arquivos e tente novamente.");
+        setStatus("Conferência concluída com sucesso.");
+      } catch (err) {
+        console.error(err);
+        setStatus("Erro ao processar arquivos.");
+        alert("Ocorreu um erro ao processar os arquivos. Verifique se o PDF e o Excel estão corretos.");
       }
     }
 
@@ -601,18 +856,21 @@
       const wsResultado = XLSX.utils.json_to_sheet(resultado);
       XLSX.utils.book_append_sheet(wb, wsResultado, "Conferencia");
 
-      const resumo = [
-        { Indicador: "NFs no Manifesto", Valor: manifestoNF.length },
-        { Indicador: "NFs no EDI", Valor: ediNF.length },
-        { Indicador: "NFs na Capa", Valor: capaNF.length },
+      const wsResumo = XLSX.utils.json_to_sheet([
+        { Indicador: "Total Manifesto", Valor: manifestoNFs.length },
+        { Indicador: "Total Emitido", Valor: ediRows.length },
+        { Indicador: "Total Físico (Capa)", Valor: capaInfo.conferencia ?? 0 },
+        { Indicador: "Falhas na Capa", Valor: capaInfo.falhaNFs.length },
         { Indicador: "Divergências", Valor: resultado.filter(r => r.Status !== "OK").length }
-      ];
-      const wsResumo = XLSX.utils.json_to_sheet(resumo);
+      ]);
       XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo");
 
-      const falhas = resultado.filter(r => r.Status !== "OK");
-      const wsFalhas = XLSX.utils.json_to_sheet(falhas);
-      XLSX.utils.book_append_sheet(wb, wsFalhas, "Falhas");
+      const wsFalhas = XLSX.utils.json_to_sheet(
+        capaInfo.falhaNFs.length
+          ? capaInfo.falhaNFs.map(nf => ({ NF: nf, Origem: "Falhas Encontradas da Capa" }))
+          : [{ NF: "", Origem: "Nenhuma falha identificada na capa" }]
+      );
+      XLSX.utils.book_append_sheet(wb, wsFalhas, "FalhasCapa");
 
       XLSX.writeFile(wb, "conferencia_manifestos.xlsx");
     }
@@ -622,17 +880,31 @@
       document.getElementById("edi").value = "";
       document.getElementById("capa").value = "";
 
-      manifestoNF = [];
-      ediNF = [];
-      capaNF = [];
+      manifestoNFs = [];
+      ediRows = [];
+      capaInfo = {
+        romaneio: null,
+        coletado: null,
+        conferencia: null,
+        falhaNFs: []
+      };
       resultado = [];
 
-      document.querySelector("#tabela tbody").innerHTML = "";
+      document.querySelector("#tabelaResultado tbody").innerHTML = "";
+      document.querySelector("#tabelaCapa tbody").innerHTML = "";
+      document.getElementById("resumoListas").innerHTML = "";
       document.getElementById("totalManifesto").innerText = "0";
-      document.getElementById("totalEDI").innerText = "0";
-      document.getElementById("totalCapa").innerText = "0";
+      document.getElementById("totalEmitido").innerText = "0";
+      document.getElementById("totalFisico").innerText = "0";
+      document.getElementById("totalFalhasCapa").innerText = "0";
       document.getElementById("totalDivergencias").innerText = "0";
-      atualizarStatus("Tela limpa.");
+
+      const alerta = document.getElementById("alerta");
+      alerta.style.display = "none";
+      alerta.innerText = "";
+      alerta.className = "alert-box";
+
+      setStatus("Tela limpa.");
     }
   </script>
 </body>
