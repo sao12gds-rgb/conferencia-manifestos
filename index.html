@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+
 <title>Conferência de Manifestos</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
@@ -13,7 +14,6 @@
 body{
 font-family:Arial;
 background:#eef2f6;
-margin:0;
 padding:40px;
 }
 
@@ -21,8 +21,8 @@ padding:40px;
 max-width:1100px;
 margin:auto;
 background:white;
-border-radius:14px;
 padding:35px;
+border-radius:14px;
 box-shadow:0 8px 25px rgba(0,0,0,0.08);
 }
 
@@ -30,7 +30,7 @@ box-shadow:0 8px 25px rgba(0,0,0,0.08);
 display:flex;
 align-items:center;
 gap:15px;
-margin-bottom:20px;
+margin-bottom:15px;
 }
 
 .header img{
@@ -44,13 +44,12 @@ color:#0b4ea2;
 
 .subtitle{
 color:#64748b;
-margin-bottom:30px;
+margin-bottom:25px;
 }
 
 .uploads{
 display:flex;
 gap:20px;
-flex-wrap:wrap;
 }
 
 .box{
@@ -58,10 +57,6 @@ flex:1;
 background:#f1f5f9;
 padding:20px;
 border-radius:10px;
-}
-
-.box h3{
-margin-top:0;
 }
 
 .actions{
@@ -77,25 +72,43 @@ font-weight:bold;
 margin-right:10px;
 }
 
-.processar{
-background:#1976d2;
-color:white;
-}
-
-.baixar{
-background:#22a652;
-color:white;
-}
-
-.limpar{
-background:#64748b;
-color:white;
-}
+.processar{background:#1976d2;color:white}
+.baixar{background:#22a652;color:white}
+.limpar{background:#64748b;color:white}
 
 .status{
 margin-top:15px;
 font-weight:bold;
 color:#0b4ea2;
+}
+
+.resumo{
+display:flex;
+gap:15px;
+margin-top:20px;
+margin-bottom:10px;
+}
+
+.card{
+background:#f1f5f9;
+padding:15px 20px;
+border-radius:8px;
+font-size:14px;
+}
+
+.card b{
+font-size:20px;
+}
+
+.filtro{
+margin-top:15px;
+}
+
+.filtro input{
+padding:8px;
+border-radius:6px;
+border:1px solid #ccc;
+width:260px;
 }
 
 table{
@@ -116,16 +129,14 @@ border-bottom:1px solid #ddd;
 text-align:center;
 }
 
-.filtro{
-margin-top:20px;
-margin-bottom:10px;
+.erro{
+color:#e11d48;
+font-weight:bold;
 }
 
-.filtro input{
-padding:8px;
-border-radius:6px;
-border:1px solid #ccc;
-width:250px;
+.ok{
+color:#22a652;
+font-weight:bold;
 }
 
 </style>
@@ -150,19 +161,16 @@ Manifesto PDF escaneado + EDI Excel + Capa / conferência física
 <div class="box">
 <h3>Upload Manifestos (PDF)</h3>
 <input type="file" id="manifestos" multiple>
-<p>Use um ou vários manifestos.</p>
 </div>
 
 <div class="box">
 <h3>Upload Planilha EDI (Excel)</h3>
 <input type="file" id="edi">
-<p>O sistema procura automaticamente Numero (NF) e Nº AWB.</p>
 </div>
 
 <div class="box">
 <h3>Upload Capa / Conferência Física</h3>
 <input type="file" id="capa">
-<p>A capa é usada para verificar volumes físicos.</p>
 </div>
 
 </div>
@@ -178,6 +186,25 @@ Manifesto PDF escaneado + EDI Excel + Capa / conferência física
 </div>
 
 <div class="status" id="status"></div>
+
+<div class="resumo">
+
+<div class="card">
+Manifesto<br>
+<b id="totalManifesto">0</b>
+</div>
+
+<div class="card">
+Emitido<br>
+<b id="totalEmitido">0</b>
+</div>
+
+<div class="card">
+Físico<br>
+<b id="totalFisico">0</b>
+</div>
+
+</div>
 
 <h3>Detalhamento por NF</h3>
 
@@ -239,6 +266,8 @@ if(nfs)manifesto.push(...nfs)
 
 manifesto=[...new Set(manifesto)]
 
+document.getElementById("totalManifesto").innerText=manifesto.length
+
 let arquivoEDI=document.getElementById("edi").files[0]
 
 if(arquivoEDI){
@@ -263,6 +292,9 @@ awb:l["Nº AWB"] || ""
 })
 
 }
+
+document.getElementById("totalEmitido").innerText=emitido.length
+document.getElementById("totalFisico").innerText=manifesto.length
 
 cruzar()
 
@@ -296,7 +328,6 @@ let awb=emi?emi.awb:""
 let status="OK"
 
 if(!noManifesto && emi) status="FALTA NO MANIFESTO"
-
 if(noManifesto && !emi) status="NAO EMITIDA"
 
 let tr=document.createElement("tr")
@@ -308,7 +339,7 @@ tr.innerHTML=`
 <td>${emi?"SIM":"NAO"}</td>
 <td>-</td>
 <td>${awb}</td>
-<td>${status}</td>
+<td class="${status=="OK"?"ok":"erro"}">${status}</td>
 
 `
 
@@ -381,9 +412,17 @@ const linhas=document.querySelectorAll("#tabelaResultado tbody tr")
 
 linhas.forEach(l=>{
 
-const texto=l.innerText.toUpperCase()
+const nf=l.children[0].textContent
+const awb=l.children[4].textContent
 
-l.style.display=texto.includes(filtro)?"":"none"
+if(
+nf.toUpperCase().includes(filtro) ||
+awb.toUpperCase().includes(filtro)
+){
+l.style.display=""
+}else{
+l.style.display="none"
+}
 
 })
 
