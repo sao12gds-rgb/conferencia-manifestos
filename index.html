@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-
 <meta charset="UTF-8">
 
 <title>Conferência de Manifestos</title>
@@ -261,7 +259,7 @@ for(let file of arquivosManifesto){
 
 let texto=await lerPDF(file)
 
-let nfs=texto.match(/\d{7,9}/g)
+let nfs=texto.match(/\b1\d{7}\b/g)
 
 if(nfs)manifesto.push(...nfs)
 
@@ -304,11 +302,11 @@ if(capa){
 
 let textoCapa=await lerPDF(capa)
 
-let coletado=textoCapa.match(/COLETADO.*?(\d+)/i)
+let volumes=textoCapa.match(/Volumes.*?(\d+)/i)
 
-if(coletado){
+if(volumes){
 
-document.getElementById("totalFisico").innerText=coletado[1]
+document.getElementById("totalFisico").innerText=volumes[1]
 
 }
 
@@ -324,6 +322,10 @@ document.getElementById("status").innerText="Conferência concluída"
 
 function cruzar(){
 
+const tbody=document.querySelector("#tabelaResultado tbody")
+
+tbody.innerHTML=""
+
 let todas=[
 
 ...manifesto,
@@ -332,10 +334,6 @@ let todas=[
 ]
 
 todas=[...new Set(todas)]
-
-const tbody=document.querySelector("#tabelaResultado tbody")
-
-tbody.innerHTML=""
 
 todas.forEach(nf=>{
 
@@ -347,16 +345,25 @@ let awb=emi?emi.awb:""
 
 let status="OK"
 
-if(!noManifesto && emi) status="FALTA NO MANIFESTO"
-if(noManifesto && !emi) status="NAO EMITIDA"
+if(!noManifesto && emi){
+
+status="EMITIDO MAS NÃO ESTÁ NO ROMANEIO"
+
+}
+
+if(noManifesto && !emi){
+
+status="NO ROMANEIO MAS NÃO EMITIDO"
+
+}
 
 let tr=document.createElement("tr")
 
 tr.innerHTML=`
 
 <td>${nf}</td>
-<td>${noManifesto?"SIM":"NAO"}</td>
-<td>${emi?"SIM":"NAO"}</td>
+<td>${noManifesto?"SIM":"NÃO"}</td>
+<td>${emi?"SIM":"NÃO"}</td>
 <td>${awb}</td>
 <td class="${status=="OK"?"ok":"erro"}">${status}</td>
 
@@ -368,7 +375,7 @@ resultado.push({
 
 NF:nf,
 Manifesto:noManifesto,
-Emitido:emi?"SIM":"NAO",
+Emitido:emi?"SIM":"NÃO",
 AWB:awb,
 Status:status
 
@@ -516,5 +523,4 @@ XLSX.writeFile(wb,"conferencia.xlsx")
 </script>
 
 </body>
-
 </html>
