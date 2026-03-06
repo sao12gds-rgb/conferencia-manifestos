@@ -5,9 +5,11 @@
 <head>
 
 <meta charset="UTF-8">
-<title>Conferência de Manifestos</title>
+<title>Conferência Manifestos</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
@@ -23,7 +25,7 @@ padding:40px;
 .container{
 background:white;
 padding:40px;
-width:750px;
+width:800px;
 margin:auto;
 border-radius:10px;
 box-shadow:0 5px 20px rgba(0,0,0,0.1);
@@ -71,10 +73,10 @@ padding:8px;
 
 <h2>Conferência de Manifestos</h2>
 
-<p>Upload Manifestos (PDF)</p>
+<p><b>Upload Manifestos PDF</b></p>
 <input type="file" id="manifestos" multiple>
 
-<p>Upload Planilha EDI (Excel)</p>
+<p><b>Upload Planilha EDI</b></p>
 <input type="file" id="edi">
 
 <br>
@@ -86,7 +88,6 @@ padding:8px;
 <table id="tabela">
 
 <thead>
-
 <tr>
 <th>NF</th>
 <th>Manifesto</th>
@@ -94,7 +95,6 @@ padding:8px;
 <th>AWB</th>
 <th>Status</th>
 </tr>
-
 </thead>
 
 <tbody></tbody>
@@ -117,17 +117,29 @@ manifestoNF=[]
 
 for(let file of files){
 
-let buffer = await file.arrayBuffer()
+let url = URL.createObjectURL(file)
 
-let pdf = await pdfjsLib.getDocument({data:buffer}).promise
+let pdf = await pdfjsLib.getDocument(url).promise
 
 for(let i=1;i<=pdf.numPages;i++){
 
 let page = await pdf.getPage(i)
 
-let content = await page.getTextContent()
+let viewport = page.getViewport({scale:2})
 
-let text = content.items.map(item=>item.str).join(" ")
+let canvas = document.createElement("canvas")
+
+let context = canvas.getContext("2d")
+
+canvas.width = viewport.width
+canvas.height = viewport.height
+
+await page.render({
+canvasContext:context,
+viewport:viewport
+}).promise
+
+let { data:{ text } } = await Tesseract.recognize(canvas,"por")
 
 let encontrados = text.match(/\d{7,9}/g)
 
@@ -157,4 +169,146 @@ let data=new Uint8Array(e.target.result)
 
 let workbook=XLSX.read(data,{type:"array"})
 
-let sheet=workbook.Sheets[workbook.SheetNames[0]()]()
+let sheet=workbook.Sheets[workbook.SheetNames[0]]
+
+let json=XLSX.utils.sheet_to_json(sheet)
+
+ediNF=[]
+
+json.forEach(linha=>{
+
+let nf=linha.Numero || linha.NF || linha.NFe
+
+let awb=linha["Nº AWB"] || linha["N° AWB"] || linha.AWB
+
+if(nf){
+
+ediNF.push({
+nf:String(nf),
+awb:awb
+})
+
+}
+
+})
+
+resolve()
+
+}
+
+reader.readAsArrayBuffer(file)
+
+})
+
+}
+
+async function processar(){
+
+document.getElementById("status").innerText="Lendo manifesto (OCR)..."
+
+let manifestos=document.getElementById("manifestos").files
+let edi=document.getElementById("edi").files[0]
+
+await lerManifestos(manifestos)
+
+document.getElementById("status").innerText="Lendo EDI..."
+
+await lerEDI(edi)
+
+resultado=[]
+
+let mapaEDI={}
+
+ediNF.forEach(item=>{
+mapaEDI[item.nf]=item.awb
+})
+
+manifestoNF.forEach(nf=>{
+
+if(mapaEDI[nf]){
+
+resultado.push({
+NF:nf,
+Manifesto:"SIM",
+Emitido:"SIM",
+AWB:mapaEDI[nf],
+Status:"OK"
+})
+
+}else{
+
+resultado.push({
+NF:nf,
+Manifesto:"SIM",
+Emitido:"NÃO",
+AWB:"",
+Status:"NÃO EMITIDA"
+})
+
+}
+
+})
+
+ediNF.forEach(item=>{
+
+if(!manifestoNF.includes(item.nf)){
+
+resultado.push({
+NF:item.nf,
+Manifesto:"NÃO",
+Emitido:"SIM",
+AWB:item.awb,
+Status:"VOLUME A MAIS"
+})
+
+}
+
+})
+
+mostrarTabela()
+
+document.getElementById("status").innerText="Conferência concluída"
+
+}
+
+function mostrarTabela(){
+
+let tbody=document.querySelector("#tabela tbody")
+
+tbody.innerHTML=""
+
+resultado.forEach(r=>{
+
+let linha=`
+<tr>
+<td>${r.NF}</td>
+<td>${r.Manifesto}</td>
+<td>${r.Emitido}</td>
+<td>${r.AWB || ""}</td>
+<td>${r.Status}</td>
+</tr>
+`
+
+tbody.innerHTML+=linha
+
+})
+
+}
+
+function baixarExcel(){
+
+let ws=XLSX.utils.json_to_sheet(resultado)
+
+let wb=XLSX.utils.book_new()
+
+XLSX.utils.book_append_sheet(wb,ws,"Resultado")
+
+XLSX.writeFile(wb,"conferencia_manifestos.xlsx")
+
+}
+
+</script>
+
+</body>
+
+</html>
