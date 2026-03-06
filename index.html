@@ -2,6 +2,7 @@
 <html lang="pt">
 
 <head>
+
 <meta charset="UTF-8">
 <title>Conferência de Manifestos</title>
 
@@ -19,26 +20,27 @@ padding:40px;
 .container{
 background:white;
 padding:40px;
-width:500px;
+width:650px;
 margin:auto;
 border-radius:12px;
 box-shadow:0 5px 20px rgba(0,0,0,0.1);
 }
 
 .logo{
-width:120px;
-margin-bottom:20px;
+width:140px;
+margin-bottom:15px;
 }
 
 h2{
 color:#003A8F;
 }
 
-input{
-margin:10px;
+.upload{
+margin:15px;
 }
 
 button{
+
 background:#0074D9;
 color:white;
 border:none;
@@ -47,6 +49,7 @@ font-size:16px;
 border-radius:6px;
 cursor:pointer;
 margin-top:20px;
+
 }
 
 button:hover{
@@ -54,9 +57,54 @@ background:#005bb5;
 }
 
 .status{
+
 margin-top:20px;
 font-weight:bold;
-color:#333;
+
+}
+
+.counter{
+
+margin-top:10px;
+font-size:14px;
+color:#555;
+
+}
+
+table{
+
+margin-top:30px;
+width:100%;
+border-collapse:collapse;
+
+}
+
+th{
+
+background:#003A8F;
+color:white;
+padding:10px;
+
+}
+
+td{
+
+border:1px solid #ddd;
+padding:8px;
+
+}
+
+.download{
+
+background:#28a745;
+margin-top:20px;
+
+}
+
+.download:hover{
+
+background:#1e7e34;
+
 }
 
 </style>
@@ -71,75 +119,141 @@ color:#333;
 
 <h2>Conferência de Manifestos</h2>
 
+<div class="upload">
+
 <p>Upload Manifestos (PDF)</p>
 <input type="file" id="manifestos" multiple>
+
+</div>
+
+<div class="upload">
 
 <p>Upload Planilha EDI (Excel)</p>
 <input type="file" id="edi">
 
-<br>
+</div>
 
 <button onclick="processar()">PROCESSAR</button>
 
 <p class="status" id="status"></p>
 
+<p class="counter" id="contador"></p>
+
+<table id="tabela">
+
+<thead>
+
+<tr>
+<th>NF</th>
+<th>AWB</th>
+<th>Status</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+</tbody>
+
+</table>
+
+<button class="download" onclick="baixarExcel()">Baixar Relatório Excel</button>
+
 </div>
 
 <script>
 
+let dadosProcessados = []
+
 function processar(){
 
-let manifestos = document.getElementById("manifestos").files
 let edi = document.getElementById("edi").files[0]
 
-if(manifestos.length === 0){
-alert("Selecione pelo menos um manifesto")
-return
-}
-
 if(!edi){
+
 alert("Selecione a planilha EDI")
+
 return
+
 }
 
-document.getElementById("status").innerHTML = "Processando arquivos..."
+document.getElementById("status").innerHTML="Processando planilha..."
 
 let reader = new FileReader()
 
 reader.onload = function(e){
 
 let data = new Uint8Array(e.target.result)
+
 let workbook = XLSX.read(data,{type:"array"})
 
 let sheet = workbook.Sheets[workbook.SheetNames[0]]
 
 let json = XLSX.utils.sheet_to_json(sheet)
 
-let resultado = []
+dadosProcessados = []
 
 json.forEach(linha =>{
 
-resultado.push({
-NF: linha.NF,
-AWB: linha.AWB,
+let nf = linha.NF || linha.NFe || linha["Numero NF"] || linha["NOTA"]
+
+let awb = linha.AWB || linha.Awb || linha["AWB Nº"] || linha["AWB No"]
+
+dadosProcessados.push({
+
+NF:nf,
+AWB:awb,
 Status:"EMITIDO"
-})
 
 })
 
-let ws = XLSX.utils.json_to_sheet(resultado)
+})
 
-let wb = XLSX.utils.book_new()
+mostrarTabela()
 
-XLSX.utils.book_append_sheet(wb,ws,"Resultado")
+document.getElementById("status").innerHTML="Processamento concluído"
 
-XLSX.writeFile(wb,"conferencia_manifestos.xlsx")
-
-document.getElementById("status").innerHTML="Relatório gerado!"
+document.getElementById("contador").innerHTML="Total de registros: " + dadosProcessados.length
 
 }
 
 reader.readAsArrayBuffer(edi)
+
+}
+
+function mostrarTabela(){
+
+let tbody = document.querySelector("#tabela tbody")
+
+tbody.innerHTML=""
+
+dadosProcessados.forEach(item =>{
+
+let linha = `
+
+<tr>
+<td>${item.NF || ""}</td>
+<td>${item.AWB || ""}</td>
+<td>${item.Status}</td>
+</tr>
+
+`
+
+tbody.innerHTML += linha
+
+})
+
+}
+
+function baixarExcel(){
+
+let ws = XLSX.utils.json_to_sheet(dadosProcessados)
+
+let wb = XLSX.utils.book_new()
+
+XLSX.utils.book_append_sheet(wb,ws,"Conferencia")
+
+XLSX.writeFile(wb,"conferencia_manifestos.xlsx")
 
 }
 
