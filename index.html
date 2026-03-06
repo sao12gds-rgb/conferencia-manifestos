@@ -1,41 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt">
 
 <head>
 <meta charset="UTF-8">
-<title>Conferência de Manifesto</title>
+<title>Conferência de Manifestos</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 
 body{
 font-family:Arial;
-background:#f0f2f5;
+background:#eef2f7;
 text-align:center;
-padding:50px;
+padding:40px;
 }
 
 .container{
 background:white;
 padding:40px;
-width:450px;
+width:500px;
 margin:auto;
-border-radius:10px;
-box-shadow:0 0 10px rgba(0,0,0,0.1);
+border-radius:12px;
+box-shadow:0 5px 20px rgba(0,0,0,0.1);
+}
+
+.logo{
+width:120px;
+margin-bottom:20px;
+}
+
+h2{
+color:#003A8F;
+}
+
+input{
+margin:10px;
 }
 
 button{
-padding:12px 25px;
-margin-top:15px;
-border:none;
-border-radius:6px;
-background:#007bff;
+background:#0074D9;
 color:white;
+border:none;
+padding:12px 30px;
 font-size:16px;
+border-radius:6px;
 cursor:pointer;
+margin-top:20px;
 }
 
 button:hover{
-background:#0056b3;
+background:#005bb5;
+}
+
+.status{
+margin-top:20px;
+font-weight:bold;
+color:#333;
 }
 
 </style>
@@ -46,19 +67,83 @@ background:#0056b3;
 
 <div class="container">
 
-<h2>Conferência de Manifesto</h2>
+<img src="logo-azulcargo.png" class="logo">
 
-<p>Upload Manifesto PDF</p>
-<input type="file">
+<h2>Conferência de Manifestos</h2>
 
-<p>Upload Planilha EDI</p>
-<input type="file">
+<p>Upload Manifestos (PDF)</p>
+<input type="file" id="manifestos" multiple>
 
-<br><br>
+<p>Upload Planilha EDI (Excel)</p>
+<input type="file" id="edi">
 
-<button>PROCESSAR</button>
+<br>
+
+<button onclick="processar()">PROCESSAR</button>
+
+<p class="status" id="status"></p>
 
 </div>
+
+<script>
+
+function processar(){
+
+let manifestos = document.getElementById("manifestos").files
+let edi = document.getElementById("edi").files[0]
+
+if(manifestos.length === 0){
+alert("Selecione pelo menos um manifesto")
+return
+}
+
+if(!edi){
+alert("Selecione a planilha EDI")
+return
+}
+
+document.getElementById("status").innerHTML = "Processando arquivos..."
+
+let reader = new FileReader()
+
+reader.onload = function(e){
+
+let data = new Uint8Array(e.target.result)
+let workbook = XLSX.read(data,{type:"array"})
+
+let sheet = workbook.Sheets[workbook.SheetNames[0]]
+
+let json = XLSX.utils.sheet_to_json(sheet)
+
+let resultado = []
+
+json.forEach(linha =>{
+
+resultado.push({
+NF: linha.NF,
+AWB: linha.AWB,
+Status:"EMITIDO"
+})
+
+})
+
+let ws = XLSX.utils.json_to_sheet(resultado)
+
+let wb = XLSX.utils.book_new()
+
+XLSX.utils.book_append_sheet(wb,ws,"Resultado")
+
+XLSX.writeFile(wb,"conferencia_manifestos.xlsx")
+
+document.getElementById("status").innerHTML="Relatório gerado!"
+
+}
+
+reader.readAsArrayBuffer(edi)
+
+}
+
+</script>
 
 </body>
 
