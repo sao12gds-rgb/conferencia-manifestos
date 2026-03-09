@@ -1,14 +1,11 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <title>Conferência de Manifestos</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -123,8 +120,16 @@ text-align:center;
 background:#fff3cd;
 }
 
-</style>
+.erro{
+color:#c62828;
+font-weight:bold;
+}
 
+.ok{
+color:#2e7d32;
+font-weight:bold;
+}
+</style>
 </head>
 
 <body>
@@ -159,7 +164,9 @@ Manifesto PDF escaneado + EDI Excel + Capa / conferência física
 
 </div>
 
-<button class="process" onclick="processar()">PROCESSAR CONFERÊNCIA</button> <button class="excel" onclick="baixarExcel()">Baixar Excel</button> <button class="clear" onclick="location.reload()">Limpar</button>
+<button class="process" onclick="processar()">PROCESSAR CONFERÊNCIA</button>
+<button class="excel" onclick="baixarExcel()">Baixar Excel</button>
+<button class="clear" onclick="location.reload()">Limpar</button>
 
 <div class="status" id="status"></div>
 
@@ -181,6 +188,8 @@ Físico<br>
 </div>
 
 </div>
+
+<div id="resumoErros"></div>
 
 <div class="search">
 <input type="text" id="busca" placeholder="Buscar NF ou AWB..." onkeyup="filtrar()">
@@ -204,271 +213,290 @@ Físico<br>
 </div>
 
 <script>
+let resultado = [];
 
-let resultado=[]
+function normalizarNumero(valor){
+  if(valor === null || valor === undefined) return "";
+  return String(valor).replace(/\D/g,"").trim();
+}
+
+function textoContemCabecalhoNF(linha){
+  return /NFE|NOTAS FISCAIS|NOTA FISCAL/i.test(linha);
+}
 
 function extrairNFColuna(texto){
+  const linhas = texto.split(/\r?\n/);
+  const notas = [];
+  let modoColeta = false;
+  let linhasSemNumero = 0;
 
-let linhas=texto.split("\n")
-let coletar=false
-let notas=[]
+  for(let i = 0; i < linhas.length; i++){
+    const linhaOriginal = linhas[i] || "";
+    const linha = linhaOriginal.trim();
 
-for(let linha of linhas){
+    if(textoContemCabecalhoNF(linha)){
+      modoColeta = true;
+      linhasSemNumero = 0;
+      continue;
+    }
 
-linha=linha.trim()
+    if(modoColeta){
+      const encontrados = linha.match(/\b\d{8,9}\b/g);
 
-if(/NFe|Notas Fiscais/i.test(linha)){
-coletar=true
-continue
-}
+      if(encontrados && encontrados.length){
+        encontrados.forEach(nf => notas.push(nf));
+        linhasSemNumero = 0;
+      }else{
+        linhasSemNumero++;
+        if(linhasSemNumero > 8){
+          modoColeta = false;
+        }
+      }
+    }
+  }
 
-if(coletar){
+  if(notas.length){
+    return notas;
+  }
 
-let match=linha.match(/\b\d{8,9}\b/)
-
-if(match){
-notas.push(match[0])
-}
-
-}
-
-}
-
-return notas
-
+  // fallback para OCR ruim: pega só números de 8/9 dígitos da página
+  const fallback = texto.match(/\b\d{8,9}\b/g) || [];
+  return fallback;
 }
 
 async function extrairNotasPDF(file){
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data:buffer}).promise;
 
-const buffer=await file.arrayBuffer()
-const pdf=await pdfjsLib.getDocument({data:buffer}).promise
+  let notas = [];
 
-let notas=[]
+  for(let i = 1; i <= pdf.numPages; i++){
+    document.getElementById("status").innerText = `Lendo manifesto ${file.name} - página ${i}/${pdf.numPages}...`;
 
-for(let i=1;i<=pdf.numPages;i++){
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({scale:2});
 
-const page=await pdf.getPage(i)
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
 
-const viewport=page.getViewport({scale:2})
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
 
-const canvas=document.createElement("canvas")
-const ctx=canvas.getContext("2d")
+    await page.render({
+      canvasContext:ctx,
+      viewport:viewport
+    }).promise;
 
-canvas.width=viewport.width
-canvas.height=viewport.height
+    const img = canvas.toDataURL();
 
-await page.render({
-canvasContext:ctx,
-viewport:viewport
-}).promise
+    const ocr = await Tesseract.recognize(img, "eng");
+    const texto = ocr.data.text || "";
 
-const img=canvas.toDataURL()
+    const encontradas = extrairNFColuna(texto);
+    notas.push(...encontradas);
+  }
 
-const ocr=await Tesseract.recognize(img,"eng")
-
-const texto=ocr.data.text
-
-const encontradas=extrairNFColuna(texto)
-
-notas.push(...encontradas)
-
+  return notas;
 }
 
-return notas
+function encontrarColuna(obj, candidatos){
+  const chaves = Object.keys(obj || {});
+  for(const chave of chaves){
+    const chaveLimpa = chave
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase()
+      .trim();
 
+    for(const candidato of candidatos){
+      if(chaveLimpa === candidato || chaveLimpa.includes(candidato)){
+        return chave;
+      }
+    }
+  }
+  return null;
 }
 
 function lerExcel(file){
+  return new Promise(resolve => {
+    const reader = new FileReader();
 
-return new Promise(resolve=>{
+    reader.onload = e => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data,{type:"array"});
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet);
 
-const reader=new FileReader()
+      let mapa = {};
 
-reader.onload=e=>{
+      if(json.length){
+        const colunaNF = encontrarColuna(json[0], ["NUMERO","NF","NOTA FISCAL","NFE"]);
+        const colunaAWB = encontrarColuna(json[0], ["N AWB","NO AWB","Nº AWB","AWB"]);
 
-const data=new Uint8Array(e.target.result)
+        json.forEach(l => {
+          const nf = normalizarNumero(colunaNF ? l[colunaNF] : "");
+          const awb = normalizarNumero(colunaAWB ? l[colunaAWB] : "");
 
-const workbook=XLSX.read(data,{type:"array"})
+          if(nf){
+            mapa[nf] = awb;
+          }
+        });
+      }
 
-const sheet=workbook.Sheets[workbook.SheetNames[0]]
+      resolve(mapa);
+    };
 
-const json=XLSX.utils.sheet_to_json(sheet)
-
-let mapa={}
-
-json.forEach(l=>{
-
-const nf=String(l.Numero || "").trim()
-const awb=String(l["Nº AWB"] || "").trim()
-
-if(nf){
-mapa[nf]=awb
-}
-
-})
-
-resolve(mapa)
-
-}
-
-reader.readAsArrayBuffer(file)
-
-})
-
+    reader.readAsArrayBuffer(file);
+  });
 }
 
 async function lerFisico(file){
+  if(!file) return 0;
 
-if(!file)return 0
+  const url = URL.createObjectURL(file);
+  const ocr = await Tesseract.recognize(url,"eng");
+  const texto = ocr.data.text || "";
 
-const url=URL.createObjectURL(file)
+  let match = texto.match(/ROMANEIO\s*(\d{1,4})/i);
+  if(match) return parseInt(match[1],10);
 
-const ocr=await Tesseract.recognize(url,"eng")
+  match = texto.match(/QTD\.?\s*VOLUMES.*?(\d{1,4})/i);
+  if(match) return parseInt(match[1],10);
 
-const texto=ocr.data.text
+  match = texto.match(/CONTAGEM.*?(\d{1,4})/i);
+  if(match) return parseInt(match[1],10);
 
-const match=texto.match(/ROMANEIO\s*(\d+)/i)
-
-if(match){
-return parseInt(match[1])
-}
-
-return 0
-
+  return 0;
 }
 
 async function processar(){
+  document.getElementById("status").innerText = "Processando...";
 
-document.getElementById("status").innerText="Processando..."
+  const pdfs = document.getElementById("manifesto").files;
+  const ediFile = document.getElementById("edi").files[0];
+  const capaFile = document.getElementById("capa").files[0];
 
-const pdfs=document.getElementById("manifesto").files
-const ediFile=document.getElementById("edi").files[0]
-const capaFile=document.getElementById("capa").files[0]
+  let notasManifesto = [];
 
-let notasManifesto=[]
+  for(const file of pdfs){
+    const notas = await extrairNotasPDF(file);
+    notasManifesto.push(...notas);
+  }
 
-for(const file of pdfs){
+  document.getElementById("manifestoCount").innerText = notasManifesto.length;
 
-const notas=await extrairNotasPDF(file)
+  let mapaEDI = {};
+  if(ediFile){
+    document.getElementById("status").innerText = "Lendo planilha EDI...";
+    mapaEDI = await lerExcel(ediFile);
+  }
 
-notasManifesto.push(...notas)
+  let emitidos = 0;
+  let duplicados = {};
+  resultado = [];
 
+  notasManifesto.forEach(nf => {
+    let emitido = false;
+    let awb = "";
+    let status = "";
+
+    if(mapaEDI[nf] !== undefined){
+      emitido = true;
+      awb = mapaEDI[nf];
+    }
+
+    if(duplicados[nf]){
+      status = "DUPLICADO NO MANIFESTO";
+    }else{
+      duplicados[nf] = true;
+      status = emitido ? "OK" : "NÃO EMITIDO";
+    }
+
+    if(emitido && status !== "DUPLICADO NO MANIFESTO"){
+      emitidos++;
+    }
+
+    resultado.push({
+      nf,
+      emitido,
+      awb,
+      status
+    });
+  });
+
+  document.getElementById("emitidoCount").innerText = emitidos;
+
+  const fisico = await lerFisico(capaFile);
+  document.getElementById("fisicoCount").innerText = fisico;
+
+  mostrarTabela();
+  montarResumo(notasManifesto.length, emitidos, fisico);
+
+  document.getElementById("status").innerText = "Conferência concluída";
 }
 
-document.getElementById("manifestoCount").innerText=notasManifesto.length
+function montarResumo(totalManifesto, totalEmitido, totalFisico){
+  const naoEmitidas = resultado
+    .filter(r => r.status === "NÃO EMITIDO")
+    .map(r => r.nf);
 
-let mapaEDI={}
+  let html = "";
 
-if(ediFile){
-mapaEDI=await lerExcel(ediFile)
-}
+  if(naoEmitidas.length){
+    html += `<p class="erro">⚠ ${naoEmitidas.length} NF(s) do manifesto não foram emitidas</p>`;
+    html += `<p><b>NFs não emitidas:</b><br>${naoEmitidas.join("<br>")}</p>`;
+  }
 
-let emitidos=0
-let duplicados={}
+  if(totalFisico && totalFisico !== totalManifesto){
+    html += `<p class="erro">⚠ Divergência física: Manifesto ${totalManifesto} x Físico ${totalFisico}</p>`;
+  }
 
-resultado=[]
+  if(!html){
+    html = `<p class="ok">✔ Conferência sem divergências</p>`;
+  }
 
-notasManifesto.forEach((nf,index)=>{
-
-let emitido=false
-let awb=""
-let status=""
-
-if(mapaEDI[nf]){
-
-emitido=true
-awb=mapaEDI[nf]
-emitidos++
-
-}
-
-if(duplicados[nf]){
-
-status="DUPLICADO NO MANIFESTO"
-
-}else{
-
-duplicados[nf]=true
-status=emitido ? "OK" : "NÃO EMITIDO"
-
-}
-
-resultado.push({
-nf,
-emitido,
-awb,
-status
-})
-
-})
-
-document.getElementById("emitidoCount").innerText=emitidos
-
-const fisico=await lerFisico(capaFile)
-
-document.getElementById("fisicoCount").innerText=fisico
-
-mostrarTabela()
-
-document.getElementById("status").innerText="Conferência concluída"
-
+  document.getElementById("resumoErros").innerHTML = html;
 }
 
 function mostrarTabela(){
+  const tbody = document.querySelector("#tabela tbody");
+  tbody.innerHTML = "";
 
-const tbody=document.querySelector("#tabela tbody")
+  resultado.forEach(r => {
+    const tr = document.createElement("tr");
 
-tbody.innerHTML=""
+    if(r.status === "DUPLICADO NO MANIFESTO"){
+      tr.classList.add("duplicado");
+    }
 
-resultado.forEach(r=>{
+    tr.innerHTML = `
+      <td>${r.nf}</td>
+      <td>${r.emitido ? "SIM" : "NÃO"}</td>
+      <td>${r.awb}</td>
+      <td>${r.status}</td>
+    `;
 
-const tr=document.createElement("tr")
-
-if(r.status==="DUPLICADO NO MANIFESTO"){
-tr.classList.add("duplicado")
-}
-
-tr.innerHTML=`
-<td>${r.nf}</td>
-<td>${r.emitido?"SIM":"NÃO"}</td>
-<td>${r.awb}</td>
-<td>${r.status}</td>
-`
-
-tbody.appendChild(tr)
-
-})
-
+    tbody.appendChild(tr);
+  });
 }
 
 function filtrar(){
+  const valor = document.getElementById("busca").value.toLowerCase();
+  const linhas = document.querySelectorAll("#tabela tbody tr");
 
-const valor=document.getElementById("busca").value.toLowerCase()
-
-const linhas=document.querySelectorAll("#tabela tbody tr")
-
-linhas.forEach(l=>{
-
-const texto=l.innerText.toLowerCase()
-
-l.style.display=texto.includes(valor)?"":"none"
-
-})
-
+  linhas.forEach(l => {
+    const texto = l.innerText.toLowerCase();
+    l.style.display = texto.includes(valor) ? "" : "none";
+  });
 }
 
 function baixarExcel(){
+  const ws = XLSX.utils.json_to_sheet(resultado);
+  const wb = XLSX.utils.book_new();
 
-const ws=XLSX.utils.json_to_sheet(resultado)
-
-const wb=XLSX.utils.book_new()
-
-XLSX.utils.book_append_sheet(wb,ws,"Relatorio")
-
-XLSX.writeFile(wb,"conferencia.xlsx")
-
+  XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+  XLSX.writeFile(wb, "conferencia.xlsx");
 }
-
 </script>
 
 </body>
