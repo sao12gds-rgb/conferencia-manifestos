@@ -6,7 +6,6 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
 <style>
 
@@ -166,9 +165,7 @@ Manifesto PDF escaneado + EDI Excel + Capa / conferência física
 <div class="actions">
 
 <button class="processar" onclick="processar()">PROCESSAR CONFERÊNCIA</button>
-
 <button class="baixar" onclick="baixarExcel()">Baixar Excel</button>
-
 <button class="limpar" onclick="location.reload()">Limpar</button>
 
 </div>
@@ -232,21 +229,25 @@ let arquivos=document.getElementById("manifestos").files
 
 for(let file of arquivos){
 
-let texto=await lerPDF(file)
+const data=await file.arrayBuffer()
+const pdf=await pdfjsLib.getDocument(data).promise
 
-let linhas=texto.split("\n")
+for(let p=1;p<=pdf.numPages;p++){
 
-linhas.forEach(l=>{
+const page=await pdf.getPage(p)
+const textContent=await page.getTextContent()
 
-if(l.includes("NFe") || l.includes("NF")){
+textContent.items.forEach(item=>{
 
-let n=l.match(/\d{7,9}/)
+let txt=item.str.trim()
 
-if(n)manifesto.push(n[0])
-
+if(/^\d{7,9}$/.test(txt)){
+manifesto.push(txt)
 }
 
 })
+
+}
 
 }
 
@@ -277,27 +278,13 @@ emitido.push({nf,awb})
 
 }
 
-let emitidasDoManifesto=manifesto.filter(nf=>emitido.some(e=>e.nf==nf))
+let emitidas=manifesto.filter(nf=>emitido.some(e=>e.nf==nf))
 
-document.getElementById("totalEmitido").innerText=emitidasDoManifesto.length
-
-let capa=document.getElementById("capa").files[0]
-
-if(capa){
-
-let texto=await lerPDF(capa)
-
-let match=texto.match(/\b\d{1,3}\b/g)
-
-if(match)fisicoTotal=parseInt(match[match.length-1])
-
-}
-
-document.getElementById("totalFisico").innerText=fisicoTotal
+document.getElementById("totalEmitido").innerText=emitidas.length
 
 montarTabela()
 
-resumo()
+document.getElementById("status").innerText="Conferência concluída"
 
 }
 
@@ -329,75 +316,6 @@ tr.innerHTML=`
 tbody.appendChild(tr)
 
 resultado.push({NF:nf,Emitido:emi?"SIM":"NÃO",AWB:awb,Status:status})
-
-})
-
-}
-
-function resumo(){
-
-let naoEmitidas=manifesto.filter(nf=>!emitido.some(e=>e.nf==nf))
-
-let html=""
-
-if(naoEmitidas.length>0){
-
-html+=`<p class="erro">⚠ ${naoEmitidas.length} NF(s) do manifesto não foram emitidas</p>`
-
-html+=`<p><b>NFs não emitidas:</b><br>${naoEmitidas.join("<br>")}</p>`
-
-}
-
-if(fisicoTotal && fisicoTotal!=manifesto.length){
-
-html+=`<p class="erro">⚠ Divergência física: Manifesto ${manifesto.length} x Físico ${fisicoTotal}</p>`
-
-}
-
-document.getElementById("resumoErros").innerHTML=html
-
-}
-
-async function lerPDF(file){
-
-const reader=new FileReader()
-
-return new Promise(resolve=>{
-
-reader.onload=async function(){
-
-const typedarray=new Uint8Array(this.result)
-
-const pdf=await pdfjsLib.getDocument(typedarray).promise
-
-let texto=""
-
-for(let i=1;i<=pdf.numPages;i++){
-
-const page=await pdf.getPage(i)
-
-const viewport=page.getViewport({scale:2})
-
-const canvas=document.createElement("canvas")
-
-const ctx=canvas.getContext("2d")
-
-canvas.height=viewport.height
-canvas.width=viewport.width
-
-await page.render({canvasContext:ctx,viewport:viewport}).promise
-
-const ocr=await Tesseract.recognize(canvas)
-
-texto+=ocr.data.text
-
-}
-
-resolve(texto)
-
-}
-
-reader.readAsArrayBuffer(file)
 
 })
 
