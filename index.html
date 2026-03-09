@@ -9,547 +9,488 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 
 <style>
+
 body{
-  font-family:Arial;
-  background:#eef2f6;
-  padding:40px;
+font-family:Arial;
+background:#eef2f6;
+padding:40px;
 }
+
 .container{
-  max-width:1100px;
-  margin:auto;
-  background:white;
-  padding:35px;
-  border-radius:14px;
-  box-shadow:0 8px 25px rgba(0,0,0,0.08);
+max-width:1100px;
+margin:auto;
+background:white;
+padding:35px;
+border-radius:14px;
+box-shadow:0 8px 25px rgba(0,0,0,0.08);
 }
+
 .header{
-  display:flex;
-  align-items:center;
-  gap:15px;
-  margin-bottom:15px;
+display:flex;
+align-items:center;
+gap:15px;
+margin-bottom:15px;
 }
+
 .header img{
-  height:40px;
+height:40px;
 }
+
 .header h1{
-  margin:0;
-  color:#0b4ea2;
+margin:0;
+color:#0b4ea2;
 }
+
 .subtitle{
-  color:#64748b;
-  margin-bottom:25px;
+color:#64748b;
+margin-bottom:25px;
 }
+
 .uploads{
-  display:flex;
-  gap:20px;
+display:flex;
+gap:20px;
 }
+
 .box{
-  flex:1;
-  background:#f1f5f9;
-  padding:20px;
-  border-radius:10px;
+flex:1;
+background:#f1f5f9;
+padding:20px;
+border-radius:10px;
 }
+
 .actions{
-  margin-top:25px;
+margin-top:25px;
 }
+
 button{
-  padding:12px 18px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  font-weight:bold;
-  margin-right:10px;
+padding:12px 18px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+margin-right:10px;
 }
+
 .processar{background:#1976d2;color:white}
 .baixar{background:#22a652;color:white}
 .limpar{background:#64748b;color:white}
+
 .status{
-  margin-top:15px;
-  font-weight:bold;
-  color:#0b4ea2;
+margin-top:15px;
+font-weight:bold;
+color:#0b4ea2;
 }
+
 .resumo{
-  display:flex;
-  gap:15px;
-  margin-top:20px;
-  margin-bottom:10px;
+display:flex;
+gap:15px;
+margin-top:20px;
+margin-bottom:10px;
 }
+
 .card{
-  background:#f1f5f9;
-  padding:15px 20px;
-  border-radius:8px;
-  font-size:14px;
+background:#f1f5f9;
+padding:15px 20px;
+border-radius:8px;
+font-size:14px;
 }
+
 .card b{
-  font-size:20px;
+font-size:20px;
 }
+
 .filtro{
-  margin-top:15px;
+margin-top:15px;
 }
+
 .filtro input{
-  padding:8px;
-  border-radius:6px;
-  border:1px solid #ccc;
-  width:260px;
+padding:8px;
+border-radius:6px;
+border:1px solid #ccc;
+width:260px;
 }
+
 table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:20px;
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
 }
+
 th{
-  background:#0b4ea2;
-  color:white;
-  padding:10px;
+background:#0b4ea2;
+color:white;
+padding:10px;
 }
+
 td{
-  padding:8px;
-  border-bottom:1px solid #ddd;
-  text-align:center;
+padding:8px;
+border-bottom:1px solid #ddd;
+text-align:center;
 }
+
 .erro{
-  color:#e11d48;
-  font-weight:bold;
+color:#e11d48;
+font-weight:bold;
 }
+
 .ok{
-  color:#22a652;
-  font-weight:bold;
+color:#22a652;
+font-weight:bold;
 }
-.aviso{
-  color:#b45309;
-  font-weight:bold;
-}
-#resumoErros{
-  margin-top:10px;
-  line-height:1.6;
-}
+
 </style>
+
 </head>
 
 <body>
 
 <div class="container">
 
-  <div class="header">
-    <img src="logo-azulcargo.png" alt="Logo Azul Cargo" onerror="this.style.display='none'">
-    <h1>Conferência de Manifestos</h1>
-  </div>
+<div class="header">
+<img src="logo-azulcargo.png">
+<h1>Conferência de Manifestos</h1>
+</div>
 
-  <div class="subtitle">
-    Manifesto PDF escaneado + EDI Excel + Capa / conferência física
-  </div>
+<div class="subtitle">
+Manifesto PDF escaneado + EDI Excel + Capa / conferência física
+</div>
 
-  <div class="uploads">
+<div class="uploads">
 
-    <div class="box">
-      <h3>Upload Manifestos (PDF)</h3>
-      <input type="file" id="manifestos" multiple accept=".pdf">
-    </div>
+<div class="box">
+<h3>Upload Manifestos (PDF)</h3>
+<input type="file" id="manifestos" multiple>
+</div>
 
-    <div class="box">
-      <h3>Upload Planilha EDI (Excel)</h3>
-      <input type="file" id="edi" accept=".xls,.xlsx,.csv">
-    </div>
+<div class="box">
+<h3>Upload Planilha EDI (Excel)</h3>
+<input type="file" id="edi">
+</div>
 
-    <div class="box">
-      <h3>Upload Capa / Conferência Física</h3>
-      <input type="file" id="capa" accept=".pdf,image/*">
-    </div>
+<div class="box">
+<h3>Upload Capa / Conferência Física</h3>
+<input type="file" id="capa">
+</div>
 
-  </div>
+</div>
 
-  <div class="actions">
-    <button class="processar" onclick="processar()">PROCESSAR CONFERÊNCIA</button>
-    <button class="baixar" onclick="baixarExcel()">Baixar Excel</button>
-    <button class="limpar" onclick="location.reload()">Limpar</button>
-  </div>
+<div class="actions">
 
-  <div class="status" id="status"></div>
+<button class="processar" onclick="processar()">PROCESSAR CONFERÊNCIA</button>
 
-  <div class="resumo">
-    <div class="card">
-      Manifesto<br>
-      <b id="totalManifesto">0</b>
-    </div>
+<button class="baixar" onclick="baixarExcel()">Baixar Excel</button>
 
-    <div class="card">
-      Emitido<br>
-      <b id="totalEmitido">0</b>
-    </div>
+<button class="limpar" onclick="location.reload()">Limpar</button>
 
-    <div class="card">
-      Físico<br>
-      <b id="totalFisico">0</b>
-    </div>
-  </div>
+</div>
 
-  <div id="resumoErros"></div>
+<div class="status" id="status"></div>
 
-  <h3>Detalhamento por NF</h3>
+<div class="resumo">
 
-  <div class="filtro">
-    <input
-      type="text"
-      id="filtroNF"
-      placeholder="🔎 Buscar NF ou AWB..."
-      onkeyup="filtrarTabela()"
-    >
-  </div>
+<div class="card">
+Manifesto<br>
+<b id="totalManifesto">0</b>
+</div>
 
-  <table id="tabelaResultado">
-    <thead>
-      <tr>
-        <th>NF</th>
-        <th>Manifesto</th>
-        <th>Emitido</th>
-        <th>AWB</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<div class="card">
+Emitido<br>
+<b id="totalEmitido">0</b>
+</div>
+
+<div class="card">
+Físico<br>
+<b id="totalFisico">0</b>
+</div>
+
+</div>
+
+<div id="resumoErros"></div>
+
+<h3>Detalhamento por NF</h3>
+
+<div class="filtro">
+
+<input
+type="text"
+id="filtroNF"
+placeholder="🔎 Buscar NF ou AWB..."
+onkeyup="filtrarTabela()"
+>
+
+</div>
+
+<table id="tabelaResultado">
+
+<thead>
+<tr>
+<th>NF</th>
+<th>Emitido</th>
+<th>AWB</th>
+<th>Status</th>
+</tr>
+</thead>
+
+<tbody></tbody>
+
+</table>
 
 </div>
 
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
 
-let manifesto = [];
-let emitido = [];
-let resultado = [];
-let fisicoTotal = 0;
-
-function setStatus(msg){
-  document.getElementById("status").innerText = msg;
-}
+let manifesto=[]
+let emitido=[]
+let resultado=[]
+let fisicoTotal=0
 
 function limparNumero(v){
-  if(v === null || v === undefined) return "";
-  return String(v).replace(/\D/g, "").trim();
+
+return String(v).replace(/\D/g,"")
+
 }
 
 function unicos(lista){
-  return [...new Set(lista.filter(Boolean))];
-}
 
-function normalizarTexto(txt){
-  return (txt || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toUpperCase();
-}
+return [...new Set(lista)]
 
-function extrairNFsManifesto(texto){
-  const bruto = texto.match(/\b\d{7,8}\b/g) || [];
-  return unicos(bruto.map(limparNumero).filter(n => n.length >= 7 && n.length <= 8));
-}
-
-function extrairFisicoCapa(texto){
-  const textoNorm = normalizarTexto(texto);
-
-  const padroes = [
-    /QTD\.?\s*VOLUMES\s*\(?CONTAGEM\)?\s*[:\-]?\s*(\d{1,4})/i,
-    /CONTAGEM\s*[:\-]?\s*(\d{1,4})/i,
-    /COLETADO\s+RIACHUELO\s*[:\-]?\s*(\d{1,4})/i,
-    /CONFERENCIA\s+TIME\s+PA\s*[:\-]?\s*(\d{1,4})/i,
-    /VOLUMES\s*[:\-]?\s*(\d{1,4})/i
-  ];
-
-  for(const p of padroes){
-    const m = textoNorm.match(p);
-    if(m) return parseInt(m[1], 10);
-  }
-
-  return 0;
-}
-
-function detectarColuna(obj, candidatos){
-  const keys = Object.keys(obj || {});
-  for(const key of keys){
-    const nk = normalizarTexto(key);
-    for(const c of candidatos){
-      if(nk.includes(c)) return key;
-    }
-  }
-  return null;
-}
-
-async function arquivoParaTexto(file){
-  const nome = (file.name || "").toLowerCase();
-  if(nome.endsWith(".pdf")) return await lerPDF(file);
-  return await lerImagem(file);
-}
-
-async function lerImagem(file){
-  const { data } = await Tesseract.recognize(file, "por");
-  return data.text || "";
-}
-
-async function lerPDF(file){
-  const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-  let textoFinal = "";
-
-  for(let i = 1; i <= pdf.numPages; i++){
-    setStatus(`Lendo ${file.name} - página ${i}/${pdf.numPages}...`);
-
-    const page = await pdf.getPage(i);
-    const textContent = await page.getTextContent();
-    const textoDireto = textContent.items.map(item => item.str).join(" ").trim();
-
-    if(textoDireto && textoDireto.length > 40){
-      textoFinal += " " + textoDireto;
-      continue;
-    }
-
-    const viewport = page.getViewport({ scale: 2 });
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-
-    await page.render({
-      canvasContext: ctx,
-      viewport: viewport
-    }).promise;
-
-    setStatus(`Aplicando OCR em ${file.name} - página ${i}/${pdf.numPages}...`);
-    const ocr = await Tesseract.recognize(canvas, "por");
-    textoFinal += " " + (ocr.data.text || "");
-  }
-
-  return textoFinal;
-}
-
-async function lerManifestos(files){
-  manifesto = [];
-
-  for(const file of files){
-    const texto = await lerPDF(file);
-    const nfs = extrairNFsManifesto(texto);
-    manifesto.push(...nfs);
-  }
-
-  manifesto = unicos(manifesto);
-}
-
-async function lerEDI(file){
-  emitido = [];
-  if(!file) return;
-
-  const data = await file.arrayBuffer();
-  const workbook = XLSX.read(data, { type: "array" });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const json = XLSX.utils.sheet_to_json(sheet);
-
-  if(!json.length) return;
-
-  const colNF = detectarColuna(json[0], ["NUMERO", "NF", "NFE"]);
-  const colAWB = detectarColuna(json[0], ["AWB"]);
-
-  json.forEach(linha => {
-    const nf = limparNumero(colNF ? linha[colNF] : "");
-    const awb = limparNumero(colAWB ? linha[colAWB] : "");
-
-    if(nf){
-      emitido.push({
-        nf,
-        awb
-      });
-    }
-  });
-
-  const mapa = new Map();
-  emitido.forEach(item => {
-    if(!mapa.has(item.nf)) mapa.set(item.nf, item);
-  });
-  emitido = [...mapa.values()];
-}
-
-async function lerCapa(file){
-  fisicoTotal = 0;
-  if(!file) return;
-
-  const texto = await arquivoParaTexto(file);
-  fisicoTotal = extrairFisicoCapa(texto);
-}
-
-function cruzar(){
-  resultado = [];
-  const tbody = document.querySelector("#tabelaResultado tbody");
-  tbody.innerHTML = "";
-
-  let todas = [
-    ...manifesto,
-    ...emitido.map(e => e.nf)
-  ];
-
-  todas = unicos(todas).sort();
-
-  todas.forEach(nf => {
-    const noManifesto = manifesto.includes(nf);
-    const emi = emitido.find(e => e.nf === nf);
-    const awb = emi ? emi.awb : "";
-
-    let status = "OK";
-
-    if(!noManifesto && emi){
-      status = "EMITIDO MAS NÃO ESTÁ NO ROMANEIO";
-    } else if(noManifesto && !emi){
-      status = "NO ROMANEIO MAS NÃO EMITIDO";
-    }
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${nf}</td>
-      <td>${noManifesto ? "SIM" : "NÃO"}</td>
-      <td>${emi ? "SIM" : "NÃO"}</td>
-      <td>${awb}</td>
-      <td class="${status === "OK" ? "ok" : "erro"}">${status}</td>
-    `;
-
-    tbody.appendChild(tr);
-
-    resultado.push({
-      NF: nf,
-      Manifesto: noManifesto ? "SIM" : "NÃO",
-      Emitido: emi ? "SIM" : "NÃO",
-      AWB: awb,
-      Status: status
-    });
-  });
-}
-
-function calcularResumo(){
-  const faltandoNoRomaneio = emitido
-    .filter(e => !manifesto.includes(e.nf))
-    .map(e => e.nf);
-
-  const naoEmitidas = manifesto
-    .filter(nf => !emitido.some(e => e.nf === nf));
-
-  const totalEmitido = emitido.length;
-  const totalErro = faltandoNoRomaneio.length;
-  const porcentagem = totalEmitido > 0
-    ? ((totalErro / totalEmitido) * 100).toFixed(2)
-    : "0.00";
-
-  let html = "";
-
-  if(fisicoTotal > 0){
-    html += `<p><b>Resumo:</b> Manifesto ${manifesto.length} | Emitido ${emitido.length} | Físico ${fisicoTotal}</p>`;
-  }
-
-  if(faltandoNoRomaneio.length > 0){
-    html += `<p class="erro">⚠ ${faltandoNoRomaneio.length} NF(s) emitidas não constam no Romaneio</p>`;
-    html += `<p>Erro: ${porcentagem}% do total emitido</p>`;
-    html += `<p><b>NFs emitidas fora do romaneio:</b><br>${faltandoNoRomaneio.join("<br>")}</p>`;
-  }
-
-  if(naoEmitidas.length > 0){
-    html += `<p class="aviso"><b>NFs do romaneio que não foram emitidas:</b><br>${naoEmitidas.join("<br>")}</p>`;
-  }
-
-  if(!faltandoNoRomaneio.length && !naoEmitidas.length){
-    html += `<p class="ok">✔ Nenhuma divergência encontrada entre Romaneio e Emitido</p>`;
-  }
-
-  document.getElementById("resumoErros").innerHTML = html;
-}
-
-function filtrarTabela(){
-  const filtro = document.getElementById("filtroNF").value.toUpperCase();
-  const linhas = document.querySelectorAll("#tabelaResultado tbody tr");
-
-  linhas.forEach(l => {
-    const nf = l.children[0].textContent.toUpperCase();
-    const awb = l.children[3].textContent.toUpperCase();
-
-    if(nf.includes(filtro) || awb.includes(filtro)){
-      l.style.display = "";
-    } else {
-      l.style.display = "none";
-    }
-  });
-}
-
-function baixarExcel(){
-  const wb = XLSX.utils.book_new();
-
-  const ws1 = XLSX.utils.json_to_sheet(resultado);
-  XLSX.utils.book_append_sheet(wb, ws1, "Conferencia");
-
-  const faltandoNoRomaneio = emitido
-    .filter(e => !manifesto.includes(e.nf))
-    .map(e => ({
-      NF: e.nf,
-      AWB: e.awb,
-      Motivo: "Emitido mas não consta no Romaneio"
-    }));
-
-  const ws2 = XLSX.utils.json_to_sheet(faltandoNoRomaneio.length ? faltandoNoRomaneio : [{ NF: "", AWB: "", Motivo: "Sem divergências" }]);
-  XLSX.utils.book_append_sheet(wb, ws2, "ForaRomaneio");
-
-  const resumo = [
-    { Indicador: "Manifesto", Valor: manifesto.length },
-    { Indicador: "Emitido", Valor: emitido.length },
-    { Indicador: "Físico", Valor: fisicoTotal }
-  ];
-  const ws3 = XLSX.utils.json_to_sheet(resumo);
-  XLSX.utils.book_append_sheet(wb, ws3, "Resumo");
-
-  XLSX.writeFile(wb, "conferencia.xlsx");
 }
 
 async function processar(){
-  try{
-    setStatus("Processando...");
 
-    manifesto = [];
-    emitido = [];
-    resultado = [];
-    fisicoTotal = 0;
+document.getElementById("status").innerText="Processando..."
 
-    const arquivosManifesto = document.getElementById("manifestos").files;
-    const arquivoEDI = document.getElementById("edi").files[0];
-    const arquivoCapa = document.getElementById("capa").files[0];
+manifesto=[]
+emitido=[]
+resultado=[]
 
-    if(!arquivosManifesto.length){
-      alert("Selecione pelo menos um manifesto PDF.");
-      return;
-    }
+let arquivosManifesto=document.getElementById("manifestos").files
 
-    if(!arquivoEDI){
-      alert("Selecione a planilha EDI.");
-      return;
-    }
+for(let file of arquivosManifesto){
 
-    await lerManifestos(arquivosManifesto);
-    document.getElementById("totalManifesto").innerText = manifesto.length;
+let texto=await lerPDF(file)
 
-    setStatus("Lendo planilha EDI...");
-    await lerEDI(arquivoEDI);
-    document.getElementById("totalEmitido").innerText = emitido.length;
+let nfs=texto.match(/\b\d{7,9}\b/g)
 
-    if(arquivoCapa){
-      setStatus("Lendo capa / conferência física...");
-      await lerCapa(arquivoCapa);
-    }
-    document.getElementById("totalFisico").innerText = fisicoTotal || 0;
+if(nfs)manifesto.push(...nfs)
 
-    setStatus("Cruzando informações...");
-    cruzar();
-    calcularResumo();
-
-    setStatus("Conferência concluída");
-  }catch(e){
-    console.error(e);
-    setStatus("Erro no processamento");
-    alert("Ocorreu um erro ao processar os arquivos.");
-  }
 }
+
+manifesto=unicos(manifesto)
+
+document.getElementById("totalManifesto").innerText=manifesto.length
+
+let arquivoEDI=document.getElementById("edi").files[0]
+
+if(arquivoEDI){
+
+const data=await arquivoEDI.arrayBuffer()
+
+const workbook=XLSX.read(data)
+
+const sheet=workbook.Sheets[workbook.SheetNames[0]]
+
+const json=XLSX.utils.sheet_to_json(sheet)
+
+json.forEach(l=>{
+
+let nf=limparNumero(l.Numero || l.NF || l["Nota Fiscal"] || "")
+
+let awb=limparNumero(l["Nº AWB"] || l.AWB || "")
+
+if(nf){
+
+emitido.push({nf,awb})
+
+}
+
+})
+
+}
+
+document.getElementById("totalEmitido").innerText=emitido.length
+
+let capa=document.getElementById("capa").files[0]
+
+if(capa){
+
+let texto=await lerPDF(capa)
+
+let match=texto.match(/\b\d{1,3}\b/g)
+
+if(match){
+
+fisicoTotal=parseInt(match[match.length-1])
+
+}
+
+}
+
+document.getElementById("totalFisico").innerText=fisicoTotal
+
+cruzar()
+
+calcularResumo()
+
+document.getElementById("status").innerText="Conferência concluída"
+
+}
+
+function cruzar(){
+
+const tbody=document.querySelector("#tabelaResultado tbody")
+
+tbody.innerHTML=""
+
+manifesto.forEach(nf=>{
+
+let emi=emitido.find(e=>e.nf==nf)
+
+let awb=emi?emi.awb:""
+
+let status="OK"
+
+if(!emi){
+
+status="NÃO EMITIDO"
+
+}
+
+let tr=document.createElement("tr")
+
+tr.innerHTML=`
+
+<td>${nf}</td>
+<td>${emi?"SIM":"NÃO"}</td>
+<td>${awb}</td>
+<td class="${status=="OK"?"ok":"erro"}">${status}</td>
+
+`
+
+tbody.appendChild(tr)
+
+resultado.push({
+
+NF:nf,
+Emitido:emi?"SIM":"NÃO",
+AWB:awb,
+Status:status
+
+})
+
+})
+
+}
+
+function calcularResumo(){
+
+let naoEmitidas=manifesto.filter(nf=>!emitido.some(e=>e.nf===nf))
+
+let html=""
+
+if(naoEmitidas.length>0){
+
+html+=`<p class="erro">⚠ ${naoEmitidas.length} NF(s) do manifesto não foram emitidas</p>`
+
+html+=`<p><b>NFs não emitidas:</b><br>${naoEmitidas.join("<br>")}</p>`
+
+}else{
+
+html=`<p class="ok">✔ Todas as NFs do manifesto foram emitidas</p>`
+
+}
+
+if(fisicoTotal!=manifesto.length){
+
+html+=`<p class="erro">⚠ Divergência física: Manifesto ${manifesto.length} x Físico ${fisicoTotal}</p>`
+
+}
+
+document.getElementById("resumoErros").innerHTML=html
+
+}
+
+async function lerPDF(file){
+
+const reader=new FileReader()
+
+return new Promise(resolve=>{
+
+reader.onload=async function(){
+
+const typedarray=new Uint8Array(this.result)
+
+const pdf=await pdfjsLib.getDocument(typedarray).promise
+
+let texto=""
+
+for(let i=1;i<=pdf.numPages;i++){
+
+const page=await pdf.getPage(i)
+
+const viewport=page.getViewport({scale:2})
+
+const canvas=document.createElement("canvas")
+
+const ctx=canvas.getContext("2d")
+
+canvas.height=viewport.height
+canvas.width=viewport.width
+
+await page.render({canvasContext:ctx,viewport:viewport}).promise
+
+const ocr=await Tesseract.recognize(canvas)
+
+texto+=ocr.data.text
+
+}
+
+resolve(texto)
+
+}
+
+reader.readAsArrayBuffer(file)
+
+})
+
+}
+
+function filtrarTabela(){
+
+const filtro=document.getElementById("filtroNF").value.toUpperCase()
+
+const linhas=document.querySelectorAll("#tabelaResultado tbody tr")
+
+linhas.forEach(l=>{
+
+const nf=l.children[0].textContent
+const awb=l.children[2].textContent
+
+if(
+nf.toUpperCase().includes(filtro) ||
+awb.toUpperCase().includes(filtro)
+){
+l.style.display=""
+}else{
+l.style.display="none"
+}
+
+})
+
+}
+
+function baixarExcel(){
+
+const ws=XLSX.utils.json_to_sheet(resultado)
+
+const wb=XLSX.utils.book_new()
+
+XLSX.utils.book_append_sheet(wb,ws,"Conferencia")
+
+XLSX.writeFile(wb,"conferencia.xlsx")
+
+}
+
 </script>
 
 </body>
