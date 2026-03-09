@@ -5,137 +5,123 @@
 <title>Conferência de Manifestos</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 
 body{
 font-family:Arial;
-background:#eef2f6;
-padding:40px;
+background:#eef1f5;
 }
 
 .container{
-max-width:1100px;
+width:900px;
 margin:auto;
 background:white;
-padding:35px;
-border-radius:14px;
-box-shadow:0 8px 25px rgba(0,0,0,0.08);
+padding:30px;
+border-radius:10px;
 }
 
-.header{
+.top{
 display:flex;
 align-items:center;
-gap:15px;
-margin-bottom:15px;
+gap:20px;
 }
 
-.header img{
-height:40px;
+.logo{
+height:45px;
 }
 
-.header h1{
+h1{
+color:#1e4f91;
 margin:0;
-color:#0b4ea2;
 }
 
 .subtitle{
-color:#64748b;
-margin-bottom:25px;
+color:#666;
+margin-bottom:20px;
 }
 
 .uploads{
 display:flex;
 gap:20px;
+margin-bottom:20px;
 }
 
 .box{
+background:#f3f4f7;
+padding:15px;
+border-radius:8px;
 flex:1;
-background:#f1f5f9;
-padding:20px;
-border-radius:10px;
-}
-
-.actions{
-margin-top:25px;
 }
 
 button{
-padding:12px 18px;
 border:none;
-border-radius:8px;
+padding:10px 18px;
+border-radius:6px;
 cursor:pointer;
-font-weight:bold;
-margin-right:10px;
 }
 
-.processar{background:#1976d2;color:white}
-.baixar{background:#22a652;color:white}
-.limpar{background:#64748b;color:white}
+.process{
+background:#1e73be;
+color:white;
+}
+
+.excel{
+background:#2e9f4b;
+color:white;
+}
+
+.clear{
+background:#7a8798;
+color:white;
+}
 
 .status{
-margin-top:15px;
-font-weight:bold;
-color:#0b4ea2;
+margin-top:10px;
+color:#1e73be;
 }
 
-.resumo{
+.counts{
 display:flex;
-gap:15px;
-margin-top:20px;
-margin-bottom:10px;
+gap:20px;
+margin:15px 0;
 }
 
-.card{
-background:#f1f5f9;
-padding:15px 20px;
-border-radius:8px;
-font-size:14px;
-}
-
-.card b{
-font-size:20px;
+.count{
+background:#f3f4f7;
+padding:10px;
+border-radius:6px;
+text-align:center;
+width:80px;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
-margin-top:20px;
+margin-top:10px;
 }
 
-th{
-background:#0b4ea2;
+thead{
+background:#1e4f91;
 color:white;
-padding:10px;
 }
 
-td{
+td,th{
 padding:8px;
-border-bottom:1px solid #ddd;
 text-align:center;
 }
 
-.erro{
-color:red;
-font-weight:bold;
-}
-
-.ok{
-color:green;
-font-weight:bold;
-}
-
 </style>
-
 </head>
 
 <body>
 
 <div class="container">
 
-<div class="header">
-<img src="logo-azulcargo.png">
+<div class="top">
+<img src="logo-azulcargo.png" class="logo">
 <h1>Conferência de Manifestos</h1>
 </div>
 
@@ -146,54 +132,48 @@ Manifesto PDF escaneado + EDI Excel + Capa / conferência física
 <div class="uploads">
 
 <div class="box">
-<h3>Upload Manifestos (PDF)</h3>
-<input type="file" id="manifestos" multiple>
+<b>Upload Manifestos (PDF)</b><br>
+<input type="file" id="manifesto" multiple>
 </div>
 
 <div class="box">
-<h3>Upload Planilha EDI (Excel)</h3>
+<b>Upload Planilha EDI (Excel)</b><br>
 <input type="file" id="edi">
 </div>
 
 <div class="box">
-<h3>Upload Capa / Conferência Física</h3>
+<b>Upload Capa / Conferência Física</b><br>
 <input type="file" id="capa">
 </div>
 
 </div>
 
-<div class="actions">
-
-<button class="processar" onclick="processar()">PROCESSAR CONFERÊNCIA</button>
-<button class="baixar" onclick="baixarExcel()">Baixar Excel</button>
-<button class="limpar" onclick="location.reload()">Limpar</button>
-
-</div>
+<button class="process" onclick="processar()">PROCESSAR CONFERÊNCIA</button>
+<button class="excel" onclick="baixarExcel()">Baixar Excel</button>
+<button class="clear" onclick="location.reload()">Limpar</button>
 
 <div class="status" id="status"></div>
 
-<div class="resumo">
+<div class="counts">
 
-<div class="card">
+<div class="count">
 Manifesto<br>
-<b id="totalManifesto">0</b>
+<b id="manifestoCount">0</b>
 </div>
 
-<div class="card">
+<div class="count">
 Emitido<br>
-<b id="totalEmitido">0</b>
+<b id="emitidoCount">0</b>
 </div>
 
-<div class="card">
+<div class="count">
 Físico<br>
-<b id="totalFisico">0</b>
+<b id="fisicoCount">0</b>
 </div>
 
 </div>
 
-<div id="resumoErros"></div>
-
-<table id="tabelaResultado">
+<table id="tabela">
 
 <thead>
 <tr>
@@ -212,110 +192,199 @@ Físico<br>
 
 <script>
 
-let manifesto=[]
-let emitido=[]
-let resultado=[]
-let fisicoTotal=0
+let resultado = []
 
-async function processar(){
+async function extrairNotasPDF(file){
 
-manifesto=[]
-emitido=[]
-resultado=[]
+const arrayBuffer = await file.arrayBuffer()
+const pdf = await pdfjsLib.getDocument({data:arrayBuffer}).promise
 
-document.getElementById("status").innerText="Processando..."
+let notas=[]
 
-let arquivos=document.getElementById("manifestos").files
+for(let i=1;i<=pdf.numPages;i++){
 
-for(let file of arquivos){
+const page = await pdf.getPage(i)
+const viewport = page.getViewport({scale:2})
 
-const data=await file.arrayBuffer()
-const pdf=await pdfjsLib.getDocument(data).promise
+const canvas = document.createElement("canvas")
+const ctx = canvas.getContext("2d")
 
-for(let p=1;p<=pdf.numPages;p++){
+canvas.width=viewport.width
+canvas.height=viewport.height
 
-const page=await pdf.getPage(p)
-const textContent=await page.getTextContent()
+await page.render({
+canvasContext:ctx,
+viewport:viewport
+}).promise
 
-textContent.items.forEach(item=>{
+const img=canvas.toDataURL()
 
-let txt=item.str.trim()
+const ocr = await Tesseract.recognize(img,"eng")
 
-if(/^\d{7,9}$/.test(txt)){
-manifesto.push(txt)
+const texto = ocr.data.text
+
+const encontrados = texto.match(/\b\d{7,10}\b/g)
+
+if(encontrados){
+
+encontrados.forEach(n=>{
+if(!notas.includes(n)){
+notas.push(n)
 }
-
 })
 
 }
 
 }
 
-manifesto=[...new Set(manifesto)]
+return notas
 
-document.getElementById("totalManifesto").innerText=manifesto.length
+}
 
-let arquivoEDI=document.getElementById("edi").files[0]
+function lerExcel(file){
 
-if(arquivoEDI){
+return new Promise(resolve=>{
 
-const data=await arquivoEDI.arrayBuffer()
+const reader = new FileReader()
 
-const workbook=XLSX.read(data)
+reader.onload = e=>{
 
-const sheet=workbook.Sheets[workbook.SheetNames[0]]
+const data = new Uint8Array(e.target.result)
+const workbook = XLSX.read(data,{type:"array"})
 
-const json=XLSX.utils.sheet_to_json(sheet)
+const sheet = workbook.Sheets[workbook.SheetNames[0]]
+
+const json = XLSX.utils.sheet_to_json(sheet)
+
+let mapa={}
 
 json.forEach(l=>{
 
-let nf=String(l.Numero||"")
-let awb=String(l["Nº AWB"]||"")
+const nf = String(l.Numero || l.NF || "").trim()
+const awb = String(l["Nº AWB"] || "").trim()
 
-emitido.push({nf,awb})
+if(nf){
+mapa[nf]=awb
+}
+
+})
+
+resolve(mapa)
+
+}
+
+reader.readAsArrayBuffer(file)
 
 })
 
 }
 
-let emitidas=manifesto.filter(nf=>emitido.some(e=>e.nf==nf))
+async function lerFisico(file){
 
-document.getElementById("totalEmitido").innerText=emitidas.length
+if(!file)return 0
 
-montarTabela()
+const imgURL = URL.createObjectURL(file)
+
+const ocr = await Tesseract.recognize(imgURL,"eng")
+
+const texto = ocr.data.text
+
+const match = texto.match(/ROMANEIO\s*(\d+)/i)
+
+if(match){
+return parseInt(match[1])
+}
+
+return 0
+
+}
+
+async function processar(){
+
+document.getElementById("status").innerText="Processando..."
+
+const pdfs = document.getElementById("manifesto").files
+const ediFile = document.getElementById("edi").files[0]
+const capaFile = document.getElementById("capa").files[0]
+
+let notasManifesto=[]
+
+for(const file of pdfs){
+
+const notas = await extrairNotasPDF(file)
+
+notasManifesto.push(...notas)
+
+}
+
+notasManifesto=[...new Set(notasManifesto)]
+
+document.getElementById("manifestoCount").innerText=notasManifesto.length
+
+let mapaEDI={}
+
+if(ediFile){
+mapaEDI = await lerExcel(ediFile)
+}
+
+let emitidos=0
+
+resultado=[]
+
+notasManifesto.forEach(nf=>{
+
+let emitido=false
+let awb=""
+
+if(mapaEDI[nf]){
+
+emitido=true
+awb=mapaEDI[nf]
+emitidos++
+
+}
+
+resultado.push({
+nf,
+emitido,
+awb,
+status: emitido ? "OK" : "NÃO EMITIDO"
+})
+
+})
+
+document.getElementById("emitidoCount").innerText=emitidos
+
+const fisico = await lerFisico(capaFile)
+
+document.getElementById("fisicoCount").innerText=fisico
+
+mostrarTabela()
 
 document.getElementById("status").innerText="Conferência concluída"
 
 }
 
-function montarTabela(){
+function mostrarTabela(){
 
-let tbody=document.querySelector("#tabelaResultado tbody")
+const tbody = document.querySelector("#tabela tbody")
 
 tbody.innerHTML=""
 
-manifesto.forEach(nf=>{
+resultado.forEach(r=>{
 
-let emi=emitido.find(e=>e.nf==nf)
-
-let awb=emi?emi.awb:""
-
-let status=emi?"OK":"NÃO EMITIDO"
-
-let tr=document.createElement("tr")
+const tr=document.createElement("tr")
 
 tr.innerHTML=`
 
-<td>${nf}</td>
-<td>${emi?"SIM":"NÃO"}</td>
-<td>${awb}</td>
-<td class="${emi?"ok":"erro"}">${status}</td>
+<td>${r.nf}</td>
+<td>${r.emitido ? "SIM":"NÃO"}</td>
+<td>${r.awb}</td>
+<td>${r.status}</td>
 
 `
 
 tbody.appendChild(tr)
-
-resultado.push({NF:nf,Emitido:emi?"SIM":"NÃO",AWB:awb,Status:status})
 
 })
 
@@ -323,11 +392,11 @@ resultado.push({NF:nf,Emitido:emi?"SIM":"NÃO",AWB:awb,Status:status})
 
 function baixarExcel(){
 
-const ws=XLSX.utils.json_to_sheet(resultado)
+const ws = XLSX.utils.json_to_sheet(resultado)
 
-const wb=XLSX.utils.book_new()
+const wb = XLSX.utils.book_new()
 
-XLSX.utils.book_append_sheet(wb,ws,"Conferencia")
+XLSX.utils.book_append_sheet(wb,ws,"Relatorio")
 
 XLSX.writeFile(wb,"conferencia.xlsx")
 
