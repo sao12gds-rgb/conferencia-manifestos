@@ -1,11 +1,14 @@
 <!DOCTYPE html>
+
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <title>Conferência de Manifestos</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
@@ -114,6 +117,7 @@ text-align:center;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -148,9 +152,7 @@ Manifesto PDF escaneado + EDI Excel + Capa / conferência física
 
 </div>
 
-<button class="process" onclick="processar()">PROCESSAR CONFERÊNCIA</button>
-<button class="excel" onclick="baixarExcel()">Baixar Excel</button>
-<button class="clear" onclick="location.reload()">Limpar</button>
+<button class="process" onclick="processar()">PROCESSAR CONFERÊNCIA</button> <button class="excel" onclick="baixarExcel()">Baixar Excel</button> <button class="clear" onclick="location.reload()">Limpar</button>
 
 <div class="status" id="status"></div>
 
@@ -192,7 +194,37 @@ Físico<br>
 
 <script>
 
-let resultado = []
+let resultado=[]
+
+function filtrarNF(texto){
+
+let linhas = texto.split("\n")
+let coletar=false
+let notas=[]
+
+for(let linha of linhas){
+
+linha=linha.trim()
+
+if(linha.match(/NFe|Notas Fiscais/i)){
+coletar=true
+continue
+}
+
+if(coletar){
+
+let match = linha.match(/\b\d{7,10}\b/)
+
+if(match){
+notas.push(match[0])
+}
+
+}
+
+}
+
+return notas
+}
 
 async function extrairNotasPDF(file){
 
@@ -206,8 +238,8 @@ for(let i=1;i<=pdf.numPages;i++){
 const page = await pdf.getPage(i)
 const viewport = page.getViewport({scale:2})
 
-const canvas = document.createElement("canvas")
-const ctx = canvas.getContext("2d")
+const canvas=document.createElement("canvas")
+const ctx=canvas.getContext("2d")
 
 canvas.width=viewport.width
 canvas.height=viewport.height
@@ -221,19 +253,15 @@ const img=canvas.toDataURL()
 
 const ocr = await Tesseract.recognize(img,"eng")
 
-const texto = ocr.data.text
+const texto=ocr.data.text
 
-const encontrados = texto.match(/\b\d{7,10}\b/g)
+const filtradas=filtrarNF(texto)
 
-if(encontrados){
-
-encontrados.forEach(n=>{
+filtradas.forEach(n=>{
 if(!notas.includes(n)){
 notas.push(n)
 }
 })
-
-}
 
 }
 
@@ -245,23 +273,23 @@ function lerExcel(file){
 
 return new Promise(resolve=>{
 
-const reader = new FileReader()
+const reader=new FileReader()
 
-reader.onload = e=>{
+reader.onload=e=>{
 
-const data = new Uint8Array(e.target.result)
-const workbook = XLSX.read(data,{type:"array"})
+const data=new Uint8Array(e.target.result)
+const workbook=XLSX.read(data,{type:"array"})
 
-const sheet = workbook.Sheets[workbook.SheetNames[0]]
+const sheet=workbook.Sheets[workbook.SheetNames[0]]
 
-const json = XLSX.utils.sheet_to_json(sheet)
+const json=XLSX.utils.sheet_to_json(sheet)
 
 let mapa={}
 
 json.forEach(l=>{
 
-const nf = String(l.Numero || l.NF || "").trim()
-const awb = String(l["Nº AWB"] || "").trim()
+const nf=String(l.Numero || "").trim()
+const awb=String(l["Nº AWB"] || "").trim()
 
 if(nf){
 mapa[nf]=awb
@@ -279,40 +307,18 @@ reader.readAsArrayBuffer(file)
 
 }
 
-async function lerFisico(file){
-
-if(!file)return 0
-
-const imgURL = URL.createObjectURL(file)
-
-const ocr = await Tesseract.recognize(imgURL,"eng")
-
-const texto = ocr.data.text
-
-const match = texto.match(/ROMANEIO\s*(\d+)/i)
-
-if(match){
-return parseInt(match[1])
-}
-
-return 0
-
-}
-
 async function processar(){
 
 document.getElementById("status").innerText="Processando..."
 
-const pdfs = document.getElementById("manifesto").files
-const ediFile = document.getElementById("edi").files[0]
-const capaFile = document.getElementById("capa").files[0]
+const pdfs=document.getElementById("manifesto").files
+const ediFile=document.getElementById("edi").files[0]
 
 let notasManifesto=[]
 
 for(const file of pdfs){
 
-const notas = await extrairNotasPDF(file)
-
+const notas=await extrairNotasPDF(file)
 notasManifesto.push(...notas)
 
 }
@@ -324,7 +330,7 @@ document.getElementById("manifestoCount").innerText=notasManifesto.length
 let mapaEDI={}
 
 if(ediFile){
-mapaEDI = await lerExcel(ediFile)
+mapaEDI=await lerExcel(ediFile)
 }
 
 let emitidos=0
@@ -337,11 +343,9 @@ let emitido=false
 let awb=""
 
 if(mapaEDI[nf]){
-
 emitido=true
 awb=mapaEDI[nf]
 emitidos++
-
 }
 
 resultado.push({
@@ -355,10 +359,6 @@ status: emitido ? "OK" : "NÃO EMITIDO"
 
 document.getElementById("emitidoCount").innerText=emitidos
 
-const fisico = await lerFisico(capaFile)
-
-document.getElementById("fisicoCount").innerText=fisico
-
 mostrarTabela()
 
 document.getElementById("status").innerText="Conferência concluída"
@@ -367,8 +367,7 @@ document.getElementById("status").innerText="Conferência concluída"
 
 function mostrarTabela(){
 
-const tbody = document.querySelector("#tabela tbody")
-
+const tbody=document.querySelector("#tabela tbody")
 tbody.innerHTML=""
 
 resultado.forEach(r=>{
@@ -376,12 +375,10 @@ resultado.forEach(r=>{
 const tr=document.createElement("tr")
 
 tr.innerHTML=`
-
 <td>${r.nf}</td>
 <td>${r.emitido ? "SIM":"NÃO"}</td>
 <td>${r.awb}</td>
 <td>${r.status}</td>
-
 `
 
 tbody.appendChild(tr)
@@ -392,9 +389,8 @@ tbody.appendChild(tr)
 
 function baixarExcel(){
 
-const ws = XLSX.utils.json_to_sheet(resultado)
-
-const wb = XLSX.utils.book_new()
+const ws=XLSX.utils.json_to_sheet(resultado)
+const wb=XLSX.utils.book_new()
 
 XLSX.utils.book_append_sheet(wb,ws,"Relatorio")
 
