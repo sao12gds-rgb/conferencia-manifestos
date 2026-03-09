@@ -12,7 +12,6 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
-
 body{
 font-family:Arial;
 background:#eef1f5;
@@ -100,10 +99,14 @@ text-align:center;
 width:80px;
 }
 
+.search{
+margin-top:15px;
+margin-bottom:10px;
+}
+
 table{
 width:100%;
 border-collapse:collapse;
-margin-top:10px;
 }
 
 thead{
@@ -114,6 +117,10 @@ color:white;
 td,th{
 padding:8px;
 text-align:center;
+}
+
+.duplicado{
+background:#fff3cd;
 }
 
 </style>
@@ -175,6 +182,10 @@ Físico<br>
 
 </div>
 
+<div class="search">
+<input type="text" id="busca" placeholder="Buscar NF ou AWB..." onkeyup="filtrar()">
+</div>
+
 <table id="tabela">
 
 <thead>
@@ -196,9 +207,9 @@ Físico<br>
 
 let resultado=[]
 
-function filtrarNF(texto){
+function extrairNFColuna(texto){
 
-let linhas = texto.split("\n")
+let linhas=texto.split("\n")
 let coletar=false
 let notas=[]
 
@@ -206,14 +217,14 @@ for(let linha of linhas){
 
 linha=linha.trim()
 
-if(linha.match(/NFe|Notas Fiscais/i)){
+if(/NFe|Notas Fiscais/i.test(linha)){
 coletar=true
 continue
 }
 
 if(coletar){
 
-let match = linha.match(/\b\d{7,10}\b/)
+let match=linha.match(/\b\d{8,9}\b/)
 
 if(match){
 notas.push(match[0])
@@ -224,19 +235,21 @@ notas.push(match[0])
 }
 
 return notas
+
 }
 
 async function extrairNotasPDF(file){
 
-const arrayBuffer = await file.arrayBuffer()
-const pdf = await pdfjsLib.getDocument({data:arrayBuffer}).promise
+const buffer=await file.arrayBuffer()
+const pdf=await pdfjsLib.getDocument({data:buffer}).promise
 
 let notas=[]
 
 for(let i=1;i<=pdf.numPages;i++){
 
-const page = await pdf.getPage(i)
-const viewport = page.getViewport({scale:2})
+const page=await pdf.getPage(i)
+
+const viewport=page.getViewport({scale:2})
 
 const canvas=document.createElement("canvas")
 const ctx=canvas.getContext("2d")
@@ -251,17 +264,13 @@ viewport:viewport
 
 const img=canvas.toDataURL()
 
-const ocr = await Tesseract.recognize(img,"eng")
+const ocr=await Tesseract.recognize(img,"eng")
 
 const texto=ocr.data.text
 
-const filtradas=filtrarNF(texto)
+const encontradas=extrairNFColuna(texto)
 
-filtradas.forEach(n=>{
-if(!notas.includes(n)){
-notas.push(n)
-}
-})
+notas.push(...encontradas)
 
 }
 
@@ -278,6 +287,7 @@ const reader=new FileReader()
 reader.onload=e=>{
 
 const data=new Uint8Array(e.target.result)
+
 const workbook=XLSX.read(data,{type:"array"})
 
 const sheet=workbook.Sheets[workbook.SheetNames[0]]
@@ -307,23 +317,43 @@ reader.readAsArrayBuffer(file)
 
 }
 
+async function lerFisico(file){
+
+if(!file)return 0
+
+const url=URL.createObjectURL(file)
+
+const ocr=await Tesseract.recognize(url,"eng")
+
+const texto=ocr.data.text
+
+const match=texto.match(/ROMANEIO\s*(\d+)/i)
+
+if(match){
+return parseInt(match[1])
+}
+
+return 0
+
+}
+
 async function processar(){
 
 document.getElementById("status").innerText="Processando..."
 
 const pdfs=document.getElementById("manifesto").files
 const ediFile=document.getElementById("edi").files[0]
+const capaFile=document.getElementById("capa").files[0]
 
 let notasManifesto=[]
 
 for(const file of pdfs){
 
 const notas=await extrairNotasPDF(file)
+
 notasManifesto.push(...notas)
 
 }
-
-notasManifesto=[...new Set(notasManifesto)]
 
 document.getElementById("manifestoCount").innerText=notasManifesto.length
 
@@ -334,30 +364,49 @@ mapaEDI=await lerExcel(ediFile)
 }
 
 let emitidos=0
+let duplicados={}
 
 resultado=[]
 
-notasManifesto.forEach(nf=>{
+notasManifesto.forEach((nf,index)=>{
 
 let emitido=false
 let awb=""
+let status=""
 
 if(mapaEDI[nf]){
+
 emitido=true
 awb=mapaEDI[nf]
 emitidos++
+
+}
+
+if(duplicados[nf]){
+
+status="DUPLICADO NO MANIFESTO"
+
+}else{
+
+duplicados[nf]=true
+status=emitido ? "OK" : "NÃO EMITIDO"
+
 }
 
 resultado.push({
 nf,
 emitido,
 awb,
-status: emitido ? "OK" : "NÃO EMITIDO"
+status
 })
 
 })
 
 document.getElementById("emitidoCount").innerText=emitidos
+
+const fisico=await lerFisico(capaFile)
+
+document.getElementById("fisicoCount").innerText=fisico
 
 mostrarTabela()
 
@@ -368,15 +417,20 @@ document.getElementById("status").innerText="Conferência concluída"
 function mostrarTabela(){
 
 const tbody=document.querySelector("#tabela tbody")
+
 tbody.innerHTML=""
 
 resultado.forEach(r=>{
 
 const tr=document.createElement("tr")
 
+if(r.status==="DUPLICADO NO MANIFESTO"){
+tr.classList.add("duplicado")
+}
+
 tr.innerHTML=`
 <td>${r.nf}</td>
-<td>${r.emitido ? "SIM":"NÃO"}</td>
+<td>${r.emitido?"SIM":"NÃO"}</td>
 <td>${r.awb}</td>
 <td>${r.status}</td>
 `
@@ -387,9 +441,26 @@ tbody.appendChild(tr)
 
 }
 
+function filtrar(){
+
+const valor=document.getElementById("busca").value.toLowerCase()
+
+const linhas=document.querySelectorAll("#tabela tbody tr")
+
+linhas.forEach(l=>{
+
+const texto=l.innerText.toLowerCase()
+
+l.style.display=texto.includes(valor)?"":"none"
+
+})
+
+}
+
 function baixarExcel(){
 
 const ws=XLSX.utils.json_to_sheet(resultado)
+
 const wb=XLSX.utils.book_new()
 
 XLSX.utils.book_append_sheet(wb,ws,"Relatorio")
