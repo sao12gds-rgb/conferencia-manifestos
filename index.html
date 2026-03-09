@@ -99,17 +99,6 @@ font-size:14px;
 font-size:20px;
 }
 
-.filtro{
-margin-top:15px;
-}
-
-.filtro input{
-padding:8px;
-border-radius:6px;
-border:1px solid #ccc;
-width:260px;
-}
-
 table{
 width:100%;
 border-collapse:collapse;
@@ -129,12 +118,12 @@ text-align:center;
 }
 
 .erro{
-color:#e11d48;
+color:red;
 font-weight:bold;
 }
 
 .ok{
-color:#22a652;
+color:green;
 font-weight:bold;
 }
 
@@ -207,19 +196,6 @@ Físico<br>
 
 <div id="resumoErros"></div>
 
-<h3>Detalhamento por NF</h3>
-
-<div class="filtro">
-
-<input
-type="text"
-id="filtroNF"
-placeholder="🔎 Buscar NF ou AWB..."
-onkeyup="filtrarTabela()"
->
-
-</div>
-
 <table id="tabelaResultado">
 
 <thead>
@@ -244,39 +220,37 @@ let emitido=[]
 let resultado=[]
 let fisicoTotal=0
 
-function limparNumero(v){
-
-return String(v).replace(/\D/g,"")
-
-}
-
-function unicos(lista){
-
-return [...new Set(lista)]
-
-}
-
 async function processar(){
-
-document.getElementById("status").innerText="Processando..."
 
 manifesto=[]
 emitido=[]
 resultado=[]
 
-let arquivosManifesto=document.getElementById("manifestos").files
+document.getElementById("status").innerText="Processando..."
 
-for(let file of arquivosManifesto){
+let arquivos=document.getElementById("manifestos").files
+
+for(let file of arquivos){
 
 let texto=await lerPDF(file)
 
-let nfs=texto.match(/\b\d{7,9}\b/g)
+let linhas=texto.split("\n")
 
-if(nfs)manifesto.push(...nfs)
+linhas.forEach(l=>{
+
+if(l.includes("NFe") || l.includes("NF")){
+
+let n=l.match(/\d{7,9}/)
+
+if(n)manifesto.push(n[0])
 
 }
 
-manifesto=unicos(manifesto)
+})
+
+}
+
+manifesto=[...new Set(manifesto)]
 
 document.getElementById("totalManifesto").innerText=manifesto.length
 
@@ -294,21 +268,18 @@ const json=XLSX.utils.sheet_to_json(sheet)
 
 json.forEach(l=>{
 
-let nf=limparNumero(l.Numero || l.NF || l["Nota Fiscal"] || "")
-
-let awb=limparNumero(l["Nº AWB"] || l.AWB || "")
-
-if(nf){
+let nf=String(l.Numero||"")
+let awb=String(l["Nº AWB"]||"")
 
 emitido.push({nf,awb})
-
-}
 
 })
 
 }
 
-document.getElementById("totalEmitido").innerText=emitido.length
+let emitidasDoManifesto=manifesto.filter(nf=>emitido.some(e=>e.nf==nf))
+
+document.getElementById("totalEmitido").innerText=emitidasDoManifesto.length
 
 let capa=document.getElementById("capa").files[0]
 
@@ -318,27 +289,21 @@ let texto=await lerPDF(capa)
 
 let match=texto.match(/\b\d{1,3}\b/g)
 
-if(match){
-
-fisicoTotal=parseInt(match[match.length-1])
-
-}
+if(match)fisicoTotal=parseInt(match[match.length-1])
 
 }
 
 document.getElementById("totalFisico").innerText=fisicoTotal
 
-cruzar()
+montarTabela()
 
-calcularResumo()
-
-document.getElementById("status").innerText="Conferência concluída"
+resumo()
 
 }
 
-function cruzar(){
+function montarTabela(){
 
-const tbody=document.querySelector("#tabelaResultado tbody")
+let tbody=document.querySelector("#tabelaResultado tbody")
 
 tbody.innerHTML=""
 
@@ -348,13 +313,7 @@ let emi=emitido.find(e=>e.nf==nf)
 
 let awb=emi?emi.awb:""
 
-let status="OK"
-
-if(!emi){
-
-status="NÃO EMITIDO"
-
-}
+let status=emi?"OK":"NÃO EMITIDO"
 
 let tr=document.createElement("tr")
 
@@ -363,28 +322,21 @@ tr.innerHTML=`
 <td>${nf}</td>
 <td>${emi?"SIM":"NÃO"}</td>
 <td>${awb}</td>
-<td class="${status=="OK"?"ok":"erro"}">${status}</td>
+<td class="${emi?"ok":"erro"}">${status}</td>
 
 `
 
 tbody.appendChild(tr)
 
-resultado.push({
-
-NF:nf,
-Emitido:emi?"SIM":"NÃO",
-AWB:awb,
-Status:status
-
-})
+resultado.push({NF:nf,Emitido:emi?"SIM":"NÃO",AWB:awb,Status:status})
 
 })
 
 }
 
-function calcularResumo(){
+function resumo(){
 
-let naoEmitidas=manifesto.filter(nf=>!emitido.some(e=>e.nf===nf))
+let naoEmitidas=manifesto.filter(nf=>!emitido.some(e=>e.nf==nf))
 
 let html=""
 
@@ -394,13 +346,9 @@ html+=`<p class="erro">⚠ ${naoEmitidas.length} NF(s) do manifesto não foram e
 
 html+=`<p><b>NFs não emitidas:</b><br>${naoEmitidas.join("<br>")}</p>`
 
-}else{
-
-html=`<p class="ok">✔ Todas as NFs do manifesto foram emitidas</p>`
-
 }
 
-if(fisicoTotal!=manifesto.length){
+if(fisicoTotal && fisicoTotal!=manifesto.length){
 
 html+=`<p class="erro">⚠ Divergência física: Manifesto ${manifesto.length} x Físico ${fisicoTotal}</p>`
 
@@ -450,30 +398,6 @@ resolve(texto)
 }
 
 reader.readAsArrayBuffer(file)
-
-})
-
-}
-
-function filtrarTabela(){
-
-const filtro=document.getElementById("filtroNF").value.toUpperCase()
-
-const linhas=document.querySelectorAll("#tabelaResultado tbody tr")
-
-linhas.forEach(l=>{
-
-const nf=l.children[0].textContent
-const awb=l.children[2].textContent
-
-if(
-nf.toUpperCase().includes(filtro) ||
-awb.toUpperCase().includes(filtro)
-){
-l.style.display=""
-}else{
-l.style.display="none"
-}
 
 })
 
