@@ -263,18 +263,18 @@ function getCropForClient(cliente, canvas){
   if(cliente === "riachuelo"){
     return {
       x: Math.floor(w * 0.56),
-      y: Math.floor(h * 0.15),
+      y: Math.floor(h * 0.12),
       width: Math.floor(w * 0.18),
-      height: Math.floor(h * 0.72)
+      height: Math.floor(h * 0.76)
     };
   }
 
   if(cliente === "3coracoes"){
     return {
       x: Math.floor(w * 0.50),
-      y: Math.floor(h * 0.18),
-      width: Math.floor(w * 0.18),
-      height: Math.floor(h * 0.66)
+      y: Math.floor(h * 0.16),
+      width: Math.floor(w * 0.20),
+      height: Math.floor(h * 0.68)
     };
   }
 
@@ -286,24 +286,43 @@ function getCropForClient(cliente, canvas){
   };
 }
 
+function limparTextoOCR(texto){
+  return (texto || "")
+    .replace(/[|]/g, " ")
+    .replace(/[Oo](?=\d)/g, "0")
+    .replace(/(?<=\d)[Oo]/g, "0")
+    .replace(/[Ss](?=\d)/g, "5")
+    .replace(/(?<=\d)[Ss]/g, "5");
+}
+
 function extrairNFsDoTexto(texto, cliente){
-  let encontrados = texto.match(/\b\d{8,9}\b/g) || [];
+  const linhas = limparTextoOCR(texto).split(/\r?\n/);
+  const notas = [];
 
-  encontrados = encontrados.map(n => {
-    if(cliente === "3coracoes"){
-      return n; // mantém zeros à esquerda
-    }
-    return n.replace(/^0+/, "");
-  });
+  for(let i = 0; i < linhas.length; i++){
+    let linha = (linhas[i] || "").trim().toUpperCase();
 
-  encontrados = encontrados.filter(n => {
-    if(cliente === "3coracoes"){
-      return n.length === 8 || n.length === 9;
-    }
-    return n.length === 8 || n.length === 9;
-  });
+    if(!linha) continue;
+    if(linha.includes("CANCELADO") || linha.includes("CANCELADA") || linha.includes("CANCEL")) continue;
+    if(linha.includes("DIGITALIZADO COM CAMSCANNER")) continue;
 
-  return encontrados;
+    const encontrados = linha.match(/\b\d{8,9}\b/g) || [];
+
+    encontrados.forEach(nf => {
+      if(cliente === "3coracoes"){
+        if(/^0\d{7,8}$/.test(nf)){
+          notas.push(nf);
+        }
+      } else {
+        const limpa = nf.replace(/^0+/, "");
+        if(/^\d{8,9}$/.test(limpa)){
+          notas.push(limpa);
+        }
+      }
+    });
+  }
+
+  return notas;
 }
 
 async function reconhecerCanvas(canvas, lang="eng"){
@@ -401,14 +420,12 @@ function lerExcel(file, cliente){
           let awb = colAWB ? String(linha[colAWB] ?? "") : "";
           let pedido = colPedido ? String(linha[colPedido] ?? "") : "";
 
-          nf = nf.trim();
+          nf = nf.trim().replace(/\D/g, "");
           awb = normalizarNumero(awb);
           pedido = normalizarNumero(pedido);
 
           if(cliente !== "3coracoes"){
-            nf = nf.replace(/\D/g, "").replace(/^0+/, "");
-          }else{
-            nf = nf.replace(/\D/g, "");
+            nf = nf.replace(/^0+/, "");
           }
 
           if(nf){
@@ -474,7 +491,7 @@ async function fileParaCanvas(file){
 }
 
 function extrairFisicoDoTexto(texto){
-  const normalizado = texto.toUpperCase();
+  const normalizado = (texto || "").toUpperCase();
 
   let match = normalizado.match(/ROMANEIO\s*[:\-]?\s*(\d{1,4})/);
   if(match) return parseInt(match[1], 10);
@@ -553,10 +570,6 @@ function atualizarAnalise(totalManifesto, totalEmitido, totalFisico, duplicadosM
   if(duplicadas.length){
     html += `<div class="status-warn">NF(s) duplicadas no manifesto:</div>`;
     html += `<div>${duplicadas.join("<br>")}</div>`;
-  }
-
-  if(!html){
-    html = `<div class="status-ok">Sem divergências.</div>`;
   }
 
   document.getElementById("analise").innerHTML = html;
