@@ -181,17 +181,18 @@ Físico<br>
 
 <script>
 
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
 let resultado=[]
 
 function limparNumero(n){
 
 if(!n) return ""
 
-n = String(n)
+n=String(n).replace(/\D/g,'')
 
-n = n.replace(/\D/g,'')
-
-n = n.replace(/^0+/,'')
+n=n.replace(/^0+/,'')
 
 return n
 
@@ -199,57 +200,48 @@ return n
 
 async function extrairNotasPDF(file){
 
-const buffer = await file.arrayBuffer()
+const buffer=await file.arrayBuffer()
 
-const pdf = await pdfjsLib.getDocument({data:buffer}).promise
+const pdf=await pdfjsLib.getDocument({data:buffer}).promise
 
 let notas=[]
 
 for(let i=1;i<=pdf.numPages;i++){
 
-const page = await pdf.getPage(i)
+const page=await pdf.getPage(i)
 
-const viewport = page.getViewport({scale:2})
+const viewport=page.getViewport({scale:2})
 
-const canvas = document.createElement("canvas")
+const canvas=document.createElement("canvas")
 
-const ctx = canvas.getContext("2d")
+const ctx=canvas.getContext("2d")
 
-canvas.width = viewport.width
-canvas.height = viewport.height
+canvas.width=viewport.width
+canvas.height=viewport.height
 
-await page.render({
-canvasContext:ctx,
-viewport:viewport
-}).promise
+await page.render({canvasContext:ctx,viewport:viewport}).promise
 
-const img = canvas.toDataURL()
+const img=canvas.toDataURL()
 
-const ocr = await Tesseract.recognize(img,"eng")
+const ocr=await Tesseract.recognize(img,"eng")
 
-const texto = ocr.data.text
+const texto=ocr.data.text
 
-const linhas = texto.split("\n")
-
-for(let linha of linhas){
-
-const match = linha.match(/\b\d{8,9}\b/g)
+const match=texto.match(/\b\d{8,9}\b/g)
 
 if(match){
 
-match.forEach(nf=>{
+match.forEach(n=>{
 
-nf = limparNumero(nf)
+n=limparNumero(n)
 
-if(nf.length>=8 && nf.length<=9){
+if(n.length>=8 && n.length<=9){
 
-notas.push(nf)
+notas.push(n)
 
 }
 
 })
-
-}
 
 }
 
@@ -279,9 +271,9 @@ let mapa={}
 
 json.forEach(l=>{
 
-let nf = limparNumero(l["Numero"] || l["Número"] || l["NF"] || l["NFe"])
+let nf=limparNumero(l["Numero"]||l["Número"]||l["NF"]||l["NFe"])
 
-let awb = limparNumero(l["Nº AWB"] || l["AWB"])
+let awb=limparNumero(l["Nº AWB"]||l["AWB"])
 
 if(nf){
 
@@ -301,31 +293,13 @@ reader.readAsArrayBuffer(file)
 
 }
 
-async function lerFisico(file){
-
-if(!file) return 0
-
-const img=URL.createObjectURL(file)
-
-const ocr=await Tesseract.recognize(img,"eng")
-
-const texto=ocr.data.text
-
-const match=texto.match(/\d{1,4}/)
-
-if(match) return parseInt(match[0])
-
-return 0
-
-}
-
 async function processar(){
 
 document.getElementById("status").innerText="Processando..."
 
 const pdfs=document.getElementById("manifesto").files
+
 const ediFile=document.getElementById("edi").files[0]
-const capaFile=document.getElementById("capa").files[0]
 
 let notasManifesto=[]
 
@@ -343,8 +317,6 @@ let mapaEDI={}
 
 if(ediFile){
 
-document.getElementById("status").innerText="Lendo planilha EDI..."
-
 mapaEDI=await lerExcel(ediFile)
 
 }
@@ -359,12 +331,10 @@ let emitido=false
 
 let awb=""
 
-if(mapaEDI[nf]!==undefined){
+if(mapaEDI[nf]){
 
 emitido=true
-
 awb=mapaEDI[nf]
-
 emitidos++
 
 }
@@ -372,11 +342,8 @@ emitidos++
 resultado.push({
 
 nf:nf,
-
 emitido:emitido?"SIM":"NÃO",
-
 awb:awb,
-
 status:emitido?"OK":"NÃO EMITIDO"
 
 })
@@ -384,10 +351,6 @@ status:emitido?"OK":"NÃO EMITIDO"
 })
 
 document.getElementById("emitidoCount").innerText=emitidos
-
-const fisico=await lerFisico(capaFile)
-
-document.getElementById("fisicoCount").innerText=fisico
 
 mostrarTabela()
 
