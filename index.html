@@ -9,228 +9,238 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
+*{box-sizing:border-box;}
 body{
-font-family:Arial;
-background:#eef1f5;
+  font-family:Arial,sans-serif;
+  background:#eef1f5;
+  margin:0;
+  padding:20px;
 }
-
 .container{
-width:900px;
-margin:auto;
-background:white;
-padding:30px;
-border-radius:10px;
+  max-width:960px;
+  margin:auto;
+  background:white;
+  padding:30px;
+  border-radius:10px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.08);
 }
-
-.logo{
-height:40px;
-}
-
-h1{
-color:#1e4f91;
-margin:0;
-}
-
-.subtitle{
-color:#666;
-margin-bottom:20px;
-}
-
-.uploads{
-display:flex;
-gap:20px;
-margin-bottom:20px;
-}
-
+.logo{height:40px;}
+h1{color:#1e4f91;margin:6px 0 2px 0;}
+.subtitle{color:#666;margin-bottom:20px;font-size:14px;}
+.uploads{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
 .box{
-background:#f3f4f7;
-padding:15px;
-border-radius:8px;
-flex:1;
+  background:#f3f4f7;
+  padding:15px;
+  border-radius:8px;
+  flex:1;
+  min-width:180px;
 }
-
+.box b{display:block;margin-bottom:6px;font-size:13px;}
 button{
-border:none;
-padding:10px 18px;
-border-radius:6px;
-cursor:pointer;
+  border:none;
+  padding:10px 18px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:bold;
+  margin-right:8px;
+  margin-bottom:8px;
 }
-
-.process{
-background:#1e73be;
-color:white;
-}
-
-.excel{
-background:#2e9f4b;
-color:white;
-}
-
-.clear{
-background:#7a8798;
-color:white;
-}
-
-.counts{
-display:flex;
-gap:20px;
-margin:15px 0;
-}
-
+.process{background:#1e73be;color:white;}
+.process:hover{background:#155fa0;}
+.excel{background:#2e9f4b;color:white;}
+.excel:hover{background:#25803c;}
+.clear{background:#7a8798;color:white;}
+.clear:hover{background:#5f6b78;}
+.counts{display:flex;gap:16px;margin:15px 0;flex-wrap:wrap;}
 .count{
-background:#f3f4f7;
-padding:10px;
-border-radius:6px;
-text-align:center;
-width:80px;
+  background:#f3f4f7;
+  padding:12px 16px;
+  border-radius:8px;
+  text-align:center;
+  min-width:90px;
+  font-size:13px;
 }
-
-table{
-width:100%;
-border-collapse:collapse;
-}
-
-thead{
-background:#1e4f91;
-color:white;
-}
-
-td,th{
-padding:8px;
-text-align:center;
-}
-
+.count b{display:block;font-size:22px;color:#1e4f91;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead{background:#1e4f91;color:white;}
+td,th{padding:8px 10px;text-align:left;border-bottom:1px solid #e4e8ee;}
+tbody tr:hover{background:#f0f4fb;}
 .summary-box{
-background:#f3f4f7;
-padding:12px;
-border-radius:8px;
-margin:12px 0;
-line-height:1.5;
+  background:#f3f4f7;
+  padding:14px;
+  border-radius:8px;
+  margin:10px 0;
+  line-height:1.8;
+  font-size:14px;
 }
-
 .section-title{
-font-weight:bold;
-margin:10px 0 6px 0;
-color:#1e4f91;
+  font-weight:bold;
+  margin:14px 0 6px 0;
+  color:#1e4f91;
+  font-size:15px;
+}
+.status-ok{color:#2e7d32;font-weight:bold;}
+.status-warn{color:#c62828;font-weight:bold;}
+.search{margin:12px 0;}
+select,input[type="text"]{
+  padding:8px 10px;
+  border:1px solid #bfc7d1;
+  border-radius:6px;
+  font-size:13px;
+}
+input[type="text"]{width:300px;}
+
+/* Barra de progresso */
+#progressBar{
+  display:none;
+  margin:12px 0;
+}
+#progressBar .bar-track{
+  background:#dde3ea;
+  border-radius:6px;
+  height:14px;
+  overflow:hidden;
+}
+#progressBar .bar-fill{
+  background:#1e73be;
+  height:100%;
+  width:0%;
+  transition:width 0.2s;
+  border-radius:6px;
+}
+#progressBar .bar-label{
+  font-size:12px;
+  color:#555;
+  margin-top:4px;
 }
 
-.status-ok{
-color:#2e7d32;
-font-weight:bold;
+/* Status */
+#status{
+  font-size:13px;
+  color:#444;
+  margin:8px 0;
+  min-height:20px;
 }
 
-.status-warn{
-color:#c62828;
-font-weight:bold;
+/* Badge de método de extração */
+.badge{
+  display:inline-block;
+  font-size:10px;
+  padding:2px 6px;
+  border-radius:4px;
+  font-weight:bold;
+  vertical-align:middle;
+  margin-left:4px;
 }
+.badge-nativo{background:#d4edda;color:#155724;}
+.badge-ocr{background:#fff3cd;color:#856404;}
 
-.search{
-margin:10px 0;
-}
+/* Tabela status cores */
+.st-ok{color:#2e7d32;font-weight:bold;}
+.st-nao{color:#c62828;font-weight:bold;}
+.st-dup{color:#e65100;font-weight:bold;}
 
-select, input[type="text"]{
-padding:8px;
-border:1px solid #bfc7d1;
-border-radius:6px;
-}
+/* Tooltip debug */
+.debug-info{font-size:11px;color:#888;margin-top:4px;}
 </style>
 </head>
 
 <body>
-
 <div class="container">
 
-<img src="logo-azulcargo.png" class="logo">
+  <img src="logo-azulcargo.png" class="logo" onerror="this.style.display='none'">
+  <h1>Conferência de Manifestos</h1>
+  <div class="subtitle">Manifesto PDF + EDI Excel + Capa / Conferência Física</div>
 
-<h1>Conferência de Manifestos</h1>
+  <div class="uploads">
+    <div class="box">
+      <b>Cliente</b>
+      <select id="cliente">
+        <option value="riachuelo">Riachuelo</option>
+        <option value="3coracoes">3 Corações</option>
+        <option value="generico">Genérico</option>
+      </select>
+    </div>
 
-<div class="subtitle">
-Manifesto PDF escaneado + EDI Excel + Capa / conferência física
-</div>
+    <div class="box">
+      <b>Upload Manifestos (PDF)</b>
+      <input type="file" id="manifesto" multiple accept=".pdf">
+    </div>
 
-<div class="uploads">
+    <div class="box">
+      <b>Upload Planilha EDI (Excel)</b>
+      <input type="file" id="edi" accept=".xls,.xlsx,.csv">
+    </div>
 
-<div class="box">
-<b>Cliente</b><br>
-<select id="cliente">
-<option value="riachuelo">Riachuelo</option>
-<option value="3coracoes">3 Corações</option>
-</select>
-</div>
+    <div class="box">
+      <b>Upload Capa / Conferência Física</b>
+      <input type="file" id="capa" accept=".pdf,image/*">
+    </div>
+  </div>
 
-<div class="box">
-<b>Upload Manifestos (PDF)</b><br>
-<input type="file" id="manifesto" multiple accept=".pdf">
-</div>
+  <div>
+    <button class="process" onclick="processar()">&#9654; PROCESSAR CONFERÊNCIA</button>
+    <button class="excel" onclick="baixarExcel()">&#8595; Baixar Excel</button>
+    <button class="clear" onclick="location.reload()">&#8635; Limpar</button>
+  </div>
 
-<div class="box">
-<b>Upload Planilha EDI (Excel)</b><br>
-<input type="file" id="edi" accept=".xls,.xlsx,.csv">
-</div>
+  <div id="status"></div>
 
-<div class="box">
-<b>Upload Capa / Conferência Física</b><br>
-<input type="file" id="capa" accept=".pdf,image/*">
-</div>
+  <div id="progressBar">
+    <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
+    <div class="bar-label" id="barLabel"></div>
+  </div>
 
-</div>
+  <div class="counts">
+    <div class="count">Manifesto<b id="manifestoCount">0</b></div>
+    <div class="count">Emitido<b id="emitidoCount">0</b></div>
+    <div class="count">Físico<b id="fisicoCount">0</b></div>
+    <div class="count">Divergências<b id="divCount" style="color:#c62828">0</b></div>
+  </div>
 
-<button class="process" onclick="processar()">PROCESSAR CONFERÊNCIA</button>
-<button class="excel" onclick="baixarExcel()">Baixar Excel</button>
-<button class="clear" onclick="location.reload()">Limpar</button>
+  <div class="section-title">Resumo Geral</div>
+  <div id="resumoGeral" class="summary-box"></div>
 
-<div id="status"></div>
+  <div class="section-title">Análise</div>
+  <div id="analise" class="summary-box"></div>
 
-<div class="counts">
-<div class="count">
-Manifesto<br>
-<b id="manifestoCount">0</b>
-</div>
+  <div class="search">
+    <input type="text" id="busca" placeholder="Buscar NF, AWB ou status..." onkeyup="filtrar()">
+  </div>
 
-<div class="count">
-Emitido<br>
-<b id="emitidoCount">0</b>
-</div>
+  <table id="tabela">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>NF</th>
+        <th>Emitido</th>
+        <th>AWB</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<div class="count">
-Físico<br>
-<b id="fisicoCount">0</b>
-</div>
-</div>
-
-<div class="section-title">Resumo Geral</div>
-<div id="resumoGeral" class="summary-box"></div>
-
-<div class="section-title">Análise</div>
-<div id="analise" class="summary-box"></div>
-
-<div class="search">
-<input type="text" id="busca" placeholder="Buscar NF ou AWB..." onkeyup="filtrar()">
-</div>
-
-<table id="tabela">
-<thead>
-<tr>
-<th>NF</th>
-<th>Emitido</th>
-<th>AWB</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
-
+  <div id="debugInfo" class="debug-info"></div>
 </div>
 
 <script>
+/* ========================================================
+   CONFIGURAÇÃO GLOBAL
+======================================================== */
 pdfjsLib.GlobalWorkerOptions.workerSrc =
-"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
 
-let resultado = [];
-let manifestNFs = [];
-let fisicoTotal = 0;
+let resultado    = [];
+let manifestNFs  = [];
+let fisicoTotal  = 0;
 let clienteAtual = "riachuelo";
+let debugLog     = [];
 
+/* ========================================================
+   UTILITÁRIOS GERAIS
+======================================================== */
 function normalizarNumero(valor){
   if(valor === null || valor === undefined) return "";
   return String(valor).replace(/\D/g, "").trim();
@@ -238,161 +248,211 @@ function normalizarNumero(valor){
 
 function deduplicarPreservando(lista){
   const vistos = new Set();
-  const saida = [];
-  for(const item of lista){
-    if(!vistos.has(item)){
-      vistos.add(item);
-      saida.push(item);
-    }
-  }
-  return saida;
+  return lista.filter(item => {
+    if(vistos.has(item)) return false;
+    vistos.add(item);
+    return true;
+  });
 }
 
 function contarDuplicados(lista){
   const mapa = {};
-  for(const item of lista){
-    mapa[item] = (mapa[item] || 0) + 1;
-  }
+  for(const item of lista) mapa[item] = (mapa[item] || 0) + 1;
   return mapa;
 }
 
-function getCropForClient(cliente, canvas){
-  const w = canvas.width;
-  const h = canvas.height;
+function setStatus(msg){ document.getElementById("status").innerText = msg; }
 
-  if(cliente === "riachuelo"){
-    return {
-      x: Math.floor(w * 0.56),
-      y: Math.floor(h * 0.12),
-      width: Math.floor(w * 0.18),
-      height: Math.floor(h * 0.76)
-    };
-  }
-
-  if(cliente === "3coracoes"){
-    return {
-      x: Math.floor(w * 0.50),
-      y: Math.floor(h * 0.16),
-      width: Math.floor(w * 0.20),
-      height: Math.floor(h * 0.68)
-    };
-  }
-
-  return {
-    x: Math.floor(w * 0.50),
-    y: Math.floor(h * 0.15),
-    width: Math.floor(w * 0.22),
-    height: Math.floor(h * 0.75)
-  };
+function setProgress(pct, label){
+  const bar = document.getElementById("progressBar");
+  bar.style.display = "block";
+  document.getElementById("barFill").style.width = pct + "%";
+  document.getElementById("barLabel").innerText = label || "";
 }
 
-function limparTextoOCR(texto){
+function hideProgress(){
+  document.getElementById("progressBar").style.display = "none";
+}
+
+/* ========================================================
+   NORMALIZAÇÃO DE NF POR CLIENTE
+======================================================== */
+function normalizarNF(nf, cliente){
+  nf = String(nf).replace(/\D/g, "").trim();
+  if(!nf) return "";
+
+  if(cliente === "3coracoes"){
+    // 3 Corações: mantém zeros à esquerda, 8-9 dígitos
+    if(nf.length >= 6 && nf.length <= 10) return nf;
+    return "";
+  }
+
+  // Riachuelo / Genérico: remove zeros à esquerda, 5-9 dígitos
+  const semZero = nf.replace(/^0+/, "");
+  if(semZero.length >= 5 && semZero.length <= 9) return semZero;
+  return "";
+}
+
+/* ========================================================
+   EXTRAÇÃO DE TEXTO NATIVO DO PDF (sem OCR)
+   Retorna o texto completo de todas as páginas.
+   Retorna null se o PDF não tiver texto nativo útil.
+======================================================== */
+async function extrairTextoNativo(pdf){
+  let textoTotal = "";
+  let paginasComTexto = 0;
+
+  for(let i = 1; i <= pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const items = content.items || [];
+
+    // Agrupa itens por linha aproximada (mesmo Y)
+    const linhas = {};
+    for(const item of items){
+      const y = Math.round(item.transform[5]);
+      if(!linhas[y]) linhas[y] = [];
+      linhas[y].push(item.str || "");
+    }
+
+    // Ordena por Y decrescente (topo → base) e junta
+    const ysOrdenados = Object.keys(linhas).map(Number).sort((a,b) => b - a);
+    let textoPagina = "";
+    for(const y of ysOrdenados){
+      textoPagina += linhas[y].join(" ") + "\n";
+    }
+
+    if(textoPagina.trim().length > 20) paginasComTexto++;
+    textoTotal += textoPagina + "\n";
+  }
+
+  // Se menos de metade das páginas têm texto nativo, considera escaneado
+  if(paginasComTexto < Math.ceil(pdf.numPages / 2)){
+    return null;
+  }
+
+  return textoTotal;
+}
+
+/* ========================================================
+   EXTRAÇÃO VIA OCR (Tesseract) — fallback para escaneados
+======================================================== */
+async function renderizarPagina(page, scale){
+  const viewport = page.getViewport({ scale });
+  const canvas   = document.createElement("canvas");
+  const ctx      = canvas.getContext("2d");
+  canvas.width   = viewport.width;
+  canvas.height  = viewport.height;
+  await page.render({ canvasContext: ctx, viewport }).promise;
+  return canvas;
+}
+
+function corrigirOCR(texto){
   return (texto || "")
     .replace(/[|]/g, " ")
     .replace(/[Oo](?=\d)/g, "0")
     .replace(/(?<=\d)[Oo]/g, "0")
     .replace(/[Ss](?=\d)/g, "5")
-    .replace(/(?<=\d)[Ss]/g, "5");
+    .replace(/(?<=\d)[Ss]/g, "5")
+    .replace(/[Ii](?=\d)/g, "1")
+    .replace(/(?<=\d)[Ii]/g, "1")
+    .replace(/[Ll](?=\d)/g, "1")
+    .replace(/(?<=\d)[Ll]/g, "1")
+    .replace(/[Bb](?=\d)/g, "8")
+    .replace(/(?<=\d)[Bb]/g, "8");
 }
 
+async function ocrCanvas(canvas){
+  const img = canvas.toDataURL("image/png");
+  // Usa português + inglês para melhor reconhecimento de documentos BR
+  const ocr = await Tesseract.recognize(img, "por+eng", {
+    tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz /-.:,\n"
+  });
+  return corrigirOCR(ocr.data.text || "");
+}
+
+/* ========================================================
+   EXTRAÇÃO DE NFs DO TEXTO (nativo ou OCR)
+======================================================== */
 function extrairNFsDoTexto(texto, cliente){
-  const linhas = limparTextoOCR(texto).split(/\r?\n/);
-  const notas = [];
+  const linhas = (texto || "").split(/\r?\n/);
+  const notas  = [];
 
-  for(let i = 0; i < linhas.length; i++){
-    let linha = (linhas[i] || "").trim().toUpperCase();
+  for(const linha of linhas){
+    const l = linha.trim().toUpperCase();
+    if(!l) continue;
 
-    if(!linha) continue;
-    if(linha.includes("CANCELADO") || linha.includes("CANCELADA") || linha.includes("CANCEL")) continue;
-    if(linha.includes("DIGITALIZADO COM CAMSCANNER")) continue;
+    // Ignora linhas de cancelamento ou ruído
+    if(/CANCEL[AO]/.test(l)) continue;
+    if(/CAMSCANNER|DIGITALIZADO/.test(l)) continue;
+    if(/CHAVE|CNPJ|EMISS[AÃ]O|PROTOCOLO/.test(l)) continue;
 
-    const encontrados = linha.match(/\b\d{8,9}\b/g) || [];
+    // Padrões de NF: números de 5 a 10 dígitos isolados
+    // Captura sequências numéricas que aparecem como NF no manifesto
+    const matches = l.match(/\b\d{5,10}\b/g) || [];
 
-    encontrados.forEach(nf => {
-      if(cliente === "3coracoes"){
-        if(/^0\d{7,8}$/.test(nf)){
-          notas.push(nf);
-        }
-      } else {
-        const limpa = nf.replace(/^0+/, "");
-        if(/^\d{8,9}$/.test(limpa)){
-          notas.push(limpa);
-        }
-      }
-    });
+    for(const m of matches){
+      const nf = normalizarNF(m, cliente);
+      if(nf) notas.push(nf);
+    }
   }
 
   return notas;
 }
 
-async function reconhecerCanvas(canvas, lang="eng"){
-  const img = canvas.toDataURL("image/png");
-  const ocr = await Tesseract.recognize(img, lang);
-  return ocr.data.text || "";
-}
-
-async function extrairNotasPDF(file, cliente){
+/* ========================================================
+   PROCESSAMENTO PRINCIPAL DO PDF DE MANIFESTO
+======================================================== */
+async function extrairNotasPDF(file, cliente, indiceArquivo, totalArquivos){
   const buffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const pdf    = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+  setStatus(`Analisando ${file.name}...`);
+
+  // --- Tentativa 1: texto nativo ---
+  const textoNativo = await extrairTextoNativo(pdf);
+
+  if(textoNativo !== null){
+    debugLog.push(`${file.name}: texto NATIVO extraído (${textoNativo.length} chars)`);
+    const nfs = extrairNFsDoTexto(textoNativo, cliente);
+    setStatus(`${file.name}: ${nfs.length} NF(s) encontradas via texto nativo.`);
+    return { nfs, metodo: "nativo" };
+  }
+
+  // --- Tentativa 2: OCR página a página ---
+  debugLog.push(`${file.name}: PDF escaneado → usando OCR`);
   const notas = [];
 
   for(let i = 1; i <= pdf.numPages; i++){
-    document.getElementById("status").innerText =
-      `Lendo manifesto ${file.name} - página ${i}/${pdf.numPages}...`;
+    const pct = Math.round(((indiceArquivo + (i / pdf.numPages)) / totalArquivos) * 100);
+    setProgress(pct, `OCR: ${file.name} — página ${i}/${pdf.numPages}`);
+    setStatus(`OCR em andamento: ${file.name} pág. ${i}/${pdf.numPages}...`);
 
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 2 });
-
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-
-    await page.render({
-      canvasContext: ctx,
-      viewport: viewport
-    }).promise;
-
-    const crop = getCropForClient(cliente, canvas);
-
-    const cropCanvas = document.createElement("canvas");
-    cropCanvas.width = crop.width;
-    cropCanvas.height = crop.height;
-    const cropCtx = cropCanvas.getContext("2d");
-
-    cropCtx.drawImage(
-      canvas,
-      crop.x, crop.y, crop.width, crop.height,
-      0, 0, crop.width, crop.height
-    );
-
-    const textoColuna = await reconhecerCanvas(cropCanvas, "eng");
-    const nfs = extrairNFsDoTexto(textoColuna, cliente);
-
+    const page   = await pdf.getPage(i);
+    const canvas = await renderizarPagina(page, 2.5); // escala maior = melhor OCR
+    const texto  = await ocrCanvas(canvas);
+    const nfs    = extrairNFsDoTexto(texto, cliente);
     notas.push(...nfs);
   }
 
-  return notas;
+  setStatus(`${file.name}: ${notas.length} NF(s) encontradas via OCR.`);
+  return { nfs: notas, metodo: "ocr" };
 }
 
+/* ========================================================
+   LEITURA DO EXCEL / EDI
+======================================================== */
 function encontrarColuna(obj, candidatos){
   const chaves = Object.keys(obj || {});
   for(const chave of chaves){
     const limpa = chave
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toUpperCase()
-      .trim();
-
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase().trim();
     for(const candidato of candidatos){
       const cand = candidato
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .toUpperCase();
-      if(limpa === cand || limpa.includes(cand)){
-        return chave;
-      }
+      if(limpa === cand || limpa.includes(cand)) return chave;
     }
   }
   return null;
@@ -401,89 +461,49 @@ function encontrarColuna(obj, candidatos){
 function lerExcel(file, cliente){
   return new Promise(resolve => {
     const reader = new FileReader();
-
     reader.onload = e => {
-      const data = new Uint8Array(e.target.result);
+      const data     = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: "array" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(sheet);
-
-      const mapa = {};
+      const sheet    = workbook.Sheets[workbook.SheetNames[0]];
+      const json     = XLSX.utils.sheet_to_json(sheet);
+      const mapa     = {};
 
       if(json.length){
-        const colNF = encontrarColuna(json[0], ["Numero", "Número", "NF", "NFe", "Nota Fiscal"]);
-        const colAWB = encontrarColuna(json[0], ["Nº AWB", "AWB", "N AWB"]);
-        const colPedido = encontrarColuna(json[0], ["Pedido", "PedidoVol"]);
+        const colNF     = encontrarColuna(json[0], ["Numero","Número","NF","NFe","Nota Fiscal","NOTA","NF_NUM"]);
+        const colAWB    = encontrarColuna(json[0], ["Nº AWB","AWB","N AWB","HAWB","AWB_NUM"]);
+        const colPedido = encontrarColuna(json[0], ["Pedido","PedidoVol","PEDIDO"]);
 
         json.forEach(linha => {
-          let nf = colNF ? String(linha[colNF] ?? "") : "";
-          let awb = colAWB ? String(linha[colAWB] ?? "") : "";
+          let nf     = colNF     ? String(linha[colNF]     ?? "") : "";
+          let awb    = colAWB    ? String(linha[colAWB]    ?? "") : "";
           let pedido = colPedido ? String(linha[colPedido] ?? "") : "";
 
-          nf = nf.trim().replace(/\D/g, "");
-          awb = normalizarNumero(awb);
+          nf     = normalizarNF(nf, cliente);
+          awb    = normalizarNumero(awb);
           pedido = normalizarNumero(pedido);
 
-          if(cliente !== "3coracoes"){
-            nf = nf.replace(/^0+/, "");
-          }
-
           if(nf){
-            mapa[nf] = {
-              awb,
-              pedido,
-              emitido: true
-            };
+            mapa[nf] = { awb, pedido, emitido: true };
           }
         });
       }
 
       resolve(mapa);
     };
-
     reader.readAsArrayBuffer(file);
   });
 }
 
-async function lerFisico(file){
-  if(!file) return 0;
-
-  const nome = (file.name || "").toLowerCase();
-
-  if(nome.endsWith(".pdf")){
-    const buffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-    let texto = "";
-
-    for(let i = 1; i <= pdf.numPages; i++){
-      const page = await pdf.getPage(i);
-      const viewport = page.getViewport({ scale: 2 });
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-
-      await page.render({ canvasContext: ctx, viewport }).promise;
-      texto += "\n" + await reconhecerCanvas(canvas, "eng");
-    }
-
-    return extrairFisicoDoTexto(texto);
-  }
-
-  const texto = await reconhecerCanvas(await fileParaCanvas(file), "eng");
-  return extrairFisicoDoTexto(texto);
-}
-
+/* ========================================================
+   LEITURA DA CAPA / CONFERÊNCIA FÍSICA
+======================================================== */
 async function fileParaCanvas(file){
   return new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => {
+    const img   = new Image();
+    img.onload  = () => {
       const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
+      canvas.width = img.width; canvas.height = img.height;
+      canvas.getContext("2d").drawImage(img, 0, 0);
       resolve(canvas);
     };
     img.src = URL.createObjectURL(file);
@@ -491,199 +511,286 @@ async function fileParaCanvas(file){
 }
 
 function extrairFisicoDoTexto(texto){
-  const normalizado = (texto || "").toUpperCase();
+  const t = (texto || "").toUpperCase();
 
-  let match = normalizado.match(/ROMANEIO\s*[:\-]?\s*(\d{1,4})/);
-  if(match) return parseInt(match[1], 10);
+  // Padrões comuns em capas de manifesto
+  const padroes = [
+    /TOTAL\s*(?:DE\s*)?(?:VOLUMES?|VOLUMES?|CAIXAS?)\s*[:\-]?\s*(\d{1,5})/,
+    /ROMANEIO\s*[:\-]?\s*(\d{1,5})/,
+    /QTD\.?\s*(?:VOLUMES?|CAIXAS?)\s*[:\-]?\s*(\d{1,5})/,
+    /CONTAGEM\s*[:\-]?\s*(\d{1,5})/,
+    /VOLUMES?\s*[:\-]?\s*(\d{1,5})/,
+    /(\d{1,5})\s*(?:VOLUMES?|CAIXAS?|EMBALAGENS?)/
+  ];
 
-  match = normalizado.match(/QTD\.?\s*VOLUMES.*?CONTAGEM.*?(\d{1,4})/);
-  if(match) return parseInt(match[1], 10);
-
-  match = normalizado.match(/CONTAGEM.*?(\d{1,4})/);
-  if(match) return parseInt(match[1], 10);
-
+  for(const p of padroes){
+    const m = t.match(p);
+    if(m) return parseInt(m[1], 10);
+  }
   return 0;
 }
 
+async function lerFisico(file){
+  if(!file) return 0;
+  const nome = (file.name || "").toLowerCase();
+
+  if(nome.endsWith(".pdf")){
+    const buffer = await file.arrayBuffer();
+    const pdf    = await pdfjsLib.getDocument({ data: buffer }).promise;
+
+    // Tenta texto nativo primeiro
+    const textoNativo = await extrairTextoNativo(pdf);
+    if(textoNativo){
+      const qtd = extrairFisicoDoTexto(textoNativo);
+      if(qtd > 0) return qtd;
+    }
+
+    // Fallback OCR
+    let textoOCR = "";
+    for(let i = 1; i <= pdf.numPages; i++){
+      const page   = await pdf.getPage(i);
+      const canvas = await renderizarPagina(page, 2);
+      textoOCR    += "\n" + await ocrCanvas(canvas);
+    }
+    return extrairFisicoDoTexto(textoOCR);
+  }
+
+  // Imagem
+  const canvas = await fileParaCanvas(file);
+  const texto  = await ocrCanvas(canvas);
+  return extrairFisicoDoTexto(texto);
+}
+
+/* ========================================================
+   INTERFACE: TABELA E FILTRO
+======================================================== */
 function mostrarTabela(){
   const tbody = document.querySelector("#tabela tbody");
   tbody.innerHTML = "";
 
   resultado.forEach(r => {
+    let cls = "";
+    if(r.status === "OK")                      cls = "st-ok";
+    else if(r.status === "NÃO EMITIDO")        cls = "st-nao";
+    else if(r.status === "DUPLICADO")          cls = "st-dup";
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
+      <td>${r.ordem}</td>
       <td>${r.nf}</td>
       <td>${r.emitido}</td>
-      <td>${r.awb}</td>
-      <td>${r.status}</td>
+      <td>${r.awb || "—"}</td>
+      <td class="${cls}">${r.status}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
 function filtrar(){
-  const valor = document.getElementById("busca").value.toLowerCase();
+  const valor  = document.getElementById("busca").value.toLowerCase();
   const linhas = document.querySelectorAll("#tabela tbody tr");
-
   linhas.forEach(l => {
-    const texto = l.innerText.toLowerCase();
-    l.style.display = texto.includes(valor) ? "" : "none";
+    l.style.display = l.innerText.toLowerCase().includes(valor) ? "" : "none";
   });
 }
 
-function atualizarResumoGeral(totalManifesto, totalEmitido, totalFisico){
+/* ========================================================
+   INTERFACE: RESUMO E ANÁLISE
+======================================================== */
+function atualizarResumoGeral(totalManifesto, totalEmitido, totalFisico, metodos){
+  const nomeCliente = {
+    riachuelo: "Riachuelo",
+    "3coracoes": "3 Corações",
+    generico: "Genérico"
+  }[clienteAtual] || clienteAtual;
+
+  const metodosStr = metodos.length
+    ? metodos.map(m => `<span class="badge badge-${m.metodo}">${m.arquivo} [${m.metodo.toUpperCase()}]</span>`).join(" ")
+    : "—";
+
   document.getElementById("resumoGeral").innerHTML = `
-    Cliente: <b>${clienteAtual === "riachuelo" ? "Riachuelo" : "3 Corações"}</b><br>
-    Total do Manifesto: <b>${totalManifesto}</b><br>
-    Total Emitido (somente NF do manifesto): <b>${totalEmitido}</b><br>
-    Total Físico (capa): <b>${totalFisico}</b>
+    <b>Cliente:</b> ${nomeCliente}<br>
+    <b>Total no Manifesto:</b> ${totalManifesto} NF(s)<br>
+    <b>Total Emitido (EDI):</b> ${totalEmitido} NF(s)<br>
+    <b>Total Físico (capa):</b> ${totalFisico || "não informado"}<br>
+    <b>Método de extração:</b> ${metodosStr}
   `;
 }
 
 function atualizarAnalise(totalManifesto, totalEmitido, totalFisico, duplicadosMapa){
   const naoEmitidas = resultado.filter(r => r.status === "NÃO EMITIDO").map(r => r.nf);
-  const duplicadas = Object.keys(duplicadosMapa).filter(nf => duplicadosMapa[nf] > 1);
+  const duplicadas  = Object.keys(duplicadosMapa).filter(nf => duplicadosMapa[nf] > 1);
+  const divergencias = naoEmitidas.length + duplicadas.length;
 
-  const percentErro = totalManifesto > 0
-    ? ((naoEmitidas.length / totalManifesto) * 100).toFixed(2)
-    : "0.00";
+  document.getElementById("divCount").innerText = divergencias;
+
+  const pct = totalManifesto > 0
+    ? ((naoEmitidas.length / totalManifesto) * 100).toFixed(1)
+    : "0.0";
 
   let html = "";
 
+  // NFs não emitidas
   if(naoEmitidas.length){
-    html += `<div class="status-warn">NF(s) do manifesto não emitidas: ${naoEmitidas.length} (${percentErro}%)</div>`;
-    html += `<div>${naoEmitidas.join("<br>")}</div><br>`;
-  }else{
-    html += `<div class="status-ok">Todas as NF(s) do manifesto foram emitidas.</div><br>`;
+    html += `<div class="status-warn">&#9888; ${naoEmitidas.length} NF(s) do manifesto NÃO encontradas no EDI (${pct}%):</div>`;
+    html += `<div style="font-size:12px;margin-left:12px;">${naoEmitidas.join(" &bull; ")}</div><br>`;
+  } else {
+    html += `<div class="status-ok">&#10003; Todas as NF(s) do manifesto foram encontradas no EDI.</div><br>`;
   }
 
+  // Conferência física
   if(totalFisico > 0){
     if(totalFisico === totalManifesto){
-      html += `<div class="status-ok">Quantidade física bate com o manifesto.</div><br>`;
-    }else{
-      html += `<div class="status-warn">Divergência física: Manifesto ${totalManifesto} x Físico ${totalFisico}</div><br>`;
+      html += `<div class="status-ok">&#10003; Quantidade física (${totalFisico}) bate com o manifesto (${totalManifesto}).</div><br>`;
+    } else {
+      html += `<div class="status-warn">&#9888; Divergência física: Manifesto ${totalManifesto} x Físico ${totalFisico} (diferença: ${Math.abs(totalManifesto - totalFisico)})</div><br>`;
     }
-  }else{
-    html += `<div class="status-warn">Não foi possível identificar a quantidade física da capa.</div><br>`;
+  } else {
+    html += `<div style="color:#888;">Quantidade física não identificada (capa não enviada ou não reconhecida).</div><br>`;
   }
 
+  // Duplicados
   if(duplicadas.length){
-    html += `<div class="status-warn">NF(s) duplicadas no manifesto:</div>`;
-    html += `<div>${duplicadas.join("<br>")}</div>`;
+    html += `<div class="status-warn">&#9888; ${duplicadas.length} NF(s) duplicadas no manifesto:</div>`;
+    html += `<div style="font-size:12px;margin-left:12px;">${duplicadas.join(" &bull; ")}</div>`;
   }
 
   document.getElementById("analise").innerHTML = html;
 }
 
+/* ========================================================
+   PROCESSAMENTO PRINCIPAL
+======================================================== */
 async function processar(){
   try{
-    document.getElementById("status").innerText = "Processando...";
+    debugLog = [];
+    document.getElementById("status").innerText = "Iniciando...";
+    document.getElementById("debugInfo").innerText = "";
 
     clienteAtual = document.getElementById("cliente").value;
 
-    const pdfs = document.getElementById("manifesto").files;
-    const ediFile = document.getElementById("edi").files[0];
+    const pdfs     = document.getElementById("manifesto").files;
+    const ediFile  = document.getElementById("edi").files[0];
     const capaFile = document.getElementById("capa").files[0];
 
-    let notasManifestoBrutas = [];
-
-    for(const file of pdfs){
-      const notas = await extrairNotasPDF(file, clienteAtual);
-      notasManifestoBrutas.push(...notas);
+    if(!pdfs.length){
+      setStatus("Selecione ao menos um PDF de manifesto.");
+      return;
     }
 
-    manifestNFs = notasManifestoBrutas.slice();
+    let notasManifestoBrutas = [];
+    const metodos = [];
+
+    for(let idx = 0; idx < pdfs.length; idx++){
+      const file = pdfs[idx];
+      const { nfs, metodo } = await extrairNotasPDF(file, clienteAtual, idx, pdfs.length);
+      notasManifestoBrutas.push(...nfs);
+      metodos.push({ arquivo: file.name, metodo });
+    }
+
+    hideProgress();
+
+    manifestNFs = notasManifestoBrutas;
     const duplicadosMapa = contarDuplicados(manifestNFs);
 
     document.getElementById("manifestoCount").innerText = manifestNFs.length;
 
+    // Lê EDI
     let mapaEDI = {};
     if(ediFile){
-      document.getElementById("status").innerText = "Lendo planilha EDI...";
+      setStatus("Lendo planilha EDI...");
       mapaEDI = await lerExcel(ediFile, clienteAtual);
     }
 
+    // Monta resultado
     let emitidos = 0;
     resultado = [];
 
     manifestNFs.forEach((nf, index) => {
-      const registroEDI = mapaEDI[nf];
-      const emitido = registroEDI ? "SIM" : "NÃO";
-      const awb = registroEDI ? registroEDI.awb : "";
-      let status = registroEDI ? "OK" : "NÃO EMITIDO";
+      const reg    = mapaEDI[nf];
+      const emitido = reg ? "SIM" : "NÃO";
+      const awb    = reg ? reg.awb : "";
+      let status   = reg ? "OK" : "NÃO EMITIDO";
 
-      if(duplicadosMapa[nf] > 1){
-        status = "DUPLICADO NO MANIFESTO";
-      }
+      if(duplicadosMapa[nf] > 1) status = "DUPLICADO";
+      if(reg) emitidos++;
 
-      if(registroEDI){
-        emitidos++;
-      }
-
-      resultado.push({
-        ordem: index + 1,
-        nf,
-        emitido,
-        awb,
-        status
-      });
+      resultado.push({ ordem: index + 1, nf, emitido, awb, status });
     });
 
     document.getElementById("emitidoCount").innerText = emitidos;
 
-    fisicoTotal = await lerFisico(capaFile);
-    document.getElementById("fisicoCount").innerText = fisicoTotal;
+    // Lê físico
+    if(capaFile){
+      setStatus("Lendo capa/conferência física...");
+      fisicoTotal = await lerFisico(capaFile);
+    } else {
+      fisicoTotal = 0;
+    }
+    document.getElementById("fisicoCount").innerText = fisicoTotal || "—";
 
-    atualizarResumoGeral(manifestNFs.length, emitidos, fisicoTotal);
+    atualizarResumoGeral(manifestNFs.length, emitidos, fisicoTotal, metodos);
     atualizarAnalise(manifestNFs.length, emitidos, fisicoTotal, duplicadosMapa);
     mostrarTabela();
 
-    document.getElementById("status").innerText = "Conferência concluída";
-  }catch(err){
+    setStatus(`Conferência concluída. ${manifestNFs.length} NF(s) processadas.`);
+
+    // Debug log
+    document.getElementById("debugInfo").innerText = debugLog.join("\n");
+
+  } catch(err){
     console.error(err);
-    document.getElementById("status").innerText = "Erro no processamento";
+    setStatus("Erro no processamento: " + err.message);
+    hideProgress();
   }
 }
 
+/* ========================================================
+   EXPORTAR EXCEL
+======================================================== */
 function baixarExcel(){
+  if(!resultado.length){
+    alert("Processe a conferência antes de baixar o Excel.");
+    return;
+  }
+
   const wb = XLSX.utils.book_new();
 
+  const nomeCliente = {
+    riachuelo: "Riachuelo",
+    "3coracoes": "3 Corações",
+    generico: "Genérico"
+  }[clienteAtual] || clienteAtual;
+
   const resumo = [
-    { Indicador: "Cliente", Valor: clienteAtual === "riachuelo" ? "Riachuelo" : "3 Corações" },
-    { Indicador: "Manifesto", Valor: manifestNFs.length },
-    { Indicador: "Emitido", Valor: resultado.filter(r => r.emitido === "SIM").length },
-    { Indicador: "Físico", Valor: fisicoTotal }
+    { Indicador: "Cliente",      Valor: nomeCliente },
+    { Indicador: "Manifesto",    Valor: manifestNFs.length },
+    { Indicador: "Emitido",      Valor: resultado.filter(r => r.emitido === "SIM").length },
+    { Indicador: "Não Emitido",  Valor: resultado.filter(r => r.status === "NÃO EMITIDO").length },
+    { Indicador: "Duplicados",   Valor: resultado.filter(r => r.status === "DUPLICADO").length },
+    { Indicador: "Físico",       Valor: fisicoTotal || "N/A" }
   ];
-  const wsResumo = XLSX.utils.json_to_sheet(resumo);
-  XLSX.utils.book_append_sheet(wb, wsResumo, "Resumo");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumo), "Resumo");
 
   const analise = resultado.map(r => ({
-    Ordem_Manifesto: r.ordem,
-    NF: r.nf,
+    Ordem:   r.ordem,
+    NF:      r.nf,
     Emitido: r.emitido,
-    AWB: r.awb,
-    Status: r.status
+    AWB:     r.awb || "",
+    Status:  r.status
   }));
-  const wsAnalise = XLSX.utils.json_to_sheet(analise);
-  XLSX.utils.book_append_sheet(wb, wsAnalise, "Analise");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(analise), "Analise");
 
-  const naoEmitidas = resultado
-    .filter(r => r.status === "NÃO EMITIDO")
-    .map(r => ({
-      Ordem_Manifesto: r.ordem,
-      NF: r.nf,
-      Emitido: r.emitido,
-      AWB: r.awb,
-      Status: r.status
-    }));
-  const wsNaoEmitidas = XLSX.utils.json_to_sheet(
-    naoEmitidas.length ? naoEmitidas : [{ Ordem_Manifesto: "", NF: "", Emitido: "", AWB: "", Status: "Sem divergências" }]
+  const naoEmitidas = resultado.filter(r => r.status === "NÃO EMITIDO").map(r => ({
+    Ordem: r.ordem, NF: r.nf, AWB: r.awb || "", Status: r.status
+  }));
+  XLSX.utils.book_append_sheet(wb,
+    XLSX.utils.json_to_sheet(naoEmitidas.length ? naoEmitidas : [{ NF: "Sem divergências" }]),
+    "NaoEmitidas"
   );
-  XLSX.utils.book_append_sheet(wb, wsNaoEmitidas, "NaoEmitidas");
 
-  XLSX.writeFile(wb, "conferencia.xlsx");
+  XLSX.writeFile(wb, `conferencia_${nomeCliente}_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 </script>
-
 </body>
 </html>
