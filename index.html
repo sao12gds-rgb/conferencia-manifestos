@@ -1,3 +1,5 @@
+
+index.html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -276,20 +278,31 @@ function hideProgress(){
 
 /* ========================================================
    NORMALIZAÇÃO DE NF POR CLIENTE
+   Valida o padrão específico de cada cliente
 ======================================================== */
 function normalizarNF(nf, cliente){
   nf = String(nf).replace(/\D/g, "").trim();
   if(!nf) return "";
 
   if(cliente === "3coracoes"){
-    // 3 Corações: mantém zeros à esquerda, 8-9 dígitos
-    if(nf.length >= 6 && nf.length <= 10) return nf;
+    // 3 Corações: 8-9 dígitos, geralmente começa com 0
+    if(nf.length === 8 || nf.length === 9) return nf;
     return "";
   }
 
-  // Riachuelo / Genérico: remove zeros à esquerda, 5-9 dígitos
+  if(cliente === "riachuelo"){
+    // Riachuelo: EXATAMENTE 8 dígitos (padrão NFe)
+    // Remove zeros à esquerda e valida
+    const semZero = nf.replace(/^0+/, "");
+    if(semZero.length === 8) return semZero;
+    // Tenta aceitar se tiver até 2 zeros à esquerda
+    if(nf.length === 8 || nf.length === 9) return nf.replace(/^0+/, "");
+    return "";
+  }
+
+  // Genérico: 7-9 dígitos
   const semZero = nf.replace(/^0+/, "");
-  if(semZero.length >= 5 && semZero.length <= 9) return semZero;
+  if(semZero.length >= 7 && semZero.length <= 9) return semZero;
   return "";
 }
 
@@ -372,34 +385,107 @@ async function ocrCanvas(canvas){
 }
 
 /* ========================================================
+   NORMALIZAÇÃO DE NF POR CLIENTE
+   Valida o padrão específico de cada cliente
+======================================================== */
+function normalizarNF(nf, cliente){
+  nf = String(nf).replace(/\D/g, "").trim();
+  if(!nf) return "";
+
+  if(cliente === "3coracoes"){
+    // 3 Corações: 8-9 dígitos, PRESERVA zeros à esquerda
+    if(nf.length === 8 || nf.length === 9) return nf;
+    return "";
+  }
+
+  if(cliente === "riachuelo"){
+    // Riachuelo: EXATAMENTE 8 dígitos (padrão NFe)
+    // Remove zeros à esquerda e valida
+    const semZero = nf.replace(/^0+/, "");
+    if(semZero.length === 8) return semZero;
+    // Tenta aceitar se tiver até 2 zeros à esquerda
+    if(nf.length === 8 || nf.length === 9) return nf.replace(/^0+/, "");
+    return "";
+  }
+
+  // Genérico: 7-9 dígitos
+  const semZero = nf.replace(/^0+/, "");
+  if(semZero.length >= 7 && semZero.length <= 9) return semZero;
+  return "";
+}
+
+/* ========================================================
    EXTRAÇÃO DE NFs DO TEXTO (nativo ou OCR)
+   Busca por âncoras de texto (NFe, Nota Fiscal, etc)
+   e captura números adjacentes
 ======================================================== */
 function extrairNFsDoTexto(texto, cliente){
   const linhas = (texto || "").split(/\r?\n/);
   const notas  = [];
+  const vistas = new Set();
 
-  for(const linha of linhas){
-    const l = linha.trim().toUpperCase();
+  // Padrões de âncora para buscar NFs
+  const ancorasNF = /(?:NF|NFE|NOTA\s*FISCAL|Nº\s*NF|NÚMERO\s*NF|NF\s*Nº|NOTA\s*Nº|NOTA\s*N°)/i;
+
+  for(let i = 0; i < linhas.length; i++){
+    const linha = linhas[i].trim();
+    const l = linha.toUpperCase();
+    
     if(!l) continue;
 
     // Ignora linhas de cancelamento ou ruído
     if(/CANCEL[AO]/.test(l)) continue;
     if(/CAMSCANNER|DIGITALIZADO/.test(l)) continue;
     if(/CHAVE|CNPJ|EMISS[AÃ]O|PROTOCOLO/.test(l)) continue;
+    if(/^\d{10,}$/.test(l)) continue; // Códigos de barras
 
-    // Padrões de NF: números de 5 a 10 dígitos isolados
-    // Captura sequências numéricas que aparecem como NF no manifesto
-    const matches = l.match(/\b\d{5,10}\b/g) || [];
+    let matches = [];
+    let temAncora = ancorasNF.test(l);
 
-    for(const m of matches){
-      const nf = normalizarNF(m, cliente);
-      if(nf) notas.push(nf);
+    // --- Estratégia 1: Se a linha tem âncora (NF, NFe, Nota Fiscal, etc) ---
+    if(temAncora){
+      // Captura números na mesma linha
+      if(cliente === "riachuelo"){
+        matches = l.match(/\b\d{8}\b/g) || [];
+      } else if(cliente === "3coracoes"){
+        // Preserva zeros à esquerda para 3 Corações
+        matches = l.match(/\b\d{8,9}\b/g) || [];
+      } else {
+        matches = l.match(/\b\d{7,9}\b/g) || [];
+      }
+
+      // Se não encontrou na mesma linha, tenta a próxima
+      if(!matches.length && i + 1 < linhas.length){
+        const proximaLinha = linhas[i + 1].toUpperCase();
+        if(cliente === "riachuelo"){
+          matches = proximaLinha.match(/\b\d{8}\b/g) || [];
+        } else if(cliente === "3coracoes"){
+          matches = proximaLinha.match(/\b\d{8,9}\b/g) || [];
+        } else {
+          matches = proximaLinha.match(/\b\d{7,9}\b/g) || [];
+        }
+      }
+    } else {
+      // --- Estratégia 2: Sem âncora, busca conservadora ---
+      // Apenas para linhas que parecem conter NFs
+      if(/\d/.test(l) && !/PEDIDO|VOLUME|PESO|VALOR|QUANTIDADE|QTD/.test(l)){
+        if(cliente === "riachuelo"){
+          matches = l.match(/\b\d{8}\b/g) || [];
+        } else if(cliente === "3coracoes"){
+          matches = l.match(/\b\d{8,9}\b/g) || [];
+        } else {
+          matches = l.match(/\b\d{7,9}\b/g) || [];
+        }
+      }
     }
-  }
 
-  return notas;
-}
-
+    // Processa matches encontrados
+    for(const m of matches){
+      if(vistas.has(m)) continue;
+      const nf = normalizarNF(m, cliente);
+      if(nf){
+        notas.push(nf);
+        vistas.add(m);
 /* ========================================================
    PROCESSAMENTO PRINCIPAL DO PDF DE MANIFESTO
 ======================================================== */
