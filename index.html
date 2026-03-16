@@ -123,19 +123,6 @@ input[type="text"]{width:300px;}
   min-height:20px;
 }
 
-/* Badge de método de extração */
-.badge{
-  display:inline-block;
-  font-size:10px;
-  padding:2px 6px;
-  border-radius:4px;
-  font-weight:bold;
-  vertical-align:middle;
-  margin-left:4px;
-}
-.badge-nativo{background:#d4edda;color:#155724;}
-.badge-ocr{background:#fff3cd;color:#856404;}
-
 /* Tabela status cores */
 .st-ok{color:#2e7d32;font-weight:bold;}
 .st-nao{color:#c62828;font-weight:bold;}
@@ -151,7 +138,7 @@ input[type="text"]{width:300px;}
 
   <img src="logo-azulcargo.png" class="logo" onerror="this.style.display='none'">
   <h1>Conferência de Manifestos</h1>
-  <div class="subtitle">Manifesto PDF + EDI Excel + Capa / Conferência Física</div>
+  <div class="subtitle">Manifesto PDF/Imagem + EDI Excel + Capa / Conferência Física</div>
 
   <div class="uploads">
     <div class="box">
@@ -164,8 +151,8 @@ input[type="text"]{width:300px;}
     </div>
 
     <div class="box">
-      <b>Upload Manifestos (PDF)</b>
-      <input type="file" id="manifesto" multiple accept=".pdf">
+      <b>Upload Manifestos (PDF ou Imagem)</b>
+      <input type="file" id="manifesto" multiple accept=".pdf,image/*">
     </div>
 
     <div class="box">
@@ -294,25 +281,29 @@ async function extrairTextoNativo(pdf){
   let paginasComTexto = 0;
 
   for(let i = 1; i <= pdf.numPages; i++){
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const items = content.items || [];
+    try {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      const items = content.items || [];
 
-    const linhas = {};
-    for(const item of items){
-      const y = Math.round(item.transform[5]);
-      if(!linhas[y]) linhas[y] = [];
-      linhas[y].push(item.str || "");
+      const linhas = {};
+      for(const item of items){
+        const y = Math.round(item.transform[5]);
+        if(!linhas[y]) linhas[y] = [];
+        linhas[y].push(item.str || "");
+      }
+
+      const ysOrdenados = Object.keys(linhas).map(Number).sort((a,b) => b - a);
+      let textoPagina = "";
+      for(const y of ysOrdenados){
+        textoPagina += linhas[y].join(" ") + "\n";
+      }
+
+      if(textoPagina.trim().length > 20) paginasComTexto++;
+      textoTotal += textoPagina + "\n";
+    } catch (e) {
+      console.warn("Erro ao ler texto nativo da página " + i, e);
     }
-
-    const ysOrdenados = Object.keys(linhas).map(Number).sort((a,b) => b - a);
-    let textoPagina = "";
-    for(const y of ysOrdenados){
-      textoPagina += linhas[y].join(" ") + "\n";
-    }
-
-    if(textoPagina.trim().length > 20) paginasComTexto++;
-    textoTotal += textoPagina + "\n";
   }
 
   if(paginasComTexto < Math.ceil(pdf.numPages / 2)) return null;
@@ -330,6 +321,22 @@ async function renderizarPagina(page, scale){
   canvas.height  = viewport.height;
   await page.render({ canvasContext: ctx, viewport }).promise;
   return canvas;
+}
+
+async function fileParaCanvas(file){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas);
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
 }
 
 function corrigirOCR(texto){
@@ -357,7 +364,6 @@ async function ocrCanvas(canvas){
 
 /* ========================================================
    EXTRAÇÃO DE NFs DO TEXTO (nativo ou OCR)
-   Busca por âncoras de texto (NFe, Nota Fiscal, etc)
 ======================================================== */
 function extrairNFsDoTexto(texto, cliente){
   const linhas = (texto || "").split(/\r?\n/);
@@ -380,13 +386,9 @@ function extrairNFsDoTexto(texto, cliente){
     let temAncora = ancorasNF.test(l);
 
     if(temAncora){
-      if(cliente === "riachuelo"){
-        matches = l.match(/\b\d{8}\b/g) || [];
-      } else if(cliente === "3coracoes"){
-        matches = l.match(/\b\d{8,9}\b/g) || [];
-      } else {
-        matches = l.match(/\b\d{7,9}\b/g) || [];
-      }
+      if(cliente === "riachuelo") matches = l.match(/\b\d{8}\b/g) || [];
+      else if(cliente === "3coracoes") matches = l.match(/\b\d{8,9}\b/g) || [];
+      else matches = l.match(/\b\d{7,9}\b/g) || [];
 
       if(!matches.length && i + 1 < linhas.length){
         const proximaLinha = linhas[i + 1].toUpperCase();
@@ -417,30 +419,51 @@ function extrairNFsDoTexto(texto, cliente){
 /* ========================================================
    PROCESSAMENTO PRINCIPAL
 ======================================================== */
-async function extrairNotasPDF(file, cliente, indiceArquivo, totalArquivos){
-  const buffer = await file.arrayBuffer();
-  const pdf    = await pdfjsLib.getDocument({ data: buffer }).promise;
-  setStatus(`Analisando ${file.name}...`);
-
-  const textoNativo = await extrairTextoNativo(pdf);
-  if(textoNativo !== null){
-    debugLog.push(`${file.name}: texto NATIVO extraído`);
-    const nfs = extrairNFsDoTexto(textoNativo, cliente);
-    return { nfs, metodo: "nativo" };
+async function extrairNotasArquivo(file, cliente, indiceArquivo, totalArquivos){
+  const nome = file.name.toLowerCase();
+  
+  // --- Se for IMAGEM direta ---
+  if(nome.endsWith(".jpg") || nome.endsWith(".jpeg") || nome.endsWith(".png")){
+    setStatus(`Lendo imagem ${file.name}...`);
+    const canvas = await fileParaCanvas(file);
+    const texto = await ocrCanvas(canvas);
+    const nfs = extrairNFsDoTexto(texto, cliente);
+    return { nfs, metodo: "ocr" };
   }
 
-  debugLog.push(`${file.name}: PDF escaneado → usando OCR`);
-  const notas = [];
-  for(let i = 1; i <= pdf.numPages; i++){
-    const pct = Math.round(((indiceArquivo + (i / pdf.numPages)) / totalArquivos) * 100);
-    setProgress(pct, `OCR: ${file.name} — página ${i}/${pdf.numPages}`);
-    const page   = await pdf.getPage(i);
-    const canvas = await renderizarPagina(page, 2.5);
-    const texto  = await ocrCanvas(canvas);
-    const nfs    = extrairNFsDoTexto(texto, cliente);
-    notas.push(...nfs);
+  // --- Se for PDF ---
+  try {
+    const buffer = await file.arrayBuffer();
+    // stopAtErrors: false permite ler PDFs com estrutura levemente corrompida (CamScanner)
+    const pdf = await pdfjsLib.getDocument({ 
+      data: buffer,
+      stopAtErrors: false 
+    }).promise;
+
+    setStatus(`Analisando ${file.name}...`);
+    const textoNativo = await extrairTextoNativo(pdf);
+    if(textoNativo !== null){
+      debugLog.push(`${file.name}: texto NATIVO extraído`);
+      const nfs = extrairNFsDoTexto(textoNativo, cliente);
+      return { nfs, metodo: "nativo" };
+    }
+
+    debugLog.push(`${file.name}: PDF escaneado → usando OCR`);
+    const notas = [];
+    for(let i = 1; i <= pdf.numPages; i++){
+      const pct = Math.round(((indiceArquivo + (i / pdf.numPages)) / totalArquivos) * 100);
+      setProgress(pct, `OCR: ${file.name} — página ${i}/${pdf.numPages}`);
+      const page = await pdf.getPage(i);
+      const canvas = await renderizarPagina(page, 2.5);
+      const texto = await ocrCanvas(canvas);
+      const nfs = extrairNFsDoTexto(texto, cliente);
+      notas.push(...nfs);
+    }
+    return { nfs: notas, metodo: "ocr" };
+  } catch (err) {
+    console.error("Erro ao processar PDF: " + file.name, err);
+    throw new Error(`O arquivo "${file.name}" parece estar corrompido ou não é um PDF válido. Tente salvá-lo novamente.`);
   }
-  return { nfs: notas, metodo: "ocr" };
 }
 
 function encontrarColuna(obj, candidatos){
@@ -459,14 +482,14 @@ function lerExcel(file, cliente){
   return new Promise(resolve => {
     const reader = new FileReader();
     reader.onload = e => {
-      const data     = new Uint8Array(e.target.result);
+      const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: "array" });
-      const sheet    = workbook.Sheets[workbook.SheetNames[0]];
-      const json     = XLSX.utils.sheet_to_json(sheet);
-      const mapa     = {};
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet);
+      const mapa = {};
       if(json.length){
-        const colNF     = encontrarColuna(json[0], ["Numero","Número","NF","NFe","Nota Fiscal","NOTA","NF_NUM"]);
-        const colAWB    = encontrarColuna(json[0], ["Nº AWB","AWB","N AWB","HAWB","AWB_NUM"]);
+        const colNF = encontrarColuna(json[0], ["Numero","Número","NF","NFe","Nota Fiscal","NOTA","NF_NUM"]);
+        const colAWB = encontrarColuna(json[0], ["Nº AWB","AWB","N AWB","HAWB","AWB_NUM"]);
         json.forEach(linha => {
           let nf = colNF ? String(linha[colNF] ?? "") : "";
           let awb = colAWB ? String(linha[colAWB] ?? "") : "";
@@ -482,14 +505,22 @@ function lerExcel(file, cliente){
 
 async function lerFisico(file){
   if(!file) return 0;
-  const buffer = await file.arrayBuffer();
-  const pdf    = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const nome = file.name.toLowerCase();
   let textoOCR = "";
-  for(let i = 1; i <= pdf.numPages; i++){
-    const page   = await pdf.getPage(i);
-    const canvas = await renderizarPagina(page, 2);
-    textoOCR    += "\n" + await ocrCanvas(canvas);
+
+  if(nome.endsWith(".pdf")){
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buffer, stopAtErrors: false }).promise;
+    for(let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const canvas = await renderizarPagina(page, 2);
+      textoOCR += "\n" + await ocrCanvas(canvas);
+    }
+  } else {
+    const canvas = await fileParaCanvas(file);
+    textoOCR = await ocrCanvas(canvas);
   }
+
   const match = textoOCR.toUpperCase().match(/TOTAL\s*(?:DE\s*)?(?:VOLUMES?|CAIXAS?)\s*[:\-]?\s*(\d{1,5})/);
   return match ? parseInt(match[1], 10) : 0;
 }
@@ -499,18 +530,18 @@ async function processar(){
     debugLog = [];
     setStatus("Iniciando...");
     clienteAtual = document.getElementById("cliente").value;
-    const pdfs     = document.getElementById("manifesto").files;
-    const ediFile  = document.getElementById("edi").files[0];
+    const manifestos = document.getElementById("manifesto").files;
+    const ediFile = document.getElementById("edi").files[0];
     const capaFile = document.getElementById("capa").files[0];
 
-    if(!pdfs.length){ setStatus("Selecione ao menos um PDF de manifesto."); return; }
+    if(!manifestos.length){ setStatus("Selecione ao menos um arquivo de manifesto."); return; }
 
     let notasManifestoBrutas = [];
     const metodos = [];
-    for(let idx = 0; idx < pdfs.length; idx++){
-      const { nfs, metodo } = await extrairNotasPDF(pdfs[idx], clienteAtual, idx, pdfs.length);
+    for(let idx = 0; idx < manifestos.length; idx++){
+      const { nfs, metodo } = await extrairNotasArquivo(manifestos[idx], clienteAtual, idx, manifestos.length);
       notasManifestoBrutas.push(...nfs);
-      metodos.push({ arquivo: pdfs[idx].name, metodo });
+      metodos.push({ arquivo: manifestos[idx].name, metodo });
     }
     hideProgress();
 
@@ -559,7 +590,7 @@ function atualizarInterface(metodos, duplicadosMapa, emitidos){
   });
 
   const naoEmitidas = resultado.filter(r => r.status === "NÃO EMITIDO").map(r => r.nf);
-  const duplicadas  = Object.keys(duplicadosMapa).filter(nf => duplicadosMapa[nf] > 1);
+  const duplicadas = Object.keys(duplicadosMapa).filter(nf => duplicadosMapa[nf] > 1);
   document.getElementById("divCount").innerText = naoEmitidas.length + duplicadas.length;
 
   document.getElementById("resumoGeral").innerHTML = `<b>Cliente:</b> ${clienteAtual}<br><b>Total Manifesto:</b> ${manifestNFs.length}<br><b>Total Emitido:</b> ${emitidos}<br><b>Método:</b> ${metodos.map(m=>m.metodo).join(", ")}`;
