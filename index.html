@@ -549,14 +549,19 @@ async function processarConferencia() {
     // =========================
     // LEITURA DA PLANILHA EDI
     // =========================
-    async function lerPlanilhaEDI(arquivo, cliente) {
+   async function lerPlanilhaEDI(arquivo, cliente) {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader();
 
     leitor.onload = function (evento) {
       try {
         const dados = new Uint8Array(evento.target.result);
-        const workbook = XLSX.read(dados, { type: "array" });
+
+        const workbook = XLSX.read(dados, {
+          type: "array",
+          cellDates: false,
+          raw: false
+        });
 
         if (!workbook.SheetNames || !workbook.SheetNames.length) {
           reject(new Error("A planilha está vazia ou sem abas."));
@@ -568,39 +573,62 @@ async function processarConferencia() {
         const linhas = XLSX.utils.sheet_to_json(primeiraAba, {
           header: 1,
           defval: "",
+          blankrows: false,
           raw: false
         });
 
-        if (!linhas.length) {
+        if (!linhas || !linhas.length) {
           reject(new Error("A planilha não contém dados."));
           return;
         }
-
-        const cabecalhos = linhas[0].map((col) => String(col || "").trim());
 
         const normalizarCabecalho = (texto) => {
           return String(texto || "")
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^A-Z0-9 ]/gi, "")
-            .toUpperCase()
-            .trim();
+            .replace(/[^a-zA-Z0-9 ]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toUpperCase();
         };
 
-        const cabecalhosNormalizados = cabecalhos.map(normalizarCabecalho);
+        let linhaCabecalho = -1;
+        let cabecalhos = [];
+        let cabecalhosNormalizados = [];
+
+        for (let i = 0; i < Math.min(linhas.length, 15); i++) {
+          const linhaAtual = (linhas[i] || []).map((col) => String(col || "").trim());
+          const linhaNorm = linhaAtual.map(normalizarCabecalho);
+
+          const temNF = linhaNorm.some((col) =>
+            ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
+          );
+
+          const temAWB = linhaNorm.some((col) => col.includes("AWB"));
+
+          if (temNF && temAWB) {
+            linhaCabecalho = i;
+            cabecalhos = linhaAtual;
+            cabecalhosNormalizados = linhaNorm;
+            break;
+          }
+        }
+
+        if (linhaCabecalho === -1) {
+          reject(
+            new Error(
+              "Não foi possível localizar o cabeçalho da planilha. Verifique se existe coluna Numero e coluna AWB."
+            )
+          );
+          return;
+        }
 
         const indiceNF = cabecalhosNormalizados.findIndex((col) =>
           ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
         );
 
         const indiceAWB = cabecalhosNormalizados.findIndex((col) =>
-          [
-            "AWB",
-            "N AWB",
-            "NO AWB",
-            "NUMERO AWB",
-            "NUMEROAWB"
-          ].includes(col) || col.includes("AWB")
+          col.includes("AWB")
         );
 
         if (indiceNF === -1) {
@@ -623,11 +651,14 @@ async function processarConferencia() {
 
         const mapaEDI = {};
 
-        for (let i = 1; i < linhas.length; i++) {
-          const linha = linhas[i];
+        for (let i = linhaCabecalho + 1; i < linhas.length; i++) {
+          const linha = linhas[i] || [];
 
-          let nf = normalizarNF(linha[indiceNF], cliente);
-          let awb = normalizarNumero(linha[indiceAWB]);
+          const nfOriginal = linha[indiceNF];
+          const awbOriginal = linha[indiceAWB];
+
+          const nf = normalizarNF(nfOriginal, cliente);
+          const awb = normalizarNumero(awbOriginal);
 
           if (!nf) continue;
           if (!awb) continue;
@@ -648,10 +679,19 @@ async function processarConferencia() {
           mapaEDI[nf].awbFormatada = mapaEDI[nf].awbs.join(" / ");
         });
 
+        if (!Object.keys(mapaEDI).length) {
+          reject(
+            new Error(
+              "A planilha foi lida, mas nenhuma NF/AWB válida foi encontrada."
+            )
+          );
+          return;
+        }
+
         resolve(mapaEDI);
       } catch (erro) {
         console.error("Erro interno ao ler Excel:", erro);
-        reject(new Error("Erro ao ler a planilha EDI."));
+        reject(new Error("Erro ao processar a planilha EDI."));
       }
     };
 
