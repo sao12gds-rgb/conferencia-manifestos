@@ -1013,9 +1013,9 @@ async function processarConferencia() {
       return valor;
     }
 
-    function exibirErro(mensagem) {
+function exibirErro(mensagem) {
   document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagem}</div>`;
-  console.error(mensagem);
+  console.error("ERRO DO SISTEMA:", mensagem);
   alert(mensagem);
 }
  </div>
