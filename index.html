@@ -444,40 +444,31 @@ async function processarConferencia() {
   try {
     document.getElementById("analise").innerHTML = "Processando arquivos...";
 
-    // capturar dados
-    estado.cliente = document.getElementById("cliente").value;
-    estado.manifestos = Array.from(document.getElementById("manifestos").files || []);
-    estado.planilhaEDI = document.getElementById("edi").files[0] || null;
-    estado.capaFisica = document.getElementById("capa").files[0] || null;
+    capturarArquivosTela();
+    validarEntrada();
 
-    // validações simples
-    if (!estado.cliente) {
-      throw new Error("Selecione o cliente.");
-    }
+    estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
+    estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
+    estado.fisicoTotal = await lerCapaFisica(estado.capaFisica);
 
-    if (!estado.manifestos.length) {
-      throw new Error("Envie pelo menos um manifesto.");
-    }
+    estado.resultadoFinal = compararManifestoComEDI(
+      estado.nfsManifesto,
+      estado.mapaEDI,
+      estado.cliente
+    );
 
-    if (!estado.planilhaEDI) {
-      throw new Error("Envie a planilha EDI.");
-    }
+    estado.totais = calcularTotais(
+      estado.resultadoFinal,
+      estado.fisicoTotal
+    );
 
-    // =========================
-    // TESTE DIRETO DO EXCEL
-    // =========================
-    console.log("Lendo planilha...");
-    const mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
-    console.log("MAPA EDI:", mapaEDI);
-
-    document.getElementById("analise").innerHTML =
-      "Planilha lida com sucesso. Total NFs: " + Object.keys(mapaEDI).length;
-
+    renderResultado();
   } catch (erro) {
-    exibirErro(erro.message);
+    exibirErro(erro.message || "Erro ao processar a conferência.");
   }
 }
-    // =========================
+
+     // =========================
     // CAPTURA DE ENTRADA
     // =========================
     function capturarArquivosTela() {
@@ -504,7 +495,40 @@ async function processarConferencia() {
     // =========================
     // LEITURA DOS MANIFESTOS
     // =========================
-    async function lerManifestos(arquivos, cliente) {
+  async function lerManifestos(arquivos, cliente) {
+  const resultado = [];
+  let ordemGlobal = 1;
+
+  for (const arquivo of arquivos) {
+    const nomeManifesto = arquivo.name;
+    let textoExtraido = "";
+
+    if (
+      arquivo.type === "application/pdf" ||
+      nomeManifesto.toLowerCase().endsWith(".pdf")
+    ) {
+      textoExtraido = await lerTextoPDF(arquivo);
+    } else if (arquivo.type.startsWith("image/")) {
+      textoExtraido = await lerTextoImagem(arquivo);
+    } else {
+      continue;
+    }
+
+    textoExtraido = limparRuidoOCR(textoExtraido);
+
+    const nfs = extrairNFsDoTexto(textoExtraido, cliente);
+
+    nfs.forEach((nf) => {
+      resultado.push({
+        ordem: ordemGlobal++,
+        manifesto: nomeManifesto,
+        nf: nf
+      });
+    });
+  }
+
+  return resultado;
+}
   const resultado = [];
   let ordemGlobal = 1;
 
