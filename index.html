@@ -690,10 +690,9 @@ async function processarConferencia() {
 
         resolve(mapaEDI);
       } catch (erro) {
-        console.error("Erro interno ao ler Excel:", erro);
-        reject(new Error("Erro ao processar a planilha EDI."));
-      }
-    };
+  console.error("Erro interno ao ler Excel:", erro);
+  reject(new Error(`Erro ao ler a planilha EDI: ${erro.message}`));
+}
 
     leitor.onerror = function () {
       reject(new Error("Falha ao abrir a planilha EDI."));
