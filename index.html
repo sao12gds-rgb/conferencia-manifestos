@@ -393,7 +393,12 @@
       </div>
     </section>
   </div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+</script>
   <script>
     function testeBotaoGlobal() {
   alert("FUNÇÃO GLOBAL OK");
@@ -437,29 +442,39 @@
     // =========================
 async function processarConferencia() {
   try {
-    capturarArquivosTela();
-    validarEntrada();
-
     document.getElementById("analise").innerHTML = "Processando arquivos...";
 
-    estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
-    estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
-    estado.fisicoTotal = await lerCapaFisica(estado.capaFisica);
+    // capturar dados
+    estado.cliente = document.getElementById("cliente").value;
+    estado.manifestos = Array.from(document.getElementById("manifestos").files || []);
+    estado.planilhaEDI = document.getElementById("edi").files[0] || null;
+    estado.capaFisica = document.getElementById("capa").files[0] || null;
 
-    estado.resultadoFinal = compararManifestoComEDI(
-      estado.nfsManifesto,
-      estado.mapaEDI,
-      estado.cliente
-    );
+    // validações simples
+    if (!estado.cliente) {
+      throw new Error("Selecione o cliente.");
+    }
 
-    estado.totais = calcularTotais(
-      estado.resultadoFinal,
-      estado.fisicoTotal
-    );
+    if (!estado.manifestos.length) {
+      throw new Error("Envie pelo menos um manifesto.");
+    }
 
-    renderResultado();
+    if (!estado.planilhaEDI) {
+      throw new Error("Envie a planilha EDI.");
+    }
+
+    // =========================
+    // TESTE DIRETO DO EXCEL
+    // =========================
+    console.log("Lendo planilha...");
+    const mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
+    console.log("MAPA EDI:", mapaEDI);
+
+    document.getElementById("analise").innerHTML =
+      "Planilha lida com sucesso. Total NFs: " + Object.keys(mapaEDI).length;
+
   } catch (erro) {
-    exibirErro(erro.message || "Erro ao processar a conferência.");
+    exibirErro(erro.message);
   }
 }
     // =========================
