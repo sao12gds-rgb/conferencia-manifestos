@@ -435,61 +435,34 @@
     // =========================
     // PROCESSAMENTO PRINCIPAL
     // =========================
-    async function processarConferencia() {
-      try {
-        capturarArquivosTela();
-        validarEntrada();
+   async function processarConferencia() {
+  try {
+    document.getElementById("analise").innerHTML = "Processando arquivos...";
 
-        /*
-          ETAPA 1
-          AQUI ENTRA:
-          - leitura dos manifestos
-          - OCR / leitura PDF
-          - extração das NFs válidas
-        */
-        estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
+    capturarArquivosTela();
+    validarEntrada();
 
-        /*
-          ETAPA 2
-          AQUI ENTRA:
-          - leitura do Excel
-          - localizar coluna Numero
-          - montar mapa NF -> AWB
-        */
-        estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
+    estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
+    estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
+    estado.fisicoTotal = await lerCapaFisica(estado.capaFisica);
 
-        /*
-          ETAPA 3
-          AQUI ENTRA:
-          - leitura da capa física
-          - pode retornar null se vier em branco
-        */
-        estado.fisicoTotal = await lerCapaFisica(estado.capaFisica);
+    estado.resultadoFinal = compararManifestoComEDI(
+      estado.nfsManifesto,
+      estado.mapaEDI,
+      estado.cliente
+    );
 
-        /*
-          ETAPA 4
-          COMPARAÇÃO PRINCIPAL
-        */
-        estado.resultadoFinal = compararManifestoComEDI(
-          estado.nfsManifesto,
-          estado.mapaEDI,
-          estado.cliente
-        );
+    estado.totais = calcularTotais(
+      estado.resultadoFinal,
+      estado.fisicoTotal
+    );
 
-        /*
-          ETAPA 5
-          RESUMO
-        */
-        estado.totais = calcularTotais(
-          estado.resultadoFinal,
-          estado.fisicoTotal
-        );
-
-        renderResultado();
-      } catch (erro) {
-        exibirErro(erro.message || "Erro ao processar a conferência.");
-      }
-    }
+    renderResultado();
+  } catch (erro) {
+    console.error("Erro ao processar conferência:", erro);
+    exibirErro(erro.message || "Erro ao processar a conferência.");
+  }
+}
 
     // =========================
     // CAPTURA DE ENTRADA
@@ -983,12 +956,17 @@
     }
 
     function exibirErro(mensagem) {
-      document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagem}</div>`;
-      alert(mensagem);
+  document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagem}</div>`;
+  console.error(mensagem);
+  alert(mensagem);
+}
     }
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+</script>
   </script>
 </body>
 </html>
