@@ -309,7 +309,7 @@
 
     <!-- AÇÕES -->
     <section class="actions">
- <button class="btn btn-primary" id="btnProcessar" onclick="testeBotaoGlobal()">▶ PROCESSAR CONFERÊNCIA</button>
+ <button class="btn btn-primary" id="btnProcessar" onclick="processarConferencia()">▶ PROCESSAR CONFERÊNCIA</button>
       <button class="btn btn-success" id="btnExportar">↓ BAIXAR EXCEL</button>
       <button class="btn btn-secondary" id="btnLimpar">↻ LIMPAR</button>
     </section>
@@ -936,13 +936,548 @@ async function processarConferencia() {
   console.error(mensagem);
   alert(mensagem);
 }
-    }
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+ </div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script>
+<script>
   pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 </script>
-  </script>
+
+<script>
+function testeBotaoGlobal() {
+  alert("FUNÇÃO GLOBAL OK");
+  document.getElementById("analise").innerHTML = "FUNÇÃO GLOBAL OK";
+}
+
+const estado = {
+  cliente: "",
+  manifestos: [],
+  planilhaEDI: null,
+  capaFisica: null,
+  nfsManifesto: [],
+  mapaEDI: {},
+  resultadoFinal: [],
+  fisicoTotal: null,
+  totais: {
+    manifesto: 0,
+    emitido: 0,
+    fisico: 0,
+    divergencias: 0,
+    acuracidade: 0
+  }
+};
+
+window.onload = function () {
+  renderTelaInicial();
+
+  document.getElementById("btnExportar").onclick = exportarExcel;
+  document.getElementById("btnLimpar").onclick = limparSistema;
+  document.getElementById("btnBuscar").onclick = buscarNaTabela;
+  document.getElementById("btnLimparBusca").onclick = limparBusca;
+};
+
+async function processarConferencia() {
+  try {
+    alert("PROCESSAR OK");
+
+    capturarArquivosTela();
+    validarEntrada();
+
+    document.getElementById("analise").innerHTML = "Processando arquivos...";
+
+    estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
+    estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
+    estado.fisicoTotal = await lerCapaFisica(estado.capaFisica);
+
+    estado.resultadoFinal = compararManifestoComEDI(
+      estado.nfsManifesto,
+      estado.mapaEDI,
+      estado.cliente
+    );
+
+    estado.totais = calcularTotais(
+      estado.resultadoFinal,
+      estado.fisicoTotal
+    );
+
+    renderResultado();
+  } catch (erro) {
+    exibirErro(erro.message || "Erro ao processar a conferência.");
+  }
+}
+
+function capturarArquivosTela() {
+  estado.cliente = document.getElementById("cliente").value;
+  estado.manifestos = Array.from(document.getElementById("manifestos").files || []);
+  estado.planilhaEDI = document.getElementById("edi").files[0] || null;
+  estado.capaFisica = document.getElementById("capa").files[0] || null;
+}
+
+function validarEntrada() {
+  if (!estado.cliente) {
+    throw new Error("Selecione o cliente antes de processar.");
+  }
+
+  if (!estado.manifestos.length) {
+    throw new Error("Envie pelo menos um manifesto.");
+  }
+
+  if (!estado.planilhaEDI) {
+    throw new Error("Envie a planilha EDI para conferência.");
+  }
+}
+
+async function lerManifestos(arquivos, cliente) {
+  const resultado = [];
+  let ordemGlobal = 1;
+
+  for (const arquivo of arquivos) {
+    const nomeManifesto = arquivo.name;
+    let textoExtraido = "";
+
+    if (
+      arquivo.type === "application/pdf" ||
+      nomeManifesto.toLowerCase().endsWith(".pdf")
+    ) {
+      textoExtraido = await lerTextoPDF(arquivo);
+    } else if (arquivo.type.startsWith("image/")) {
+      textoExtraido = await lerTextoImagem(arquivo);
+    } else {
+      continue;
+    }
+
+    textoExtraido = limparRuidoOCR(textoExtraido);
+
+    const nfs = extrairNFsDoTexto(textoExtraido, cliente);
+
+    nfs.forEach((nf) => {
+      resultado.push({
+        ordem: ordemGlobal++,
+        manifesto: nomeManifesto,
+        nf: nf
+      });
+    });
+  }
+
+  return resultado;
+}
+
+async function lerTextoPDF(arquivo) {
+  const arrayBuffer = await arquivo.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+  let textoCompleto = "";
+
+  for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
+    const page = await pdf.getPage(pagina);
+    const textContent = await page.getTextContent();
+    const textoPagina = textContent.items.map((item) => item.str).join(" ");
+    textoCompleto += "\n" + textoPagina;
+  }
+
+  return textoCompleto;
+}
+
+async function lerTextoImagem(arquivo) {
+  const { data } = await Tesseract.recognize(arquivo, "por");
+  return data.text || "";
+}
+
+function extrairNFsDoTexto(texto, cliente) {
+  const textoLimpo = limparRuidoOCR(texto || "");
+  const linhas = textoLimpo.split(/\n+/);
+  const nfs = [];
+
+  linhas.forEach((linha) => {
+    const numeros = linha.match(/\d+/g) || [];
+
+    numeros.forEach((numero) => {
+      const nfTratada = normalizarNF(numero, cliente);
+      if (nfTratada) {
+        nfs.push(nfTratada);
+      }
+    });
+  });
+
+  return nfs;
+}
+
+async function lerPlanilhaEDI(arquivo, cliente) {
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader();
+
+    leitor.onload = function (evento) {
+      try {
+        const dados = new Uint8Array(evento.target.result);
+        const workbook = XLSX.read(dados, { type: "array" });
+        const primeiraAba = workbook.Sheets[workbook.SheetNames[0]];
+
+        const linhas = XLSX.utils.sheet_to_json(primeiraAba, {
+          header: 1,
+          defval: "",
+          raw: false
+        });
+
+        if (!linhas.length) {
+          resolve({});
+          return;
+        }
+
+        const cabecalhos = linhas[0].map((col) => String(col || "").trim());
+
+        const normalizarCabecalho = (texto) => {
+          return String(texto || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toUpperCase()
+            .trim();
+        };
+
+        const cabecalhosNormalizados = cabecalhos.map(normalizarCabecalho);
+
+        const indiceNF = cabecalhosNormalizados.findIndex((col) =>
+          ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
+        );
+
+        const indiceAWB = cabecalhosNormalizados.findIndex((col) =>
+          col.includes("AWB")
+        );
+
+        if (indiceNF === -1) {
+          reject(
+            new Error(
+              'Coluna de NF não encontrada. Para Riachuelo e 3 Corações, a coluna deve estar como "Numero".'
+            )
+          );
+          return;
+        }
+
+        if (indiceAWB === -1) {
+          reject(new Error("Coluna de AWB não encontrada na planilha."));
+          return;
+        }
+
+        const mapaEDI = {};
+
+        for (let i = 1; i < linhas.length; i++) {
+          const linha = linhas[i];
+
+          let nf = normalizarNF(linha[indiceNF], cliente);
+          let awb = normalizarNumero(linha[indiceAWB]);
+
+          if (!nf) continue;
+          if (!awb) continue;
+
+          if (!mapaEDI[nf]) {
+            mapaEDI[nf] = {
+              emitido: true,
+              awbs: []
+            };
+          }
+
+          if (!mapaEDI[nf].awbs.includes(awb)) {
+            mapaEDI[nf].awbs.push(awb);
+          }
+        }
+
+        Object.keys(mapaEDI).forEach((nf) => {
+          mapaEDI[nf].awbFormatada = mapaEDI[nf].awbs.join(" / ");
+        });
+
+        resolve(mapaEDI);
+      } catch (erro) {
+        reject(new Error("Erro ao ler a planilha EDI."));
+      }
+    };
+
+    leitor.onerror = function () {
+      reject(new Error("Falha ao abrir a planilha EDI."));
+    };
+
+    leitor.readAsArrayBuffer(arquivo);
+  });
+}
+
+async function lerCapaFisica(arquivo) {
+  if (!arquivo) return null;
+  return null;
+}
+
+function compararManifestoComEDI(nfsManifesto, mapaEDI, cliente) {
+  const resultado = [];
+
+  nfsManifesto.forEach((item, index) => {
+    const registroEDI = mapaEDI[item.nf];
+
+    let emitido = "NÃO";
+    let awb = "";
+    let status = "COLETADA E NÃO EMITIDA";
+    let observacao = "";
+
+    if (registroEDI) {
+      emitido = "SIM";
+      awb = registroEDI.awbFormatada || "";
+      status = "OK";
+    }
+
+    resultado.push({
+      ordem: index + 1,
+      manifesto: item.manifesto,
+      nf: item.nf,
+      emitido,
+      awb,
+      status,
+      observacao
+    });
+  });
+
+  return resultado;
+}
+
+function calcularTotais(resultado, fisicoTotal) {
+  const totalManifesto = resultado.length;
+  const totalEmitido = resultado.filter((item) => item.emitido === "SIM").length;
+  const totalDivergencias = resultado.filter((item) => item.status !== "OK").length;
+
+  let acuracidade = 0;
+  if (totalManifesto > 0) {
+    acuracidade = ((totalEmitido / totalManifesto) * 100).toFixed(2);
+  }
+
+  return {
+    manifesto: totalManifesto,
+    emitido: totalEmitido,
+    fisico: fisicoTotal ?? 0,
+    divergencias: totalDivergencias,
+    acuracidade
+  };
+}
+
+function renderTelaInicial() {
+  atualizarCards({
+    manifesto: 0,
+    emitido: 0,
+    fisico: 0,
+    divergencias: 0,
+    acuracidade: 0
+  });
+
+  document.getElementById("resumoGeral").innerHTML =
+    "Nenhum processamento realizado até o momento.";
+
+  document.getElementById("analise").innerHTML =
+    "Sem análise disponível.";
+
+  document.getElementById("tabelaResultado").innerHTML = `
+    <tr>
+      <td colspan="7" class="muted">Nenhum dado processado.</td>
+    </tr>
+  `;
+}
+
+function renderResultado() {
+  atualizarCards(estado.totais);
+  renderResumoGeral();
+  renderAnalise();
+  renderTabela(estado.resultadoFinal);
+}
+
+function atualizarCards(totais) {
+  document.getElementById("cardManifesto").textContent = totais.manifesto;
+  document.getElementById("cardEmitido").textContent = totais.emitido;
+  document.getElementById("cardFisico").textContent = totais.fisico;
+  document.getElementById("cardDivergencias").textContent = totais.divergencias;
+  document.getElementById("cardAcuracidade").textContent = `${totais.acuracidade}%`;
+}
+
+function renderResumoGeral() {
+  const faltantes = estado.resultadoFinal.filter(
+    (item) => item.status === "COLETADA E NÃO EMITIDA"
+  ).length;
+
+  const quantidadeManifestos = estado.manifestos.length;
+
+  document.getElementById("resumoGeral").innerHTML = `
+    <strong>Cliente:</strong> ${formatarCliente(estado.cliente)}<br>
+    <strong>Manifestos processados:</strong> ${quantidadeManifestos}<br>
+    <strong>Total de NFs no manifesto:</strong> ${estado.totais.manifesto}<br>
+    <strong>Total emitido no Excel:</strong> ${estado.totais.emitido}<br>
+    <strong>Total físico:</strong> ${estado.fisicoTotal ?? "Não identificado"}<br>
+    <strong>Faltante do manifesto não emitido:</strong> ${faltantes}<br>
+    <strong>Percentual de acuracidade:</strong> ${estado.totais.acuracidade}%
+  `;
+}
+
+function renderAnalise() {
+  const faltantes = estado.resultadoFinal.filter(
+    (item) => item.status === "COLETADA E NÃO EMITIDA"
+  );
+
+  const mensagens = [];
+
+  if (!estado.capaFisica) {
+    mensagens.push("Capa física não enviada.");
+  } else if (estado.fisicoTotal === null) {
+    mensagens.push("Capa física enviada, porém sem quantidade identificada ou em branco.");
+  }
+
+  if (faltantes.length) {
+    mensagens.push(`Existem ${faltantes.length} NF(s) com status COLETADA E NÃO EMITIDA.`);
+  }
+
+  if (!mensagens.length) {
+    mensagens.push("Conferência concluída sem alerta estrutural identificado.");
+  }
+
+  document.getElementById("analise").innerHTML = mensagens
+    .map((texto) => `<div>• ${texto}</div>`)
+    .join("");
+}
+
+function renderTabela(dados) {
+  const tbody = document.getElementById("tabelaResultado");
+
+  if (!dados.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="muted">Nenhum dado processado.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = dados
+    .map(
+      (item) => `
+      <tr>
+        <td>${item.ordem}</td>
+        <td>${item.manifesto}</td>
+        <td>${item.nf}</td>
+        <td>${item.emitido}</td>
+        <td>${item.awb || "-"}</td>
+        <td class="${classeStatus(item.status)}">${item.status}</td>
+        <td>${item.observacao || "-"}</td>
+      </tr>
+    `
+    )
+    .join("");
+}
+
+function classeStatus(status) {
+  if (status === "OK") return "status-ok";
+  if (status === "COLETADA E NÃO EMITIDA") return "status-pendente";
+  return "status-alerta";
+}
+
+function buscarNaTabela() {
+  const termo = document.getElementById("campoBusca").value.trim().toUpperCase();
+
+  if (!termo) {
+    renderTabela(estado.resultadoFinal);
+    return;
+  }
+
+  const filtrado = estado.resultadoFinal.filter(
+    (item) =>
+      String(item.nf).toUpperCase().includes(termo) ||
+      String(item.awb).toUpperCase().includes(termo)
+  );
+
+  renderTabela(filtrado);
+}
+
+function limparBusca() {
+  document.getElementById("campoBusca").value = "";
+  renderTabela(estado.resultadoFinal);
+}
+
+function exportarExcel() {
+  if (!estado.resultadoFinal.length) {
+    alert("Não há resultado para exportar.");
+    return;
+  }
+
+  alert("Estrutura pronta. Falta conectar a exportação real do Excel.");
+}
+
+function limparSistema() {
+  document.getElementById("cliente").value = "";
+  document.getElementById("manifestos").value = "";
+  document.getElementById("edi").value = "";
+  document.getElementById("capa").value = "";
+  document.getElementById("campoBusca").value = "";
+
+  estado.cliente = "";
+  estado.manifestos = [];
+  estado.planilhaEDI = null;
+  estado.capaFisica = null;
+  estado.nfsManifesto = [];
+  estado.mapaEDI = {};
+  estado.resultadoFinal = [];
+  estado.fisicoTotal = null;
+  estado.totais = {
+    manifesto: 0,
+    emitido: 0,
+    fisico: 0,
+    divergencias: 0,
+    acuracidade: 0
+  };
+
+  renderTelaInicial();
+}
+
+function formatarCliente(cliente) {
+  const mapa = {
+    riachuelo: "Riachuelo",
+    "3coracoes": "3 Corações",
+    stone: "Stone",
+    generico: "Genérico"
+  };
+
+  return mapa[cliente] || cliente;
+}
+
+function normalizarNumero(valor) {
+  return String(valor || "").replace(/\D/g, "");
+}
+
+function limparRuidoOCR(texto) {
+  if (!texto) return "";
+
+  return texto
+    .replace(/CANCELAO/gi, "")
+    .replace(/CANCELADA/gi, "")
+    .replace(/CANCEL/gi, "")
+    .replace(/CAMSCANNER/gi, "")
+    .trim();
+}
+
+function normalizarNF(nf, cliente) {
+  let valor = normalizarNumero(nf);
+
+  if (!valor) return "";
+
+  if (cliente === "riachuelo") {
+    if (!(valor.length === 8 || valor.length === 9)) return "";
+  }
+
+  if (cliente === "3coracoes") {
+    if (!valor.startsWith("0")) {
+      valor = valor.padStart(9, "0");
+    }
+  }
+
+  return valor;
+}
+
+function exibirErro(mensagem) {
+  document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagem}</div>`;
+  console.error(mensagem);
+  alert(mensagem);
+}
+</script>
+
 </body>
 </html>
