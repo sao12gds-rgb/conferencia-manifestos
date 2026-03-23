@@ -558,26 +558,97 @@
     // LEITURA DA PLANILHA EDI
     // =========================
     async function lerPlanilhaEDI(arquivo, cliente) {
-      /*
-        ESTRUTURA ESPERADA:
-        {
-          "12345678": {
-            emitido: true,
-            awbs: ["57712345", "57767890"],
-            awbFormatada: "57712345 / 57767890"
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader();
+
+    leitor.onload = function(evento) {
+      try {
+        const dados = new Uint8Array(evento.target.result);
+        const workbook = XLSX.read(dados, { type: "array" });
+        const primeiraAba = workbook.Sheets[workbook.SheetNames[0]];
+
+        const linhas = XLSX.utils.sheet_to_json(primeiraAba, {
+          header: 1,
+          defval: "",
+          raw: false
+        });
+
+        if (!linhas.length) {
+          resolve({});
+          return;
+        }
+
+        const cabecalhos = linhas[0].map(col => String(col || "").trim());
+
+        const normalizarCabecalho = (texto) => {
+          return String(texto || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toUpperCase()
+            .trim();
+        };
+
+        const cabecalhosNormalizados = cabecalhos.map(normalizarCabecalho);
+
+        const indiceNF = cabecalhosNormalizados.findIndex(col =>
+          ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
+        );
+
+        const indiceAWB = cabecalhosNormalizados.findIndex(col =>
+          col.includes("AWB")
+        );
+
+        if (indiceNF === -1) {
+          reject(new Error('Coluna de NF não encontrada. Para Riachuelo e 3 Corações, a coluna deve estar como "Numero".'));
+          return;
+        }
+
+        if (indiceAWB === -1) {
+          reject(new Error("Coluna de AWB não encontrada na planilha."));
+          return;
+        }
+
+        const mapaEDI = {};
+
+        for (let i = 1; i < linhas.length; i++) {
+          const linha = linhas[i];
+
+          let nf = normalizarNF(linha[indiceNF], cliente);
+          let awb = normalizarNumero(linha[indiceAWB]);
+
+          if (!nf) continue;
+          if (!awb) continue;
+
+          if (!mapaEDI[nf]) {
+            mapaEDI[nf] = {
+              emitido: true,
+              awbs: []
+            };
+          }
+
+          if (!mapaEDI[nf].awbs.includes(awb)) {
+            mapaEDI[nf].awbs.push(awb);
           }
         }
 
-        REGRAS:
-        - Riachuelo e 3 Corações usam coluna Numero
-        - Excel é apenas consulta
-        - se houver mais de 1 AWB para mesma NF, juntar com /
-      */
+        Object.keys(mapaEDI).forEach(nf => {
+          mapaEDI[nf].awbFormatada = mapaEDI[nf].awbs.join(" / ");
+        });
 
-      // BASE TEMPORÁRIA PARA ESTRUTURA
-      return {};
-    }
+        resolve(mapaEDI);
 
+      } catch (erro) {
+        reject(new Error("Erro ao ler a planilha EDI."));
+      }
+    };
+
+    leitor.onerror = function() {
+      reject(new Error("Falha ao abrir a planilha EDI."));
+    };
+
+    leitor.readAsArrayBuffer(arquivo);
+  });
+}
     // =========================
     // LEITURA DA CAPA FÍSICA
     // =========================
@@ -894,6 +965,7 @@
       document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagem}</div>`;
       alert(mensagem);
     }
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   </script>
 </body>
 </html>
