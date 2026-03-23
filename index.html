@@ -519,15 +519,36 @@
     // LEITURA DOS MANIFESTOS
     // =========================
     async function lerManifestos(arquivos, cliente) {
-      /*
-        ESTRUTURA ESPERADA DE RETORNO:
-        [
-          {
-            ordem: 1,
-            manifesto: "manifesto_001.pdf",
-            nf: "12345678"
-          }
-        ]
+  const resultado = [];
+  let ordemGlobal = 1;
+
+  for (const arquivo of arquivos) {
+    const nomeManifesto = arquivo.name;
+    let textoExtraido = "";
+
+    if (arquivo.type === "application/pdf" || nomeManifesto.toLowerCase().endsWith(".pdf")) {
+      textoExtraido = await lerTextoPDF(arquivo);
+    } else if (arquivo.type.startsWith("image/")) {
+      textoExtraido = await lerTextoImagem(arquivo);
+    } else {
+      continue;
+    }
+
+    textoExtraido = limparRuidoOCR(textoExtraido);
+
+    const nfs = extrairNFsDoTexto(textoExtraido, cliente);
+
+    nfs.forEach(nf => {
+      resultado.push({
+        ordem: ordemGlobal++,
+        manifesto: nomeManifesto,
+        nf: nf
+      });
+    });
+  }
+
+  return resultado;
+}
 
         REGRAS:
         - considerar apenas NF do manifesto
@@ -669,35 +690,35 @@
     // COMPARAÇÃO PRINCIPAL
     // =========================
     function compararManifestoComEDI(nfsManifesto, mapaEDI, cliente) {
-      const resultado = [];
+  const resultado = [];
 
-      nfsManifesto.forEach((item, index) => {
-        const registroEDI = mapaEDI[item.nf];
+  nfsManifesto.forEach((item, index) => {
+    const registroEDI = mapaEDI[item.nf];
 
-        let emitido = "NÃO";
-        let awb = "";
-        let status = "COLETADA E NÃO EMITIDA";
-        let observacao = "";
+    let emitido = "NÃO";
+    let awb = "";
+    let status = "COLETADA E NÃO EMITIDA";
+    let observacao = "";
 
-        if (registroEDI) {
-          emitido = "SIM";
-          awb = registroEDI.awbFormatada || "";
-          status = "OK";
-        }
-
-        resultado.push({
-          ordem: index + 1,
-          manifesto: item.manifesto,
-          nf: item.nf,
-          emitido,
-          awb,
-          status,
-          observacao
-        });
-      });
-
-      return resultado;
+    if (registroEDI) {
+      emitido = "SIM";
+      awb = registroEDI.awbFormatada || "";
+      status = "OK";
     }
+
+    resultado.push({
+      ordem: index + 1,
+      manifesto: item.manifesto,
+      nf: item.nf,
+      emitido,
+      awb,
+      status,
+      observacao
+    });
+  });
+
+  return resultado;
+}
 
     // =========================
     // TOTAIS E RESUMO
@@ -966,6 +987,8 @@
       alert(mensagem);
     }
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   </script>
 </body>
 </html>
