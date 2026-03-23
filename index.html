@@ -431,37 +431,10 @@
     // =========================
     // PROCESSAMENTO PRINCIPAL
     // =========================
- async function processarConferencia() {
-  try {
-    alert("Botão acionado com sucesso.");
-
-    document.getElementById("analise").innerHTML = "Processando arquivos...";
-
-    capturarArquivosTela();
-    validarEntrada();
-
-    estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
-    estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
-    estado.fisicoTotal = await lerCapaFisica(estado.capaFisica);
-
-    estado.resultadoFinal = compararManifestoComEDI(
-      estado.nfsManifesto,
-      estado.mapaEDI,
-      estado.cliente
-    );
-
-    estado.totais = calcularTotais(
-      estado.resultadoFinal,
-      estado.fisicoTotal
-    );
-
-    renderResultado();
-  } catch (erro) {
-    const mensagem = erro?.message || "Erro ao processar a conferência.";
-    document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagem}</div>`;
-    alert(mensagem);
-    console.error(erro);
-  }
+async function processarConferencia() {
+  alert("ENTROU NA FUNÇÃO");
+  document.getElementById("analise").innerHTML = "Função acionada com sucesso.";
+  return;
 }
     // =========================
     // CAPTURA DE ENTRADA
