@@ -484,22 +484,45 @@
       return resultado;
     }
 
-    async function lerTextoPDF(arquivo) {
-      const arrayBuffer = await arquivo.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  async function lerTextoPDF(arquivo) {
+  const arrayBuffer = await arquivo.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-      let textoCompleto = "";
+  let textoCompleto = "";
 
-      for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
-        const page = await pdf.getPage(pagina);
-        const textContent = await page.getTextContent();
-        const textoPagina = textContent.items.map((item) => item.str).join(" ");
-        textoCompleto += "\n" + textoPagina;
-      }
+  for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
+    const page = await pdf.getPage(pagina);
 
-      return textoCompleto;
+    // tenta primeiro texto nativo do PDF
+    const textContent = await page.getTextContent();
+    const textoNativo = textContent.items.map((item) => item.str).join(" ").trim();
+
+    if (textoNativo) {
+      textoCompleto += "\n" + textoNativo;
+      continue;
     }
 
+    // se não houver texto, usa OCR na imagem da página
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({
+      canvasContext: context,
+      viewport: viewport
+    }).promise;
+
+    const { data } = await Tesseract.recognize(canvas, "por");
+    const textoOCR = data.text || "";
+
+    textoCompleto += "\n" + textoOCR;
+  }
+
+  return textoCompleto;
+}
     async function lerTextoImagem(arquivo) {
       const { data } = await Tesseract.recognize(arquivo, "por");
       return data.text || "";
@@ -794,7 +817,7 @@
       );
 
       const mensagens = [];
-
+mensagens.push(`Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`);
       if (!estado.capaFisica) {
         mensagens.push("Capa física não enviada.");
       } else if (estado.fisicoTotal === null) {
