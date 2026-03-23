@@ -309,7 +309,7 @@
 
     <!-- AÇÕES -->
     <section class="actions">
-      <button class="btn btn-primary" id="btnProcessar">▶ PROCESSAR CONFERÊNCIA</button>
+    <button class="btn btn-primary" id="btnProcessar" onclick="processarConferencia()">▶ PROCESSAR CONFERÊNCIA</button>
       <button class="btn btn-success" id="btnExportar">↓ BAIXAR EXCEL</button>
       <button class="btn btn-secondary" id="btnLimpar">↻ LIMPAR</button>
     </section>
@@ -419,24 +419,22 @@
     // =========================
     // INICIALIZAÇÃO
     // =========================
-    document.addEventListener("DOMContentLoaded", () => {
-      bindEventos();
-      renderTelaInicial();
-    });
+   window.onload = function () {
+  renderTelaInicial();
 
-    function bindEventos() {
-      document.getElementById("btnProcessar").addEventListener("click", processarConferencia);
-      document.getElementById("btnExportar").addEventListener("click", exportarExcel);
-      document.getElementById("btnLimpar").addEventListener("click", limparSistema);
-      document.getElementById("btnBuscar").addEventListener("click", buscarNaTabela);
-      document.getElementById("btnLimparBusca").addEventListener("click", limparBusca);
-    }
+  document.getElementById("btnExportar").onclick = exportarExcel;
+  document.getElementById("btnLimpar").onclick = limparSistema;
+  document.getElementById("btnBuscar").onclick = buscarNaTabela;
+  document.getElementById("btnLimparBusca").onclick = limparBusca;
+};
 
     // =========================
     // PROCESSAMENTO PRINCIPAL
     // =========================
-   async function processarConferencia() {
+  async function processarConferencia() {
   try {
+    alert("Botão acionado com sucesso.");
+
     document.getElementById("analise").innerHTML = "Processando arquivos...";
 
     capturarArquivosTela();
@@ -459,11 +457,12 @@
 
     renderResultado();
   } catch (erro) {
-    console.error("Erro ao processar conferência:", erro);
-    exibirErro(erro.message || "Erro ao processar a conferência.");
+    const mensagem = erro?.message || "Erro ao processar a conferência.";
+    document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagem}</div>`;
+    alert(mensagem);
+    console.error(erro);
   }
 }
-
     // =========================
     // CAPTURA DE ENTRADA
     // =========================
