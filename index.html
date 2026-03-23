@@ -309,7 +309,7 @@
 
     <!-- AÇÕES -->
     <section class="actions">
-   <button class="btn btn-primary" id="btnProcessar" onclick="alert('teste clique')">▶ PROCESSAR CONFERÊNCIA</button>
+   <button class="btn btn-primary" id="btnProcessar" onclick="processarConferencia()">▶ PROCESSAR CONFERÊNCIA</button>
       <button class="btn btn-success" id="btnExportar">↓ BAIXAR EXCEL</button>
       <button class="btn btn-secondary" id="btnLimpar">↻ LIMPAR</button>
     </section>
@@ -431,7 +431,7 @@
     // =========================
     // PROCESSAMENTO PRINCIPAL
     // =========================
-  async function processarConferencia() {
+ async function processarConferencia() {
   try {
     alert("Botão acionado com sucesso.");
 
