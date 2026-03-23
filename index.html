@@ -531,10 +531,16 @@ async function processarConferencia() {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader();
 
-    leitor.onload = function(evento) {
+    leitor.onload = function (evento) {
       try {
         const dados = new Uint8Array(evento.target.result);
         const workbook = XLSX.read(dados, { type: "array" });
+
+        if (!workbook.SheetNames || !workbook.SheetNames.length) {
+          reject(new Error("A planilha está vazia ou sem abas."));
+          return;
+        }
+
         const primeiraAba = workbook.Sheets[workbook.SheetNames[0]];
 
         const linhas = XLSX.utils.sheet_to_json(primeiraAba, {
@@ -544,37 +550,52 @@ async function processarConferencia() {
         });
 
         if (!linhas.length) {
-          resolve({});
+          reject(new Error("A planilha não contém dados."));
           return;
         }
 
-        const cabecalhos = linhas[0].map(col => String(col || "").trim());
+        const cabecalhos = linhas[0].map((col) => String(col || "").trim());
 
         const normalizarCabecalho = (texto) => {
           return String(texto || "")
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^A-Z0-9 ]/gi, "")
             .toUpperCase()
             .trim();
         };
 
         const cabecalhosNormalizados = cabecalhos.map(normalizarCabecalho);
 
-        const indiceNF = cabecalhosNormalizados.findIndex(col =>
+        const indiceNF = cabecalhosNormalizados.findIndex((col) =>
           ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
         );
 
-        const indiceAWB = cabecalhosNormalizados.findIndex(col =>
-          col.includes("AWB")
+        const indiceAWB = cabecalhosNormalizados.findIndex((col) =>
+          [
+            "AWB",
+            "N AWB",
+            "NO AWB",
+            "NUMERO AWB",
+            "NUMEROAWB"
+          ].includes(col) || col.includes("AWB")
         );
 
         if (indiceNF === -1) {
-          reject(new Error('Coluna de NF não encontrada. Para Riachuelo e 3 Corações, a coluna deve estar como "Numero".'));
+          reject(
+            new Error(
+              `Coluna de NF não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}`
+            )
+          );
           return;
         }
 
         if (indiceAWB === -1) {
-          reject(new Error("Coluna de AWB não encontrada na planilha."));
+          reject(
+            new Error(
+              `Coluna de AWB não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}`
+            )
+          );
           return;
         }
 
@@ -601,18 +622,18 @@ async function processarConferencia() {
           }
         }
 
-        Object.keys(mapaEDI).forEach(nf => {
+        Object.keys(mapaEDI).forEach((nf) => {
           mapaEDI[nf].awbFormatada = mapaEDI[nf].awbs.join(" / ");
         });
 
         resolve(mapaEDI);
-
       } catch (erro) {
+        console.error("Erro interno ao ler Excel:", erro);
         reject(new Error("Erro ao ler a planilha EDI."));
       }
     };
 
-    leitor.onerror = function() {
+    leitor.onerror = function () {
       reject(new Error("Falha ao abrir a planilha EDI."));
     };
 
