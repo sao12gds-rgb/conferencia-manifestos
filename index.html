@@ -296,7 +296,7 @@
 
       <div class="card">
         <label for="edi">Upload Planilha EDI (Excel)</label>
-        <input type="file" id="edi" accept=".xls,.xlsx,.csv" />
+      <input type="file" id="edi" accept=".xls,.xlsx,.csv" />
         <small class="muted">Para Riachuelo e 3 Corações, a coluna NF é “Numero”.</small>
       </div>
 
@@ -1029,9 +1029,10 @@ async function processarConferencia() {
     }
 
 function exibirErro(mensagem) {
-  document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagem}</div>`;
-  console.error("ERRO DO SISTEMA:", mensagem);
-  alert(mensagem);
+  const mensagemFinal = `${mensagem} Se o arquivo estiver em .xls, salve como .xlsx e tente novamente.`;
+  document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagemFinal}</div>`;
+  alert(mensagemFinal);
+  console.error(mensagemFinal);
 }
  </div>
 
