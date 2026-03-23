@@ -1,614 +1,899 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Conferência de Manifestos</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conferência de Manifestos</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
 
-<style>
-*{box-sizing:border-box;}
-body{
-  font-family:Arial,sans-serif;
-  background:#eef1f5;
-  margin:0;
-  padding:20px;
-}
-.container{
-  max-width:960px;
-  margin:auto;
-  background:white;
-  padding:30px;
-  border-radius:10px;
-  box-shadow:0 2px 12px rgba(0,0,0,0.08);
-}
-.logo{height:40px;}
-h1{color:#1e4f91;margin:6px 0 2px 0;}
-.subtitle{color:#666;margin-bottom:20px;font-size:14px;}
-.uploads{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
-.box{
-  background:#f3f4f7;
-  padding:15px;
-  border-radius:8px;
-  flex:1;
-  min-width:180px;
-}
-.box b{display:block;margin-bottom:6px;font-size:13px;}
-button{
-  border:none;
-  padding:10px 18px;
-  border-radius:6px;
-  cursor:pointer;
-  font-size:14px;
-  font-weight:bold;
-  margin-right:8px;
-  margin-bottom:8px;
-}
-.process{background:#1e73be;color:white;}
-.process:hover{background:#155fa0;}
-.excel{background:#2e9f4b;color:white;}
-.excel:hover{background:#25803c;}
-.clear{background:#7a8798;color:white;}
-.clear:hover{background:#5f6b78;}
-.counts{display:flex;gap:16px;margin:15px 0;flex-wrap:wrap;}
-.count{
-  background:#f3f4f7;
-  padding:12px 16px;
-  border-radius:8px;
-  text-align:center;
-  min-width:90px;
-  font-size:13px;
-}
-.count b{display:block;font-size:22px;color:#1e4f91;}
-table{width:100%;border-collapse:collapse;font-size:13px;}
-thead{background:#1e4f91;color:white;}
-td,th{padding:8px 10px;text-align:left;border-bottom:1px solid #e4e8ee;}
-tbody tr:hover{background:#f0f4fb;}
-.summary-box{
-  background:#f3f4f7;
-  padding:14px;
-  border-radius:8px;
-  margin:10px 0;
-  line-height:1.8;
-  font-size:14px;
-}
-.section-title{
-  font-weight:bold;
-  margin:14px 0 6px 0;
-  color:#1e4f91;
-  font-size:15px;
-}
-.status-ok{color:#2e7d32;font-weight:bold;}
-.status-warn{color:#c62828;font-weight:bold;}
-.search{margin:12px 0;}
-select,input[type="text"]{
-  padding:8px 10px;
-  border:1px solid #bfc7d1;
-  border-radius:6px;
-  font-size:13px;
-}
-input[type="text"]{width:300px;}
+    body {
+      background: #f3f4f6;
+      color: #1f2937;
+      padding: 24px;
+    }
 
-/* Barra de progresso */
-#progressBar{
-  display:none;
-  margin:12px 0;
-}
-#progressBar .bar-track{
-  background:#dde3ea;
-  border-radius:6px;
-  height:14px;
-  overflow:hidden;
-}
-#progressBar .bar-fill{
-  background:#1e73be;
-  height:100%;
-  width:0%;
-  transition:width 0.2s;
-  border-radius:6px;
-}
-#progressBar .bar-label{
-  font-size:12px;
-  color:#555;
-  margin-top:4px;
-}
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
 
-/* Status */
-#status{
-  font-size:13px;
-  color:#444;
-  margin:8px 0;
-  min-height:20px;
-}
+    .header {
+      margin-bottom: 28px;
+    }
 
-/* Tabela status cores */
-.st-ok{color:#2e7d32;font-weight:bold;}
-.st-nao{color:#c62828;font-weight:bold;}
-.st-dup{color:#e65100;font-weight:bold;}
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+      color: #0f4c9a;
+      margin-bottom: 8px;
+    }
 
-/* Tooltip debug */
-.debug-info{font-size:11px;color:#888;margin-top:4px;white-space:pre-wrap;}
-</style>
+    .title {
+      font-size: 44px;
+      font-weight: 700;
+      color: #17488c;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: #4b5563;
+    }
+
+    .grid-inputs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-top: 28px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: #f3f4f6;
+      border-radius: 14px;
+      padding: 18px;
+      min-height: 120px;
+    }
+
+    .card label {
+      display: block;
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #111827;
+    }
+
+    .card select,
+    .card input[type="file"],
+    .search-box input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: #ffffff;
+      font-size: 15px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-primary {
+      background: #1f6fbe;
+      color: #ffffff;
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: #ffffff;
+    }
+
+    .btn-secondary {
+      background: #7b8794;
+      color: #ffffff;
+    }
+
+    .btn:hover {
+      opacity: 0.92;
+    }
+
+    .cards-resumo {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .mini-card {
+      background: #f3f4f6;
+      border-radius: 14px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .mini-card .label {
+      font-size: 15px;
+      margin-bottom: 8px;
+      color: #374151;
+    }
+
+    .mini-card .value {
+      font-size: 34px;
+      font-weight: 700;
+      color: #17488c;
+    }
+
+    .mini-card .value.red {
+      color: #c62828;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section h2 {
+      font-size: 28px;
+      color: #17488c;
+      margin-bottom: 14px;
+    }
+
+    .box {
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 68px;
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .search-box {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+    }
+
+    thead {
+      background: #17488c;
+      color: #ffffff;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+      vertical-align: top;
+    }
+
+    .status-ok {
+      color: #1f7a1f;
+      font-weight: 700;
+    }
+
+    .status-pendente {
+      color: #b91c1c;
+      font-weight: 700;
+    }
+
+    .status-alerta {
+      color: #b45309;
+      font-weight: 700;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #e5eefb;
+      color: #17488c;
+    }
+
+    .muted {
+      color: #6b7280;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 1100px) {
+      .grid-inputs,
+      .cards-resumo {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .grid-inputs,
+      .cards-resumo,
+      .search-box {
+        grid-template-columns: 1fr;
+      }
+
+      .title {
+        font-size: 32px;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
-
 <body>
-<div class="container">
+  <div class="container">
 
-  <img src="logo-azulcargo.png" class="logo" onerror="this.style.display='none'">
-  <h1>Conferência de Manifestos</h1>
-  <div class="subtitle">Manifesto PDF/Imagem + EDI Excel + Capa / Conferência Física</div>
+    <!-- CABEÇALHO -->
+    <header class="header">
+      <div class="logo">Azul Cargo Express</div>
+      <h1 class="title">Conferência de Manifestos</h1>
+      <p class="subtitle">
+        Manifesto PDF/Imagem + EDI Excel + Capa / Conferência Física
+      </p>
+    </header>
 
-  <div class="uploads">
-    <div class="box">
-      <b>Cliente</b>
-      <select id="cliente">
-        <option value="riachuelo">Riachuelo</option>
-        <option value="3coracoes">3 Corações</option>
-        <option value="generico">Genérico</option>
-      </select>
-    </div>
+    <!-- ENTRADA -->
+    <section class="grid-inputs">
+      <div class="card">
+        <label for="cliente">Cliente</label>
+        <select id="cliente">
+          <option value="">Selecione</option>
+          <option value="riachuelo">Riachuelo</option>
+          <option value="3coracoes">3 Corações</option>
+          <option value="stone">Stone</option>
+          <option value="generico">Genérico</option>
+        </select>
+      </div>
 
-    <div class="box">
-      <b>Upload Manifestos (PDF ou Imagem)</b>
-      <input type="file" id="manifesto" multiple accept=".pdf,image/*">
-    </div>
+      <div class="card">
+        <label for="manifestos">Upload Manifestos (PDF ou Imagem)</label>
+        <input type="file" id="manifestos" accept=".pdf,image/*" multiple />
+        <small class="muted">Pode enviar mais de um manifesto, desde que sejam do mesmo cliente.</small>
+      </div>
 
-    <div class="box">
-      <b>Upload Planilha EDI (Excel)</b>
-      <input type="file" id="edi" accept=".xls,.xlsx,.csv">
-    </div>
+      <div class="card">
+        <label for="edi">Upload Planilha EDI (Excel)</label>
+        <input type="file" id="edi" accept=".xls,.xlsx,.csv" />
+        <small class="muted">Para Riachuelo e 3 Corações, a coluna NF é “Numero”.</small>
+      </div>
 
-    <div class="box">
-      <b>Upload Capa / Conferência Física</b>
-      <input type="file" id="capa" accept=".pdf,image/*">
-    </div>
+      <div class="card">
+        <label for="capa">Upload Capa / Conferência Física</label>
+        <input type="file" id="capa" accept="image/*,.pdf" />
+        <small class="muted">A capa pode vir em branco.</small>
+      </div>
+    </section>
+
+    <!-- AÇÕES -->
+    <section class="actions">
+      <button class="btn btn-primary" id="btnProcessar">▶ PROCESSAR CONFERÊNCIA</button>
+      <button class="btn btn-success" id="btnExportar">↓ BAIXAR EXCEL</button>
+      <button class="btn btn-secondary" id="btnLimpar">↻ LIMPAR</button>
+    </section>
+
+    <!-- INDICADORES -->
+    <section class="cards-resumo">
+      <div class="mini-card">
+        <div class="label">Manifesto</div>
+        <div class="value" id="cardManifesto">0</div>
+      </div>
+
+      <div class="mini-card">
+        <div class="label">Emitido</div>
+        <div class="value" id="cardEmitido">0</div>
+      </div>
+
+      <div class="mini-card">
+        <div class="label">Físico</div>
+        <div class="value" id="cardFisico">0</div>
+      </div>
+
+      <div class="mini-card">
+        <div class="label">Divergências</div>
+        <div class="value red" id="cardDivergencias">0</div>
+      </div>
+
+      <div class="mini-card">
+        <div class="label">Acuracidade</div>
+        <div class="value" id="cardAcuracidade">0%</div>
+      </div>
+    </section>
+
+    <!-- RESUMO -->
+    <section class="section">
+      <h2>Resumo Geral</h2>
+      <div class="box" id="resumoGeral">
+        Nenhum processamento realizado até o momento.
+      </div>
+    </section>
+
+    <!-- ANÁLISE -->
+    <section class="section">
+      <h2>Análise</h2>
+      <div class="box" id="analise">
+        Sem análise disponível.
+      </div>
+    </section>
+
+    <!-- BUSCA -->
+    <section class="section">
+      <h2>Busca</h2>
+      <div class="search-box">
+        <input type="text" id="campoBusca" placeholder="Buscar por NF ou AWB no manifesto carregado" />
+        <button class="btn btn-primary" id="btnBuscar">Buscar</button>
+        <button class="btn btn-secondary" id="btnLimparBusca">Limpar busca</button>
+      </div>
+    </section>
+
+    <!-- TABELA -->
+    <section class="section">
+      <h2>Tabela Detalhada</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Ordem</th>
+              <th>Manifesto</th>
+              <th>NF</th>
+              <th>Emitido</th>
+              <th>AWB</th>
+              <th>Status</th>
+              <th>Observação</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaResultado">
+            <tr>
+              <td colspan="7" class="muted">Nenhum dado processado.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
-  <div>
-    <button class="process" onclick="processar()">&#9654; PROCESSAR CONFERÊNCIA</button>
-    <button class="excel" onclick="baixarExcel()">&#8595; Baixar Excel</button>
-    <button class="clear" onclick="location.reload()">&#8635; Limpar</button>
-  </div>
-
-  <div id="status"></div>
-
-  <div id="progressBar">
-    <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
-    <div class="bar-label" id="barLabel"></div>
-  </div>
-
-  <div class="counts">
-    <div class="count">Manifesto<b id="manifestoCount">0</b></div>
-    <div class="count">Emitido<b id="emitidoCount">0</b></div>
-    <div class="count">Físico<b id="fisicoCount">0</b></div>
-    <div class="count">Divergências<b id="divCount" style="color:#c62828">0</b></div>
-  </div>
-
-  <div class="section-title">Resumo Geral</div>
-  <div id="resumoGeral" class="summary-box"></div>
-
-  <div class="section-title">Análise</div>
-  <div id="analise" class="summary-box"></div>
-
-  <div class="search">
-    <input type="text" id="busca" placeholder="Buscar NF, AWB ou status..." onkeyup="filtrar()">
-  </div>
-
-  <table id="tabela">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>NF</th>
-        <th>Emitido</th>
-        <th>AWB</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <div id="debugInfo" class="debug-info"></div>
-</div>
-
-<script>
-/* ========================================================
-   CONFIGURAÇÃO GLOBAL
-======================================================== */
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
-
-let resultado    = [];
-let manifestNFs  = [];
-let fisicoTotal  = 0;
-let clienteAtual = "riachuelo";
-let debugLog     = [];
-
-/* ========================================================
-   UTILITÁRIOS GERAIS
-======================================================== */
-function normalizarNumero(valor){
-  if(valor === null || valor === undefined) return "";
-  return String(valor).replace(/\D/g, "").trim();
-}
-
-function setStatus(msg){ document.getElementById("status").innerText = msg; }
-
-function setProgress(pct, label){
-  const bar = document.getElementById("progressBar");
-  bar.style.display = "block";
-  document.getElementById("barFill").style.width = pct + "%";
-  document.getElementById("barLabel").innerText = label || "";
-}
-
-function hideProgress(){
-  document.getElementById("progressBar").style.display = "none";
-}
-
-/* ========================================================
-   NORMALIZAÇÃO DE NF POR CLIENTE
-======================================================== */
-function normalizarNF(nf, cliente){
-  nf = String(nf).replace(/\D/g, "").trim();
-  if(!nf) return "";
-
-  if(cliente === "3coracoes"){
-    // 3 Corações: 8-9 dígitos, PRESERVA zeros à esquerda
-    if(nf.length === 8 || nf.length === 9) return nf;
-    return "";
-  }
-
-  if(cliente === "riachuelo"){
-    // Riachuelo: EXATAMENTE 8 dígitos (padrão NFe)
-    const semZero = nf.replace(/^0+/, "");
-    if(semZero.length === 8) return semZero;
-    if(nf.length === 8 || nf.length === 9) return nf.replace(/^0+/, "");
-    return "";
-  }
-
-  // Genérico: 7-9 dígitos
-  const semZero = nf.replace(/^0+/, "");
-  if(semZero.length >= 7 && semZero.length <= 9) return semZero;
-  return "";
-}
-
-/* ========================================================
-   EXTRAÇÃO DE TEXTO NATIVO DO PDF (sem OCR)
-======================================================== */
-async function extrairTextoNativo(pdf){
-  let textoTotal = "";
-  let paginasComTexto = 0;
-
-  for(let i = 1; i <= pdf.numPages; i++){
-    try {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const items = content.items || [];
-
-      const linhas = {};
-      for(const item of items){
-        const y = Math.round(item.transform[5]);
-        if(!linhas[y]) linhas[y] = [];
-        linhas[y].push(item.str || "");
+  <script>
+    // =========================
+    // ESTADO GLOBAL CONTROLADO
+    // =========================
+    const estado = {
+      cliente: "",
+      manifestos: [],
+      planilhaEDI: null,
+      capaFisica: null,
+      nfsManifesto: [],
+      mapaEDI: {},
+      resultadoFinal: [],
+      fisicoTotal: null,
+      totais: {
+        manifesto: 0,
+        emitido: 0,
+        fisico: 0,
+        divergencias: 0,
+        acuracidade: 0
       }
-
-      const ysOrdenados = Object.keys(linhas).map(Number).sort((a,b) => b - a);
-      let textoPagina = "";
-      for(const y of ysOrdenados){
-        textoPagina += linhas[y].join(" ") + "\n";
-      }
-
-      if(textoPagina.trim().length > 20) paginasComTexto++;
-      textoTotal += textoPagina + "\n";
-    } catch (e) {
-      console.warn("Erro ao ler texto nativo da página " + i, e);
-    }
-  }
-
-  if(paginasComTexto < Math.ceil(pdf.numPages / 2)) return null;
-  return textoTotal;
-}
-
-/* ========================================================
-   EXTRAÇÃO VIA OCR (Tesseract)
-======================================================== */
-async function renderizarPagina(page, scale){
-  const viewport = page.getViewport({ scale });
-  const canvas   = document.createElement("canvas");
-  const ctx      = canvas.getContext("2d");
-  canvas.width   = viewport.width;
-  canvas.height  = viewport.height;
-  await page.render({ canvasContext: ctx, viewport }).promise;
-  return canvas;
-}
-
-async function fileParaCanvas(file){
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
-      resolve(canvas);
     };
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
 
-function corrigirOCR(texto){
-  return (texto || "")
-    .replace(/[|]/g, " ")
-    .replace(/[Oo](?=\d)/g, "0")
-    .replace(/(?<=\d)[Oo]/g, "0")
-    .replace(/[Ss](?=\d)/g, "5")
-    .replace(/(?<=\d)[Ss]/g, "5")
-    .replace(/[Ii](?=\d)/g, "1")
-    .replace(/(?<=\d)[Ii]/g, "1")
-    .replace(/[Ll](?=\d)/g, "1")
-    .replace(/(?<=\d)[Ll]/g, "1")
-    .replace(/[Bb](?=\d)/g, "8")
-    .replace(/(?<=\d)[Bb]/g, "8");
-}
-
-async function ocrCanvas(canvas){
-  const img = canvas.toDataURL("image/png");
-  const ocr = await Tesseract.recognize(img, "por+eng", {
-    tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz /-.:,\n"
-  });
-  return corrigirOCR(ocr.data.text || "");
-}
-
-/* ========================================================
-   EXTRAÇÃO DE NFs DO TEXTO (nativo ou OCR)
-======================================================== */
-function extrairNFsDoTexto(texto, cliente){
-  const linhas = (texto || "").split(/\r?\n/);
-  const notas  = [];
-  const vistas = new Set();
-
-  const ancorasNF = /(?:NF|NFE|NOTA\s*FISCAL|Nº\s*NF|NÚMERO\s*NF|NF\s*Nº|NOTA\s*Nº|NOTA\s*N°)/i;
-
-  for(let i = 0; i < linhas.length; i++){
-    const linha = linhas[i].trim();
-    const l = linha.toUpperCase();
-    if(!l) continue;
-
-    if(/CANCEL[AO]/.test(l)) continue;
-    if(/CAMSCANNER|DIGITALIZADO/.test(l)) continue;
-    if(/CHAVE|CNPJ|EMISS[AÃ]O|PROTOCOLO/.test(l)) continue;
-    if(/^\d{10,}$/.test(l)) continue;
-
-    let matches = [];
-    let temAncora = ancorasNF.test(l);
-
-    if(temAncora){
-      if(cliente === "riachuelo") matches = l.match(/\b\d{8}\b/g) || [];
-      else if(cliente === "3coracoes") matches = l.match(/\b\d{8,9}\b/g) || [];
-      else matches = l.match(/\b\d{7,9}\b/g) || [];
-
-      if(!matches.length && i + 1 < linhas.length){
-        const proximaLinha = linhas[i + 1].toUpperCase();
-        if(cliente === "riachuelo") matches = proximaLinha.match(/\b\d{8}\b/g) || [];
-        else if(cliente === "3coracoes") matches = proximaLinha.match(/\b\d{8,9}\b/g) || [];
-        else matches = proximaLinha.match(/\b\d{7,9}\b/g) || [];
-      }
-    } else {
-      if(/\d/.test(l) && !/PEDIDO|VOLUME|PESO|VALOR|QUANTIDADE|QTD/.test(l)){
-        if(cliente === "riachuelo") matches = l.match(/\b\d{8}\b/g) || [];
-        else if(cliente === "3coracoes") matches = l.match(/\b\d{8,9}\b/g) || [];
-        else matches = l.match(/\b\d{7,9}\b/g) || [];
-      }
-    }
-
-    for(const m of (matches || [])){
-      if(vistas.has(m)) continue;
-      const nf = normalizarNF(m, cliente);
-      if(nf){
-        notas.push(nf);
-        vistas.add(m);
-      }
-    }
-  }
-  return notas;
-}
-
-/* ========================================================
-   PROCESSAMENTO PRINCIPAL
-======================================================== */
-async function extrairNotasArquivo(file, cliente, indiceArquivo, totalArquivos){
-  const nome = file.name.toLowerCase();
-  
-  // --- Se for IMAGEM direta ---
-  if(nome.endsWith(".jpg") || nome.endsWith(".jpeg") || nome.endsWith(".png")){
-    setStatus(`Lendo imagem ${file.name}...`);
-    const canvas = await fileParaCanvas(file);
-    const texto = await ocrCanvas(canvas);
-    const nfs = extrairNFsDoTexto(texto, cliente);
-    return { nfs, metodo: "ocr" };
-  }
-
-  // --- Se for PDF ---
-  try {
-    const buffer = await file.arrayBuffer();
-    // stopAtErrors: false permite ler PDFs com estrutura levemente corrompida (CamScanner)
-    const pdf = await pdfjsLib.getDocument({ 
-      data: buffer,
-      stopAtErrors: false 
-    }).promise;
-
-    setStatus(`Analisando ${file.name}...`);
-    const textoNativo = await extrairTextoNativo(pdf);
-    if(textoNativo !== null){
-      debugLog.push(`${file.name}: texto NATIVO extraído`);
-      const nfs = extrairNFsDoTexto(textoNativo, cliente);
-      return { nfs, metodo: "nativo" };
-    }
-
-    debugLog.push(`${file.name}: PDF escaneado → usando OCR`);
-    const notas = [];
-    for(let i = 1; i <= pdf.numPages; i++){
-      const pct = Math.round(((indiceArquivo + (i / pdf.numPages)) / totalArquivos) * 100);
-      setProgress(pct, `OCR: ${file.name} — página ${i}/${pdf.numPages}`);
-      const page = await pdf.getPage(i);
-      const canvas = await renderizarPagina(page, 2.5);
-      const texto = await ocrCanvas(canvas);
-      const nfs = extrairNFsDoTexto(texto, cliente);
-      notas.push(...nfs);
-    }
-    return { nfs: notas, metodo: "ocr" };
-  } catch (err) {
-    console.error("Erro ao processar PDF: " + file.name, err);
-    throw new Error(`O arquivo "${file.name}" parece estar corrompido ou não é um PDF válido. Tente salvá-lo novamente.`);
-  }
-}
-
-function encontrarColuna(obj, candidatos){
-  const chaves = Object.keys(obj || {});
-  for(const chave of chaves){
-    const limpa = chave.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-    for(const candidato of candidatos){
-      const cand = candidato.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-      if(limpa === cand || limpa.includes(cand)) return chave;
-    }
-  }
-  return null;
-}
-
-function lerExcel(file, cliente){
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: "array" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json(sheet);
-      const mapa = {};
-      if(json.length){
-        const colNF = encontrarColuna(json[0], ["Numero","Número","NF","NFe","Nota Fiscal","NOTA","NF_NUM"]);
-        const colAWB = encontrarColuna(json[0], ["Nº AWB","AWB","N AWB","HAWB","AWB_NUM"]);
-        json.forEach(linha => {
-          let nf = colNF ? String(linha[colNF] ?? "") : "";
-          let awb = colAWB ? String(linha[colAWB] ?? "") : "";
-          nf = normalizarNF(nf, cliente);
-          if(nf) mapa[nf] = { awb: normalizarNumero(awb), emitido: true };
-        });
-      }
-      resolve(mapa);
-    };
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-async function lerFisico(file){
-  if(!file) return 0;
-  const nome = file.name.toLowerCase();
-  let textoOCR = "";
-
-  if(nome.endsWith(".pdf")){
-    const buffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buffer, stopAtErrors: false }).promise;
-    for(let i = 1; i <= pdf.numPages; i++){
-      const page = await pdf.getPage(i);
-      const canvas = await renderizarPagina(page, 2);
-      textoOCR += "\n" + await ocrCanvas(canvas);
-    }
-  } else {
-    const canvas = await fileParaCanvas(file);
-    textoOCR = await ocrCanvas(canvas);
-  }
-
-  const match = textoOCR.toUpperCase().match(/TOTAL\s*(?:DE\s*)?(?:VOLUMES?|CAIXAS?)\s*[:\-]?\s*(\d{1,5})/);
-  return match ? parseInt(match[1], 10) : 0;
-}
-
-async function processar(){
-  try{
-    debugLog = [];
-    setStatus("Iniciando...");
-    clienteAtual = document.getElementById("cliente").value;
-    const manifestos = document.getElementById("manifesto").files;
-    const ediFile = document.getElementById("edi").files[0];
-    const capaFile = document.getElementById("capa").files[0];
-
-    if(!manifestos.length){ setStatus("Selecione ao menos um arquivo de manifesto."); return; }
-
-    let notasManifestoBrutas = [];
-    const metodos = [];
-    for(let idx = 0; idx < manifestos.length; idx++){
-      const { nfs, metodo } = await extrairNotasArquivo(manifestos[idx], clienteAtual, idx, manifestos.length);
-      notasManifestoBrutas.push(...nfs);
-      metodos.push({ arquivo: manifestos[idx].name, metodo });
-    }
-    hideProgress();
-
-    manifestNFs = notasManifestoBrutas;
-    const duplicadosMapa = {};
-    for(const n of manifestNFs) duplicadosMapa[n] = (duplicadosMapa[n] || 0) + 1;
-
-    let mapaEDI = ediFile ? await lerExcel(ediFile, clienteAtual) : {};
-    let emitidos = 0;
-    resultado = manifestNFs.map((nf, index) => {
-      const reg = mapaEDI[nf];
-      if(reg) emitidos++;
-      return {
-        ordem: index + 1,
-        nf,
-        emitido: reg ? "SIM" : "NÃO",
-        awb: reg ? reg.awb : "",
-        status: duplicadosMapa[nf] > 1 ? "DUPLICADO" : (reg ? "OK" : "NÃO EMITIDO")
-      };
+    // =========================
+    // INICIALIZAÇÃO
+    // =========================
+    document.addEventListener("DOMContentLoaded", () => {
+      bindEventos();
+      renderTelaInicial();
     });
 
-    fisicoTotal = capaFile ? await lerFisico(capaFile) : 0;
-    
-    document.getElementById("manifestoCount").innerText = manifestNFs.length;
-    document.getElementById("emitidoCount").innerText = emitidos;
-    document.getElementById("fisicoCount").innerText = fisicoTotal || "—";
-    
-    atualizarInterface(metodos, duplicadosMapa, emitidos);
-    setStatus(`Conferência concluída. ${manifestNFs.length} NF(s) processadas.`);
-    document.getElementById("debugInfo").innerText = debugLog.join("\n");
-  } catch(err){
-    console.error(err);
-    setStatus("Erro: " + err.message);
-    hideProgress();
-  }
-}
+    function bindEventos() {
+      document.getElementById("btnProcessar").addEventListener("click", processarConferencia);
+      document.getElementById("btnExportar").addEventListener("click", exportarExcel);
+      document.getElementById("btnLimpar").addEventListener("click", limparSistema);
+      document.getElementById("btnBuscar").addEventListener("click", buscarNaTabela);
+      document.getElementById("btnLimparBusca").addEventListener("click", limparBusca);
+    }
 
-function atualizarInterface(metodos, duplicadosMapa, emitidos){
-  const tbody = document.querySelector("#tabela tbody");
-  tbody.innerHTML = "";
-  resultado.forEach(r => {
-    const tr = document.createElement("tr");
-    const cls = r.status === "OK" ? "st-ok" : (r.status === "DUPLICADO" ? "st-dup" : "st-nao");
-    tr.innerHTML = `<td>${r.ordem}</td><td>${r.nf}</td><td>${r.emitido}</td><td>${r.awb || "—"}</td><td class="${cls}">${r.status}</td>`;
-    tbody.appendChild(tr);
-  });
+    // =========================
+    // PROCESSAMENTO PRINCIPAL
+    // =========================
+    async function processarConferencia() {
+      try {
+        capturarArquivosTela();
+        validarEntrada();
 
-  const naoEmitidas = resultado.filter(r => r.status === "NÃO EMITIDO").map(r => r.nf);
-  const duplicadas = Object.keys(duplicadosMapa).filter(nf => duplicadosMapa[nf] > 1);
-  document.getElementById("divCount").innerText = naoEmitidas.length + duplicadas.length;
+        /*
+          ETAPA 1
+          AQUI ENTRA:
+          - leitura dos manifestos
+          - OCR / leitura PDF
+          - extração das NFs válidas
+        */
+        estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
 
-  document.getElementById("resumoGeral").innerHTML = `<b>Cliente:</b> ${clienteAtual}<br><b>Total Manifesto:</b> ${manifestNFs.length}<br><b>Total Emitido:</b> ${emitidos}<br><b>Método:</b> ${metodos.map(m=>m.metodo).join(", ")}`;
-  
-  let html = naoEmitidas.length ? `<div class="status-warn">⚠️ ${naoEmitidas.length} NF(s) não encontradas:</div><div>${naoEmitidas.join(", ")}</div>` : `<div class="status-ok">✅ Tudo emitido!</div>`;
-  document.getElementById("analise").innerHTML = html;
-}
+        /*
+          ETAPA 2
+          AQUI ENTRA:
+          - leitura do Excel
+          - localizar coluna Numero
+          - montar mapa NF -> AWB
+        */
+        estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
 
-function filtrar(){
-  const v = document.getElementById("busca").value.toLowerCase();
-  document.querySelectorAll("#tabela tbody tr").forEach(l => l.style.display = l.innerText.toLowerCase().includes(v) ? "" : "none");
-}
+        /*
+          ETAPA 3
+          AQUI ENTRA:
+          - leitura da capa física
+          - pode retornar null se vier em branco
+        */
+        estado.fisicoTotal = await lerCapaFisica(estado.capaFisica);
 
-function baixarExcel(){
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resultado), "Conferencia");
-  XLSX.writeFile(wb, "conferencia.xlsx");
-}
-</script>
+        /*
+          ETAPA 4
+          COMPARAÇÃO PRINCIPAL
+        */
+        estado.resultadoFinal = compararManifestoComEDI(
+          estado.nfsManifesto,
+          estado.mapaEDI,
+          estado.cliente
+        );
+
+        /*
+          ETAPA 5
+          RESUMO
+        */
+        estado.totais = calcularTotais(
+          estado.resultadoFinal,
+          estado.fisicoTotal
+        );
+
+        renderResultado();
+      } catch (erro) {
+        exibirErro(erro.message || "Erro ao processar a conferência.");
+      }
+    }
+
+    // =========================
+    // CAPTURA DE ENTRADA
+    // =========================
+    function capturarArquivosTela() {
+      estado.cliente = document.getElementById("cliente").value;
+      estado.manifestos = Array.from(document.getElementById("manifestos").files || []);
+      estado.planilhaEDI = document.getElementById("edi").files[0] || null;
+      estado.capaFisica = document.getElementById("capa").files[0] || null;
+    }
+
+    function validarEntrada() {
+      if (!estado.cliente) {
+        throw new Error("Selecione o cliente antes de processar.");
+      }
+
+      if (!estado.manifestos.length) {
+        throw new Error("Envie pelo menos um manifesto.");
+      }
+
+      if (!estado.planilhaEDI) {
+        throw new Error("Envie a planilha EDI para conferência.");
+      }
+    }
+
+    // =========================
+    // LEITURA DOS MANIFESTOS
+    // =========================
+    async function lerManifestos(arquivos, cliente) {
+      /*
+        ESTRUTURA ESPERADA DE RETORNO:
+        [
+          {
+            ordem: 1,
+            manifesto: "manifesto_001.pdf",
+            nf: "12345678"
+          }
+        ]
+
+        REGRAS:
+        - considerar apenas NF do manifesto
+        - manter ordem original
+        - ignorar ruídos do OCR
+        - aplicar regra por cliente
+      */
+
+      // BASE TEMPORÁRIA PARA ESTRUTURA
+      const dadosMock = [];
+
+      arquivos.forEach((arquivo, indexArquivo) => {
+        const nomeManifesto = arquivo.name;
+
+        // EXEMPLO ESTRUTURAL
+        // Aqui depois entra OCR real / leitura PDF real
+        dadosMock.push({
+          ordem: indexArquivo + 1,
+          manifesto: nomeManifesto,
+          nf: "EXEMPLO_NF"
+        });
+      });
+
+      return dadosMock;
+    }
+
+    // =========================
+    // LEITURA DA PLANILHA EDI
+    // =========================
+    async function lerPlanilhaEDI(arquivo, cliente) {
+      /*
+        ESTRUTURA ESPERADA:
+        {
+          "12345678": {
+            emitido: true,
+            awbs: ["57712345", "57767890"],
+            awbFormatada: "57712345 / 57767890"
+          }
+        }
+
+        REGRAS:
+        - Riachuelo e 3 Corações usam coluna Numero
+        - Excel é apenas consulta
+        - se houver mais de 1 AWB para mesma NF, juntar com /
+      */
+
+      // BASE TEMPORÁRIA PARA ESTRUTURA
+      return {};
+    }
+
+    // =========================
+    // LEITURA DA CAPA FÍSICA
+    // =========================
+    async function lerCapaFisica(arquivo) {
+      /*
+        REGRAS:
+        - a capa pode vir em branco
+        - se não conseguir ler, retornar null
+      */
+
+      if (!arquivo) return null;
+
+      // TEMPORÁRIO
+      return null;
+    }
+
+    // =========================
+    // COMPARAÇÃO PRINCIPAL
+    // =========================
+    function compararManifestoComEDI(nfsManifesto, mapaEDI, cliente) {
+      const resultado = [];
+
+      nfsManifesto.forEach((item, index) => {
+        const registroEDI = mapaEDI[item.nf];
+
+        let emitido = "NÃO";
+        let awb = "";
+        let status = "COLETADA E NÃO EMITIDA";
+        let observacao = "";
+
+        if (registroEDI) {
+          emitido = "SIM";
+          awb = registroEDI.awbFormatada || "";
+          status = "OK";
+        }
+
+        resultado.push({
+          ordem: index + 1,
+          manifesto: item.manifesto,
+          nf: item.nf,
+          emitido,
+          awb,
+          status,
+          observacao
+        });
+      });
+
+      return resultado;
+    }
+
+    // =========================
+    // TOTAIS E RESUMO
+    // =========================
+    function calcularTotais(resultado, fisicoTotal) {
+      const totalManifesto = resultado.length;
+      const totalEmitido = resultado.filter(item => item.emitido === "SIM").length;
+      const totalDivergencias = resultado.filter(item => item.status !== "OK").length;
+
+      let acuracidade = 0;
+      if (totalManifesto > 0) {
+        acuracidade = ((totalEmitido / totalManifesto) * 100).toFixed(2);
+      }
+
+      return {
+        manifesto: totalManifesto,
+        emitido: totalEmitido,
+        fisico: fisicoTotal ?? 0,
+        divergencias: totalDivergencias,
+        acuracidade
+      };
+    }
+
+    // =========================
+    // RENDERIZAÇÃO
+    // =========================
+    function renderTelaInicial() {
+      atualizarCards({
+        manifesto: 0,
+        emitido: 0,
+        fisico: 0,
+        divergencias: 0,
+        acuracidade: 0
+      });
+
+      document.getElementById("resumoGeral").innerHTML =
+        "Nenhum processamento realizado até o momento.";
+
+      document.getElementById("analise").innerHTML =
+        "Sem análise disponível.";
+
+      document.getElementById("tabelaResultado").innerHTML = `
+        <tr>
+          <td colspan="7" class="muted">Nenhum dado processado.</td>
+        </tr>
+      `;
+    }
+
+    function renderResultado() {
+      atualizarCards(estado.totais);
+      renderResumoGeral();
+      renderAnalise();
+      renderTabela(estado.resultadoFinal);
+    }
+
+    function atualizarCards(totais) {
+      document.getElementById("cardManifesto").textContent = totais.manifesto;
+      document.getElementById("cardEmitido").textContent = totais.emitido;
+      document.getElementById("cardFisico").textContent = totais.fisico;
+      document.getElementById("cardDivergencias").textContent = totais.divergencias;
+      document.getElementById("cardAcuracidade").textContent = `${totais.acuracidade}%`;
+    }
+
+    function renderResumoGeral() {
+      const faltantes = estado.resultadoFinal.filter(
+        item => item.status === "COLETADA E NÃO EMITIDA"
+      ).length;
+
+      const quantidadeManifestos = estado.manifestos.length;
+
+      document.getElementById("resumoGeral").innerHTML = `
+        <strong>Cliente:</strong> ${formatarCliente(estado.cliente)}<br>
+        <strong>Manifestos processados:</strong> ${quantidadeManifestos}<br>
+        <strong>Total de NFs no manifesto:</strong> ${estado.totais.manifesto}<br>
+        <strong>Total emitido no Excel:</strong> ${estado.totais.emitido}<br>
+        <strong>Total físico:</strong> ${estado.fisicoTotal ?? "Não identificado"}<br>
+        <strong>Faltante do manifesto não emitido:</strong> ${faltantes}<br>
+        <strong>Percentual de acuracidade:</strong> ${estado.totais.acuracidade}%
+      `;
+    }
+
+    function renderAnalise() {
+      const faltantes = estado.resultadoFinal.filter(
+        item => item.status === "COLETADA E NÃO EMITIDA"
+      );
+
+      const mensagens = [];
+
+      if (!estado.capaFisica) {
+        mensagens.push("Capa física não enviada.");
+      } else if (estado.fisicoTotal === null) {
+        mensagens.push("Capa física enviada, porém sem quantidade identificada ou em branco.");
+      }
+
+      if (faltantes.length) {
+        mensagens.push(`Existem ${faltantes.length} NF(s) com status COLETADA E NÃO EMITIDA.`);
+      }
+
+      if (!mensagens.length) {
+        mensagens.push("Conferência concluída sem alerta estrutural identificado.");
+      }
+
+      document.getElementById("analise").innerHTML = mensagens
+        .map(texto => `<div>• ${texto}</div>`)
+        .join("");
+    }
+
+    function renderTabela(dados) {
+      const tbody = document.getElementById("tabelaResultado");
+
+      if (!dados.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="muted">Nenhum dado processado.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = dados.map(item => `
+        <tr>
+          <td>${item.ordem}</td>
+          <td>${item.manifesto}</td>
+          <td>${item.nf}</td>
+          <td>${item.emitido}</td>
+          <td>${item.awb || "-"}</td>
+          <td class="${classeStatus(item.status)}">${item.status}</td>
+          <td>${item.observacao || "-"}</td>
+        </tr>
+      `).join("");
+    }
+
+    function classeStatus(status) {
+      if (status === "OK") return "status-ok";
+      if (status === "COLETADA E NÃO EMITIDA") return "status-pendente";
+      return "status-alerta";
+    }
+
+    // =========================
+    // BUSCA
+    // =========================
+    function buscarNaTabela() {
+      const termo = document.getElementById("campoBusca").value.trim().toUpperCase();
+
+      if (!termo) {
+        renderTabela(estado.resultadoFinal);
+        return;
+      }
+
+      const filtrado = estado.resultadoFinal.filter(item =>
+        String(item.nf).toUpperCase().includes(termo) ||
+        String(item.awb).toUpperCase().includes(termo)
+      );
+
+      renderTabela(filtrado);
+    }
+
+    function limparBusca() {
+      document.getElementById("campoBusca").value = "";
+      renderTabela(estado.resultadoFinal);
+    }
+
+    // =========================
+    // EXPORTAÇÃO
+    // =========================
+    function exportarExcel() {
+      /*
+        AQUI DEPOIS ENTRA A EXPORTAÇÃO REAL COM XLSX
+
+        COLUNAS SUGERIDAS:
+        - ORDEM
+        - MANIFESTO
+        - NF
+        - EMITIDO
+        - AWB
+        - STATUS
+        - OBSERVAÇÃO
+      */
+
+      if (!estado.resultadoFinal.length) {
+        alert("Não há resultado para exportar.");
+        return;
+      }
+
+      alert("Estrutura pronta. Falta conectar a exportação real do Excel.");
+    }
+
+    // =========================
+    // LIMPEZA
+    // =========================
+    function limparSistema() {
+      document.getElementById("cliente").value = "";
+      document.getElementById("manifestos").value = "";
+      document.getElementById("edi").value = "";
+      document.getElementById("capa").value = "";
+      document.getElementById("campoBusca").value = "";
+
+      estado.cliente = "";
+      estado.manifestos = [];
+      estado.planilhaEDI = null;
+      estado.capaFisica = null;
+      estado.nfsManifesto = [];
+      estado.mapaEDI = {};
+      estado.resultadoFinal = [];
+      estado.fisicoTotal = null;
+      estado.totais = {
+        manifesto: 0,
+        emitido: 0,
+        fisico: 0,
+        divergencias: 0,
+        acuracidade: 0
+      };
+
+      renderTelaInicial();
+    }
+
+    // =========================
+    // AUXILIARES
+    // =========================
+    function formatarCliente(cliente) {
+      const mapa = {
+        riachuelo: "Riachuelo",
+        "3coracoes": "3 Corações",
+        stone: "Stone",
+        generico: "Genérico"
+      };
+
+      return mapa[cliente] || cliente;
+    }
+
+    function normalizarNumero(valor) {
+      return String(valor || "").replace(/\D/g, "");
+    }
+
+    function limparRuidoOCR(texto) {
+      if (!texto) return "";
+
+      return texto
+        .replace(/CANCELAO/gi, "")
+        .replace(/CANCELADA/gi, "")
+        .replace(/CANCEL/gi, "")
+        .replace(/CAMSCANNER/gi, "")
+        .trim();
+    }
+
+    function normalizarNF(nf, cliente) {
+      let valor = normalizarNumero(nf);
+
+      if (!valor) return "";
+
+      if (cliente === "riachuelo") {
+        if (!(valor.length === 8 || valor.length === 9)) return "";
+      }
+
+      if (cliente === "3coracoes") {
+        if (!valor.startsWith("0")) {
+          valor = valor.padStart(9, "0");
+        }
+      }
+
+      return valor;
+    }
+
+    function exibirErro(mensagem) {
+      document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagem}</div>`;
+      alert(mensagem);
+    }
+  </script>
 </body>
 </html>
