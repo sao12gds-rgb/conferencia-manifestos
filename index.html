@@ -251,7 +251,6 @@
 </head>
 <body>
   <div class="container">
-
     <header class="header">
       <div class="logo">Azul Cargo Express</div>
       <h1 class="title">Conferência de Manifestos</h1>
@@ -287,6 +286,7 @@
       <button class="btn btn-primary" id="btnProcessar" onclick="processarConferencia()">▶ PROCESSAR CONFERÊNCIA</button>
       <button class="btn btn-success" id="btnExportar">↓ BAIXAR EXCEL</button>
       <button class="btn btn-primary" id="btnExportarPDF">🧾 BAIXAR PDF</button>
+      <button class="btn btn-success" id="btnWhatsapp">📲 GERAR WHATSAPP</button>
       <button class="btn btn-secondary" id="btnLimpar">↻ LIMPAR</button>
     </section>
 
@@ -360,13 +360,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-  </script>
 
-  <script>
     const estado = {
       cliente: "",
       manifestos: [],
@@ -386,6 +383,7 @@
       renderTelaInicial();
       document.getElementById("btnExportar").onclick = exportarExcel;
       document.getElementById("btnExportarPDF").onclick = exportarPDF;
+      document.getElementById("btnWhatsapp").onclick = gerarMensagemWhatsApp;
       document.getElementById("btnLimpar").onclick = limparSistema;
       document.getElementById("btnBuscar").onclick = buscarNaTabela;
       document.getElementById("btnLimparBusca").onclick = limparBusca;
@@ -400,13 +398,10 @@
 
         estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
         estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
-
         estado.resultadoFinal = compararManifestoComEDI(
           estado.nfsManifesto,
-          estado.mapaEDI,
-          estado.cliente
+          estado.mapaEDI
         );
-
         estado.totais = calcularTotais(estado.resultadoFinal);
 
         renderResultado();
@@ -447,60 +442,53 @@
           arquivo.type === "application/pdf" ||
           nomeManifesto.toLowerCase().endsWith(".pdf")
         ) {
-          textoExtraido = await lerTextoPDF(arquivo);
+          textoExtraido = await lerTextoPDFOtimizado(arquivo);
         } else if (arquivo.type.startsWith("image/")) {
-          textoExtraido = await lerTextoImagem(arquivo);
+          textoExtraido = await lerTextoImagemOtimizada(arquivo);
         } else {
           continue;
         }
 
         textoExtraido = limparRuidoOCR(textoExtraido);
-
         const nfs = extrairNFsDoTexto(textoExtraido, cliente);
 
         nfs.forEach((nf) => {
           resultado.push({
             ordem: ordemGlobal++,
             manifesto: nomeManifesto,
-            nf: nf
+            nf
           });
         });
+      }
+
+      if (!resultado.length) {
+        throw new Error("Nenhuma NF válida foi identificada no manifesto.");
       }
 
       return resultado;
     }
 
-    async function lerTextoPDF(arquivo) {
+    async function lerTextoPDFOtimizado(arquivo) {
       const arrayBuffer = await arquivo.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pdf = await pdfjsLib.getDocument({
+        data: arrayBuffer,
+        stopAtErrors: false,
+        useSystemFonts: true
+      }).promise;
 
       let textoCompleto = "";
 
       for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
         const page = await pdf.getPage(pagina);
 
-        const textContent = await page.getTextContent();
-        const textoNativo = textContent.items.map((item) => item.str).join(" ").trim();
-
-        if (textoNativo) {
+        const textoNativo = await extrairTextoNativoOrdenado(page);
+        if (textoNativo && contarDigitos(textoNativo) >= 20) {
           textoCompleto += "\n" + textoNativo;
           continue;
         }
 
-        const viewport = page.getViewport({ scale: 2 });
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        await page.render({
-          canvasContext: context,
-          viewport: viewport
-        }).promise;
-
-        const { data } = await Tesseract.recognize(canvas, "por");
-        const textoOCR = data.text || "";
+        const canvas = await renderizarPaginaPDF(page, 2.8);
+        const textoOCR = await executarOCRComPreprocessamento(canvas);
 
         textoCompleto += "\n" + textoOCR;
       }
@@ -508,30 +496,215 @@
       return textoCompleto;
     }
 
-    async function lerTextoImagem(arquivo) {
-      const { data } = await Tesseract.recognize(arquivo, "por");
-      return data.text || "";
+    async function extrairTextoNativoOrdenado(page) {
+      try {
+        const textContent = await page.getTextContent();
+        const items = textContent.items || [];
+        if (!items.length) return "";
+
+        const linhas = {};
+        for (const item of items) {
+          const y = Math.round(item.transform[5]);
+          if (!linhas[y]) linhas[y] = [];
+          linhas[y].push({
+            x: item.transform[4],
+            str: item.str || ""
+          });
+        }
+
+        const ys = Object.keys(linhas).map(Number).sort((a, b) => b - a);
+        let texto = "";
+
+        for (const y of ys) {
+          const linha = linhas[y]
+            .sort((a, b) => a.x - b.x)
+            .map((item) => item.str)
+            .join(" ");
+          texto += linha + "\n";
+        }
+
+        return texto.trim();
+      } catch (e) {
+        return "";
+      }
+    }
+
+    async function renderizarPaginaPDF(page, scale) {
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+
+      await page.render({
+        canvasContext: ctx,
+        viewport
+      }).promise;
+
+      return canvas;
+    }
+
+    async function lerTextoImagemOtimizada(arquivo) {
+      const canvas = await arquivoParaCanvas(arquivo);
+      const textoOCR = await executarOCRComPreprocessamento(canvas);
+      return textoOCR;
+    }
+
+    function arquivoParaCanvas(arquivo) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = function () {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+          const larguraMaxima = 2400;
+          const proporcao = Math.min(1, larguraMaxima / img.width);
+
+          canvas.width = Math.round(img.width * proporcao);
+          canvas.height = Math.round(img.height * proporcao);
+
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(img.src);
+          resolve(canvas);
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(arquivo);
+      });
+    }
+
+    async function executarOCRComPreprocessamento(canvasOriginal) {
+      const canvasTratado = preprocessarCanvas(canvasOriginal);
+
+      const { data } = await Tesseract.recognize(canvasTratado, "por", {
+        logger: () => {},
+        tessedit_pageseg_mode: 6,
+        preserve_interword_spaces: "1"
+      });
+
+      return corrigirTextoOCR(data.text || "");
+    }
+
+    function preprocessarCanvas(canvasOriginal) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+      canvas.width = canvasOriginal.width;
+      canvas.height = canvasOriginal.height;
+      ctx.drawImage(canvasOriginal, 0, 0);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        let cinza = (r * 0.299) + (g * 0.587) + (b * 0.114);
+
+        cinza = cinza > 180 ? 255 : cinza < 120 ? 0 : cinza;
+        cinza = Math.max(0, Math.min(255, cinza * 1.08));
+
+        data[i] = cinza;
+        data[i + 1] = cinza;
+        data[i + 2] = cinza;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      return canvas;
+    }
+
+    function corrigirTextoOCR(texto) {
+      if (!texto) return "";
+
+      return texto
+        .replace(/[|]/g, " ")
+        .replace(/[‘’`´]/g, "")
+        .replace(/(?<=\d)[oO](?=\d)/g, "0")
+        .replace(/(?<=\d)[iIlL](?=\d)/g, "1")
+        .replace(/(?<=\d)[sS](?=\d)/g, "5")
+        .replace(/(?<=\d)[bB](?=\d)/g, "8")
+        .replace(/[Oo](?=\d)/g, "0")
+        .replace(/(?<=\d)[Oo]/g, "0")
+        .replace(/[IiLl](?=\d)/g, "1")
+        .replace(/(?<=\d)[IiLl]/g, "1")
+        .replace(/[Ss](?=\d)/g, "5")
+        .replace(/(?<=\d)[Ss]/g, "5")
+        .replace(/[B](?=\d)/g, "8")
+        .replace(/(?<=\d)[B]/g, "8")
+        .replace(/(?<=\d)\s+(?=\d)/g, "")
+        .replace(/(?<=\d)[\.\,\-\/](?=\d)/g, "")
+        .replace(/[^\S\r\n]+/g, " ");
     }
 
     function extrairNFsDoTexto(texto, cliente) {
-      const textoLimpo = limparRuidoOCR(texto || "");
-      const linhas = textoLimpo.split(/\n+/);
+      const textoBase = limparRuidoOCR(texto || "");
+      const linhasOriginais = textoBase.split(/\n+/);
       const nfs = [];
       const vistos = new Set();
 
-      linhas.forEach((linha) => {
-        const numeros = linha.match(/\d+/g) || [];
+      for (let i = 0; i < linhasOriginais.length; i++) {
+        const linhaOriginal = linhasOriginais[i] || "";
+        const linha = normalizarLinhaParaExtracao(linhaOriginal);
 
-        numeros.forEach((numero) => {
-          const nfTratada = normalizarNF(numero, cliente);
-          if (nfTratada && !vistos.has(nfTratada)) {
-            vistos.add(nfTratada);
-            nfs.push(nfTratada);
+        const candidatosLinha = extrairCandidatosDaLinha(linha, cliente);
+        for (const candidato of candidatosLinha) {
+          if (!vistos.has(candidato)) {
+            vistos.add(candidato);
+            nfs.push(candidato);
           }
-        });
-      });
+        }
+
+        if (!candidatosLinha.length && i < linhasOriginais.length - 1) {
+          const linhaSeguinte = normalizarLinhaParaExtracao(linhasOriginais[i + 1] || "");
+          const combinada = linha + " " + linhaSeguinte;
+          const candidatosCombinados = extrairCandidatosDaLinha(combinada, cliente);
+
+          for (const candidato of candidatosCombinados) {
+            if (!vistos.has(candidato)) {
+              vistos.add(candidato);
+              nfs.push(candidato);
+            }
+          }
+        }
+      }
 
       return nfs;
+    }
+
+    function normalizarLinhaParaExtracao(linha) {
+      return corrigirTextoOCR(
+        String(linha || "")
+          .replace(/CANCELAO/gi, "")
+          .replace(/CANCELADA/gi, "")
+          .replace(/CANCEL/gi, "")
+          .replace(/CAMSCANNER/gi, "")
+      )
+        .replace(/N[FO0][\s:\-]*/gi, " ")
+        .replace(/NOTA\s+FISCAL[\s:\-]*/gi, " ")
+        .replace(/NFE[\s:\-]*/gi, " ")
+        .replace(/(?<=\d)\s+(?=\d)/g, "")
+        .replace(/(?<=\d)[\.\,\-\/](?=\d)/g, "")
+        .trim();
+    }
+
+    function extrairCandidatosDaLinha(linha, cliente) {
+      const candidatos = new Set();
+      const matches = linha.match(/\d[\d\s\.\,\-\/]{5,20}\d|\d{7,12}/g) || [];
+
+      matches.forEach((m) => {
+        const nf = normalizarNF(m, cliente);
+        if (nf) candidatos.add(nf);
+      });
+
+      const somenteNumerosGrandes = linha.match(/\d{7,12}/g) || [];
+      somenteNumerosGrandes.forEach((m) => {
+        const nf = normalizarNF(m, cliente);
+        if (nf) candidatos.add(nf);
+      });
+
+      return Array.from(candidatos);
     }
 
     async function lerPlanilhaEDI(arquivo, cliente) {
@@ -554,7 +727,6 @@
             }
 
             const primeiraAba = workbook.Sheets[workbook.SheetNames[0]];
-
             const linhas = XLSX.utils.sheet_to_json(primeiraAba, {
               header: 1,
               defval: "",
@@ -607,9 +779,7 @@
 
             if (linhaCabecalho === -1) {
               reject(
-                new Error(
-                  "Não foi possível localizar o cabeçalho da planilha. Verifique se existe coluna Numero."
-                )
+                new Error("Não foi possível localizar o cabeçalho da planilha. Verifique se existe coluna Numero.")
               );
               return;
             }
@@ -618,9 +788,7 @@
               ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
             );
 
-            const indiceAWB = cabecalhosNormalizados.findIndex((col) =>
-              col.includes("AWB")
-            );
+            const indiceAWB = cabecalhosNormalizados.findIndex((col) => col.includes("AWB"));
 
             const indiceUltimaOcorrencia = cabecalhosNormalizados.findIndex((col) =>
               col.includes("ULTIMAOCORRENCIA") ||
@@ -631,9 +799,7 @@
 
             if (indiceNF === -1) {
               reject(
-                new Error(
-                  `Coluna de NF não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}`
-                )
+                new Error(`Coluna de NF não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}`)
               );
               return;
             }
@@ -642,7 +808,6 @@
 
             for (let i = linhaCabecalho + 1; i < linhas.length; i++) {
               const linha = linhas[i] || [];
-
               const nfOriginal = linha[indiceNF];
               const awbOriginal = indiceAWB > -1 ? linha[indiceAWB] : "";
               const ultimaOcorrenciaOriginal = indiceUltimaOcorrencia > -1 ? linha[indiceUltimaOcorrencia] : "";
@@ -676,18 +841,8 @@
               mapaEDI[nf].awbFormatada = mapaEDI[nf].awbs.join(" / ");
             });
 
-            if (!Object.keys(mapaEDI).length) {
-              reject(
-                new Error(
-                  "A planilha foi lida, mas nenhuma NF válida foi encontrada."
-                )
-              );
-              return;
-            }
-
             resolve(mapaEDI);
           } catch (erro) {
-            console.error("Erro interno ao ler Excel:", erro);
             reject(new Error(`Erro ao ler a planilha EDI: ${erro.message}`));
           }
         };
@@ -800,41 +955,35 @@
         (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
       ).length;
 
-      const quantidadeManifestos = estado.manifestos.length;
-
       document.getElementById("resumoGeral").innerHTML = `
         <strong>Cliente:</strong> ${formatarCliente(estado.cliente)}<br>
-        <strong>Manifestos processados:</strong> ${quantidadeManifestos}<br>
+        <strong>Manifestos processados:</strong> ${estado.manifestos.length}<br>
         <strong>Total de NFs no manifesto:</strong> ${estado.totais.manifesto}<br>
         <strong>Total emitido no Excel:</strong> ${estado.totais.emitido}<br>
-        <strong>Faltante do manifesto não emitido:</strong> ${faltantesNaoEmitidos}<br>
-        <strong>Carga não emitida - book:</strong> ${faltantesBook}<br>
+        <strong>Não emitidas:</strong> ${faltantesNaoEmitidos}<br>
+        <strong>Não emitidas - book:</strong> ${faltantesBook}<br>
         <strong>Percentual de acuracidade:</strong> ${estado.totais.acuracidade}%
       `;
     }
 
     function renderAnalise() {
-      const faltantes = estado.resultadoFinal.filter(
-        (item) => item.status === "COLETADA E NÃO EMITIDA"
-      );
-
-      const books = estado.resultadoFinal.filter(
-        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
-      );
-
+      const faltantes = obterPendenciasOrdenadas();
       const mensagens = [];
 
       mensagens.push(`Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`);
 
-      if (faltantes.length) {
-        mensagens.push(`Existem ${faltantes.length} NF(s) com status COLETADA E NÃO EMITIDA.`);
+      const pendNaoEmitidas = faltantes.filter((item) => item.status === "COLETADA E NÃO EMITIDA").length;
+      const pendBook = faltantes.filter((item) => item.status === "CARGA NÃO EMITIDA - BOOK").length;
+
+      if (pendNaoEmitidas) {
+        mensagens.push(`Existem ${pendNaoEmitidas} NF(s) com status COLETADA E NÃO EMITIDA.`);
       }
 
-      if (books.length) {
-        mensagens.push(`Existem ${books.length} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
+      if (pendBook) {
+        mensagens.push(`Existem ${pendBook} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
       }
 
-      if (!faltantes.length && !books.length) {
+      if (!faltantes.length) {
         mensagens.push("Conferência concluída sem alerta estrutural identificado.");
       }
 
@@ -933,132 +1082,177 @@
 
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF("p", "mm", "a4");
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 10;
+      const usableWidth = pageWidth - (margin * 2);
 
-      const clienteFormatado = formatarCliente(estado.cliente);
-      const dataGeracao = new Date().toLocaleString("pt-BR");
+      const pendencias = obterPendenciasOrdenadas();
+      const naoEmitidas = pendencias.filter((item) => item.status === "COLETADA E NÃO EMITIDA");
+      const books = pendencias.filter((item) => item.status === "CARGA NÃO EMITIDA - BOOK");
 
-      const faltantesNaoEmitidos = estado.resultadoFinal.filter(
-        (item) => item.status === "COLETADA E NÃO EMITIDA"
-      ).length;
-
-      const faltantesBook = estado.resultadoFinal.filter(
-        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
-      ).length;
-
-      const linhasTabela = estado.resultadoFinal.map((item) => [
-        item.ordem,
-        item.manifesto,
-        item.nf,
-        item.emitido,
-        item.awb || "-",
-        item.status,
-        item.observacao || "-"
-      ]);
-
-      let y = 15;
+      let y = 10;
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("CONFERÊNCIA DE MANIFESTOS", 14, y);
-
-      y += 8;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text(`Cliente: ${clienteFormatado}`, 14, y);
-
-      y += 5;
-      doc.text(`Data de geração: ${dataGeracao}`, 14, y);
-
-      y += 8;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("RESUMO GERAL", 14, y);
+      doc.setFontSize(15);
+      doc.text("CONFERÊNCIA DE MANIFESTOS", margin, y);
 
       y += 6;
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-
-      const resumoLinhas = [
-        `Manifestos processados: ${estado.manifestos.length}`,
-        `Total de NFs no manifesto: ${estado.totais.manifesto}`,
-        `Total emitido no Excel: ${estado.totais.emitido}`,
-        `Faltante do manifesto não emitido: ${faltantesNaoEmitidos}`,
-        `Carga não emitida - book: ${faltantesBook}`,
-        `Divergências: ${estado.totais.divergencias}`,
-        `Percentual de acuracidade: ${estado.totais.acuracidade}%`
-      ];
-
-      resumoLinhas.forEach((linha) => {
-        doc.text(linha, 14, y);
-        y += 5;
-      });
+      doc.setFontSize(9);
+      doc.text(`Cliente: ${formatarCliente(estado.cliente)}`, margin, y);
 
       y += 4;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("ANÁLISE", 14, y);
+      doc.text(`Manifestos: ${estado.manifestos.length} | Total NF: ${estado.totais.manifesto} | Emitido: ${estado.totais.emitido} | Acuracidade: ${estado.totais.acuracidade}%`, margin, y);
 
       y += 6;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("ANÁLISE", margin, y);
+
+      y += 4;
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
+      doc.setFontSize(9);
 
       const analiseLinhas = [
-        `Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`
+        `NFs não emitidas: ${naoEmitidas.length}`,
+        `NFs não emitidas - book: ${books.length}`,
+        `Divergências totais: ${estado.totais.divergencias}`
       ];
 
-      if (faltantesNaoEmitidos > 0) {
-        analiseLinhas.push(`Existem ${faltantesNaoEmitidos} NF(s) com status COLETADA E NÃO EMITIDA.`);
-      }
-
-      if (faltantesBook > 0) {
-        analiseLinhas.push(`Existem ${faltantesBook} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
-      }
-
-      if (faltantesNaoEmitidos === 0 && faltantesBook === 0) {
-        analiseLinhas.push("Conferência concluída sem alerta estrutural identificado.");
-      }
-
       analiseLinhas.forEach((linha) => {
-        const textoQuebrado = doc.splitTextToSize(linha, 180);
-        doc.text(textoQuebrado, 14, y);
-        y += textoQuebrado.length * 5;
+        doc.text(linha, margin, y);
+        y += 4;
       });
 
+      y += 2;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("PENDÊNCIAS", margin, y);
       y += 4;
 
-      doc.autoTable({
-        startY: y,
-        head: [[
-          "ORDEM",
-          "MANIFESTO",
-          "NF",
-          "EMITIDO",
-          "AWB",
-          "STATUS",
-          "OBSERVAÇÃO"
-        ]],
-        body: linhasTabela,
-        styles: {
-          fontSize: 8,
-          cellPadding: 2,
-          overflow: "linebreak"
-        },
-        headStyles: {
-          fillColor: [23, 72, 140]
-        },
-        columnStyles: {
-          0: { cellWidth: 15 },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 25 },
-          3: { cellWidth: 18 },
-          4: { cellWidth: 28 },
-          5: { cellWidth: 35 },
-          6: { cellWidth: 34 }
-        },
-        margin: { left: 14, right: 14 }
+      if (!pendencias.length) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.text("Nenhuma pendência identificada.", margin, y);
+        doc.save("resultado_conferencia_manifestos.pdf");
+        return;
+      }
+
+      const linhasPendencias = pendencias.map((item) => {
+        const prefixo = item.status === "CARGA NÃO EMITIDA - BOOK" ? "BOOK" : "NAO EMITIDA";
+        return `${item.nf} - ${prefixo}`;
       });
 
+      const areaDisponivel = pageHeight - y - 10;
+      const colunas = 2;
+      const gap = 6;
+      const larguraColuna = (usableWidth - gap) / colunas;
+      let fonte = 8.5;
+      let alturaLinha = 3.8;
+      let linhasPorColuna = 0;
+      let cabe = false;
+
+      while (fonte >= 6) {
+        doc.setFontSize(fonte);
+        alturaLinha = fonte <= 6.5 ? 3.0 : fonte <= 7 ? 3.2 : fonte <= 8 ? 3.5 : 3.8;
+        linhasPorColuna = Math.floor(areaDisponivel / alturaLinha);
+        const capacidadeTotal = linhasPorColuna * colunas;
+
+        if (linhasPendencias.length <= capacidadeTotal) {
+          cabe = true;
+          break;
+        }
+
+        fonte -= 0.5;
+      }
+
+      if (!cabe) {
+        doc.setFontSize(6);
+        alturaLinha = 3;
+        linhasPorColuna = Math.floor(areaDisponivel / alturaLinha);
+      }
+
+      doc.setFont("helvetica", "normal");
+
+      const capacidadeTotalFinal = linhasPorColuna * colunas;
+      let listaFinal = [...linhasPendencias];
+
+      if (listaFinal.length > capacidadeTotalFinal) {
+        const vagasParaTexto = Math.max(0, capacidadeTotalFinal - 1);
+        const excedente = listaFinal.length - vagasParaTexto;
+        listaFinal = listaFinal.slice(0, vagasParaTexto);
+        listaFinal.push(`... E MAIS ${excedente} REGISTRO(S). VER TELA/EXCEL.`);
+      }
+
+      for (let i = 0; i < listaFinal.length; i++) {
+        const coluna = Math.floor(i / linhasPorColuna);
+        const linhaNaColuna = i % linhasPorColuna;
+        const x = margin + (coluna * (larguraColuna + gap));
+        const yLinha = y + (linhaNaColuna * alturaLinha);
+
+        const texto = doc.splitTextToSize(listaFinal[i], larguraColuna - 1);
+        doc.text(texto[0], x, yLinha);
+      }
+
       doc.save("resultado_conferencia_manifestos.pdf");
+    }
+
+    async function gerarMensagemWhatsApp() {
+      if (!estado.resultadoFinal.length) {
+        alert("Não há resultado processado para gerar mensagem.");
+        return;
+      }
+
+      const mensagem = montarMensagemWhatsapp();
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(mensagem);
+        }
+      } catch (e) {}
+
+      const link = "https://wa.me/?text=" + encodeURIComponent(mensagem);
+      window.open(link, "_blank");
+    }
+
+    function montarMensagemWhatsapp() {
+      const pendencias = obterPendenciasOrdenadas();
+      const naoEmitidas = pendencias.filter((item) => item.status === "COLETADA E NÃO EMITIDA");
+      const books = pendencias.filter((item) => item.status === "CARGA NÃO EMITIDA - BOOK");
+
+      let mensagem = "";
+      mensagem += "*CONFERÊNCIA DE MANIFESTOS*\n";
+      mensagem += `CLIENTE: ${formatarCliente(estado.cliente)}\n`;
+      mensagem += `MANIFESTOS PROCESSADOS: ${estado.manifestos.length}\n`;
+      mensagem += `TOTAL NF MANIFESTO: ${estado.totais.manifesto}\n`;
+      mensagem += `TOTAL EMITIDO: ${estado.totais.emitido}\n`;
+      mensagem += `ACURACIDADE: ${estado.totais.acuracidade}%\n`;
+
+      if (!pendencias.length) {
+        mensagem += "\nSEM PENDÊNCIAS IDENTIFICADAS.";
+        return mensagem;
+      }
+
+      mensagem += `\nNÃO EMITIDAS: ${naoEmitidas.length}`;
+      mensagem += `\nNÃO EMITIDAS - BOOK: ${books.length}\n`;
+
+      if (naoEmitidas.length) {
+        mensagem += `\n*COLETADA E NÃO EMITIDA*\n`;
+        mensagem += naoEmitidas.map((item) => item.nf).join("\n");
+        mensagem += "\n";
+      }
+
+      if (books.length) {
+        mensagem += `\n*CARGA NÃO EMITIDA - BOOK*\n`;
+        mensagem += books.map((item) => item.nf).join("\n");
+      }
+
+      return mensagem.trim();
+    }
+
+    function obterPendenciasOrdenadas() {
+      return estado.resultadoFinal.filter((item) => item.status !== "OK");
     }
 
     function limparSistema() {
@@ -1106,23 +1300,39 @@
         .replace(/CANCELADA/gi, "")
         .replace(/CANCEL/gi, "")
         .replace(/CAMSCANNER/gi, "")
+        .replace(/PAGINA\s+\d+/gi, "")
         .trim();
     }
 
     function normalizarNF(nf, cliente) {
-      let valor = normalizarNumero(nf);
+      let valor = String(nf || "")
+        .replace(/[^\d]/g, "")
+        .trim();
 
       if (!valor) return "";
 
       if (cliente === "riachuelo") {
-        if (!(valor.length === 8 || valor.length === 9)) return "";
+        if (valor.length === 8 || valor.length === 9) return valor;
+        return "";
       }
 
       if (cliente === "3coracoes") {
-        valor = valor.padStart(9, "0");
+        if (valor.length > 9) {
+          valor = valor.slice(-9);
+        }
+        return valor.padStart(9, "0");
       }
 
-      return valor;
+      if (valor.length >= 7 && valor.length <= 12) {
+        return valor;
+      }
+
+      return "";
+    }
+
+    function contarDigitos(texto) {
+      const match = String(texto || "").match(/\d/g);
+      return match ? match.length : 0;
     }
 
     function exibirErro(mensagem) {
