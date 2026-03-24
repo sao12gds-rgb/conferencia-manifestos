@@ -53,7 +53,7 @@
 
     .grid-inputs {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 18px;
       margin-top: 28px;
       margin-bottom: 24px;
@@ -123,7 +123,7 @@
 
     .cards-resumo {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 18px;
       margin-bottom: 28px;
     }
@@ -255,7 +255,7 @@
     <header class="header">
       <div class="logo">Azul Cargo Express</div>
       <h1 class="title">Conferência de Manifestos</h1>
-      <p class="subtitle">Manifesto PDF/Imagem + EDI Excel + Capa / Conferência Física</p>
+      <p class="subtitle">Manifesto PDF/Imagem + EDI Excel</p>
     </header>
 
     <section class="grid-inputs">
@@ -281,12 +281,6 @@
         <input type="file" id="edi" accept=".xls,.xlsx,.csv" />
         <small class="muted">Para Riachuelo e 3 Corações, a coluna NF é “Numero”.</small>
       </div>
-
-      <div class="card">
-        <label for="capa">Upload Capa / Conferência Física</label>
-        <input type="file" id="capa" accept="image/*,.pdf" />
-        <small class="muted">A capa pode vir em branco.</small>
-      </div>
     </section>
 
     <section class="actions">
@@ -304,11 +298,6 @@
       <div class="mini-card">
         <div class="label">Emitido</div>
         <div class="value" id="cardEmitido">0</div>
-      </div>
-
-      <div class="mini-card">
-        <div class="label">Físico</div>
-        <div class="value" id="cardFisico">0</div>
       </div>
 
       <div class="mini-card">
@@ -378,15 +367,12 @@
       cliente: "",
       manifestos: [],
       planilhaEDI: null,
-      capaFisica: null,
       nfsManifesto: [],
       mapaEDI: {},
       resultadoFinal: [],
-      fisicoTotal: null,
       totais: {
         manifesto: 0,
         emitido: 0,
-        fisico: 0,
         divergencias: 0,
         acuracidade: 0
       }
@@ -409,7 +395,6 @@
 
         estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
         estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
-        estado.fisicoTotal = await lerCapaFisica(estado.capaFisica);
 
         estado.resultadoFinal = compararManifestoComEDI(
           estado.nfsManifesto,
@@ -417,10 +402,7 @@
           estado.cliente
         );
 
-        estado.totais = calcularTotais(
-          estado.resultadoFinal,
-          estado.fisicoTotal
-        );
+        estado.totais = calcularTotais(estado.resultadoFinal);
 
         renderResultado();
       } catch (erro) {
@@ -432,7 +414,6 @@
       estado.cliente = document.getElementById("cliente").value;
       estado.manifestos = Array.from(document.getElementById("manifestos").files || []);
       estado.planilhaEDI = document.getElementById("edi").files[0] || null;
-      estado.capaFisica = document.getElementById("capa").files[0] || null;
     }
 
     function validarEntrada() {
@@ -484,45 +465,44 @@
       return resultado;
     }
 
-  async function lerTextoPDF(arquivo) {
-  const arrayBuffer = await arquivo.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    async function lerTextoPDF(arquivo) {
+      const arrayBuffer = await arquivo.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-  let textoCompleto = "";
+      let textoCompleto = "";
 
-  for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
-    const page = await pdf.getPage(pagina);
+      for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
+        const page = await pdf.getPage(pagina);
 
-    // tenta primeiro texto nativo do PDF
-    const textContent = await page.getTextContent();
-    const textoNativo = textContent.items.map((item) => item.str).join(" ").trim();
+        const textContent = await page.getTextContent();
+        const textoNativo = textContent.items.map((item) => item.str).join(" ").trim();
 
-    if (textoNativo) {
-      textoCompleto += "\n" + textoNativo;
-      continue;
+        if (textoNativo) {
+          textoCompleto += "\n" + textoNativo;
+          continue;
+        }
+
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({
+          canvasContext: context,
+          viewport: viewport
+        }).promise;
+
+        const { data } = await Tesseract.recognize(canvas, "por");
+        const textoOCR = data.text || "";
+
+        textoCompleto += "\n" + textoOCR;
+      }
+
+      return textoCompleto;
     }
 
-    // se não houver texto, usa OCR na imagem da página
-    const viewport = page.getViewport({ scale: 2 });
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-
-    await page.render({
-      canvasContext: context,
-      viewport: viewport
-    }).promise;
-
-    const { data } = await Tesseract.recognize(canvas, "por");
-    const textoOCR = data.text || "";
-
-    textoCompleto += "\n" + textoOCR;
-  }
-
-  return textoCompleto;
-}
     async function lerTextoImagem(arquivo) {
       const { data } = await Tesseract.recognize(arquivo, "por");
       return data.text || "";
@@ -594,7 +574,7 @@
             let cabecalhos = [];
             let cabecalhosNormalizados = [];
 
-            for (let i = 0; i < Math.min(linhas.length, 15); i++) {
+            for (let i = 0; i < Math.min(linhas.length, 20); i++) {
               const linhaAtual = (linhas[i] || []).map((col) => String(col || "").trim());
               const linhaNorm = linhaAtual.map(normalizarCabecalho);
 
@@ -603,8 +583,14 @@
               );
 
               const temAWB = linhaNorm.some((col) => col.includes("AWB"));
+              const temUltimaOcorrencia = linhaNorm.some((col) =>
+                col.includes("ULTIMAOCORRENCIA") ||
+                col.includes("ULTIMA OCORRENCIA") ||
+                col.includes("ULT OCORRENCIA") ||
+                col.includes("OCORRENCIA")
+              );
 
-              if (temNF && temAWB) {
+              if (temNF && (temAWB || temUltimaOcorrencia)) {
                 linhaCabecalho = i;
                 cabecalhos = linhaAtual;
                 cabecalhosNormalizados = linhaNorm;
@@ -615,7 +601,7 @@
             if (linhaCabecalho === -1) {
               reject(
                 new Error(
-                  "Não foi possível localizar o cabeçalho da planilha. Verifique se existe coluna Numero e coluna AWB."
+                  "Não foi possível localizar o cabeçalho da planilha. Verifique se existe coluna Numero."
                 )
               );
               return;
@@ -629,19 +615,17 @@
               col.includes("AWB")
             );
 
+            const indiceUltimaOcorrencia = cabecalhosNormalizados.findIndex((col) =>
+              col.includes("ULTIMAOCORRENCIA") ||
+              col.includes("ULTIMA OCORRENCIA") ||
+              col.includes("ULT OCORRENCIA") ||
+              col === "OCORRENCIA"
+            );
+
             if (indiceNF === -1) {
               reject(
                 new Error(
                   `Coluna de NF não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}`
-                )
-              );
-              return;
-            }
-
-            if (indiceAWB === -1) {
-              reject(
-                new Error(
-                  `Coluna de AWB não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}`
                 )
               );
               return;
@@ -653,23 +637,31 @@
               const linha = linhas[i] || [];
 
               const nfOriginal = linha[indiceNF];
-              const awbOriginal = linha[indiceAWB];
+              const awbOriginal = indiceAWB > -1 ? linha[indiceAWB] : "";
+              const ultimaOcorrenciaOriginal = indiceUltimaOcorrencia > -1 ? linha[indiceUltimaOcorrencia] : "";
 
               const nf = normalizarNF(nfOriginal, cliente);
               const awb = normalizarNumero(awbOriginal);
+              const ultimaOcorrencia = String(ultimaOcorrenciaOriginal || "").trim().toUpperCase();
 
               if (!nf) continue;
-              if (!awb) continue;
 
               if (!mapaEDI[nf]) {
                 mapaEDI[nf] = {
-                  emitido: true,
-                  awbs: []
+                  awbs: [],
+                  booked: false,
+                  emitido: false
                 };
               }
 
-              if (!mapaEDI[nf].awbs.includes(awb)) {
+              if (awb && !mapaEDI[nf].awbs.includes(awb)) {
                 mapaEDI[nf].awbs.push(awb);
+              }
+
+              if (ultimaOcorrencia === "BKD - BOOKED") {
+                mapaEDI[nf].booked = true;
+              } else {
+                mapaEDI[nf].emitido = true;
               }
             }
 
@@ -680,7 +672,7 @@
             if (!Object.keys(mapaEDI).length) {
               reject(
                 new Error(
-                  "A planilha foi lida, mas nenhuma NF/AWB válida foi encontrada."
+                  "A planilha foi lida, mas nenhuma NF válida foi encontrada."
                 )
               );
               return;
@@ -701,11 +693,6 @@
       });
     }
 
-    async function lerCapaFisica(arquivo) {
-      if (!arquivo) return null;
-      return null;
-    }
-
     function compararManifestoComEDI(nfsManifesto, mapaEDI, cliente) {
       const resultado = [];
 
@@ -718,9 +705,16 @@
         let observacao = "";
 
         if (registroEDI) {
-          emitido = "SIM";
           awb = registroEDI.awbFormatada || "";
-          status = "OK";
+
+          if (registroEDI.booked) {
+            emitido = "NÃO";
+            status = "CARGA NÃO EMITIDA - BOOK";
+            observacao = "ULTIMAOCORRENCIA = BKD - BOOKED";
+          } else if (registroEDI.emitido) {
+            emitido = "SIM";
+            status = "OK";
+          }
         }
 
         resultado.push({
@@ -737,7 +731,7 @@
       return resultado;
     }
 
-    function calcularTotais(resultado, fisicoTotal) {
+    function calcularTotais(resultado) {
       const totalManifesto = resultado.length;
       const totalEmitido = resultado.filter((item) => item.emitido === "SIM").length;
       const totalDivergencias = resultado.filter((item) => item.status !== "OK").length;
@@ -750,7 +744,6 @@
       return {
         manifesto: totalManifesto,
         emitido: totalEmitido,
-        fisico: fisicoTotal ?? 0,
         divergencias: totalDivergencias,
         acuracidade
       };
@@ -760,7 +753,6 @@
       atualizarCards({
         manifesto: 0,
         emitido: 0,
-        fisico: 0,
         divergencias: 0,
         acuracidade: 0
       });
@@ -788,14 +780,17 @@
     function atualizarCards(totais) {
       document.getElementById("cardManifesto").textContent = totais.manifesto;
       document.getElementById("cardEmitido").textContent = totais.emitido;
-      document.getElementById("cardFisico").textContent = totais.fisico;
       document.getElementById("cardDivergencias").textContent = totais.divergencias;
       document.getElementById("cardAcuracidade").textContent = `${totais.acuracidade}%`;
     }
 
     function renderResumoGeral() {
-      const faltantes = estado.resultadoFinal.filter(
+      const faltantesNaoEmitidos = estado.resultadoFinal.filter(
         (item) => item.status === "COLETADA E NÃO EMITIDA"
+      ).length;
+
+      const faltantesBook = estado.resultadoFinal.filter(
+        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
       ).length;
 
       const quantidadeManifestos = estado.manifestos.length;
@@ -805,8 +800,8 @@
         <strong>Manifestos processados:</strong> ${quantidadeManifestos}<br>
         <strong>Total de NFs no manifesto:</strong> ${estado.totais.manifesto}<br>
         <strong>Total emitido no Excel:</strong> ${estado.totais.emitido}<br>
-        <strong>Total físico:</strong> ${estado.fisicoTotal ?? "Não identificado"}<br>
-        <strong>Faltante do manifesto não emitido:</strong> ${faltantes}<br>
+        <strong>Faltante do manifesto não emitido:</strong> ${faltantesNaoEmitidos}<br>
+        <strong>Carga não emitida - book:</strong> ${faltantesBook}<br>
         <strong>Percentual de acuracidade:</strong> ${estado.totais.acuracidade}%
       `;
     }
@@ -816,19 +811,23 @@
         (item) => item.status === "COLETADA E NÃO EMITIDA"
       );
 
+      const books = estado.resultadoFinal.filter(
+        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
+      );
+
       const mensagens = [];
-mensagens.push(`Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`);
-      if (!estado.capaFisica) {
-        mensagens.push("Capa física não enviada.");
-      } else if (estado.fisicoTotal === null) {
-        mensagens.push("Capa física enviada, porém sem quantidade identificada ou em branco.");
-      }
+
+      mensagens.push(`Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`);
 
       if (faltantes.length) {
         mensagens.push(`Existem ${faltantes.length} NF(s) com status COLETADA E NÃO EMITIDA.`);
       }
 
-      if (!mensagens.length) {
+      if (books.length) {
+        mensagens.push(`Existem ${books.length} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
+      }
+
+      if (!faltantes.length && !books.length) {
         mensagens.push("Conferência concluída sem alerta estrutural identificado.");
       }
 
@@ -869,6 +868,7 @@ mensagens.push(`Total de NFs extraídas do manifesto: ${estado.nfsManifesto.leng
     function classeStatus(status) {
       if (status === "OK") return "status-ok";
       if (status === "COLETADA E NÃO EMITIDA") return "status-pendente";
+      if (status === "CARGA NÃO EMITIDA - BOOK") return "status-alerta";
       return "status-alerta";
     }
 
@@ -883,7 +883,8 @@ mensagens.push(`Total de NFs extraídas do manifesto: ${estado.nfsManifesto.leng
       const filtrado = estado.resultadoFinal.filter(
         (item) =>
           String(item.nf).toUpperCase().includes(termo) ||
-          String(item.awb).toUpperCase().includes(termo)
+          String(item.awb).toUpperCase().includes(termo) ||
+          String(item.status).toUpperCase().includes(termo)
       );
 
       renderTabela(filtrado);
@@ -900,28 +901,38 @@ mensagens.push(`Total de NFs extraídas do manifesto: ${estado.nfsManifesto.leng
         return;
       }
 
-      alert("Estrutura pronta. Falta conectar a exportação real do Excel.");
+      const dadosExportacao = estado.resultadoFinal.map((item) => ({
+        ORDEM: item.ordem,
+        MANIFESTO: item.manifesto,
+        NF: item.nf,
+        EMITIDO: item.emitido,
+        AWB: item.awb,
+        STATUS: item.status,
+        OBSERVACAO: item.observacao
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
+      const workbook = XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, "CONFERENCIA");
+      XLSX.writeFile(workbook, "resultado_conferencia_manifestos.xlsx");
     }
 
     function limparSistema() {
       document.getElementById("cliente").value = "";
       document.getElementById("manifestos").value = "";
       document.getElementById("edi").value = "";
-      document.getElementById("capa").value = "";
       document.getElementById("campoBusca").value = "";
 
       estado.cliente = "";
       estado.manifestos = [];
       estado.planilhaEDI = null;
-      estado.capaFisica = null;
       estado.nfsManifesto = [];
       estado.mapaEDI = {};
       estado.resultadoFinal = [];
-      estado.fisicoTotal = null;
       estado.totais = {
         manifesto: 0,
         emitido: 0,
-        fisico: 0,
         divergencias: 0,
         acuracidade: 0
       };
