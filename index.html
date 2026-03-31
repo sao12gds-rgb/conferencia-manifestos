@@ -6,7 +6,6 @@
   <title>Conferência de Manifestos</title>
 
   <style>
-    /* <-- SEU CSS ORIGINAL, SEM ALTERAÇÕES --> */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -285,7 +284,7 @@
     </section>
 
     <section class="actions">
-      <button class="btn btn-primary" id="btnProcessar">▶ PROCESSAR CONFERÊNCIA</button>
+      <button class="btn btn-primary" id="btnProcessar" onclick="processarConferencia()">▶ PROCESSAR CONFERÊNCIA</button>
       <button class="btn btn-success" id="btnExportar">↓ BAIXAR EXCEL</button>
       <button class="btn btn-primary" id="btnExportarPDF">🧾 BAIXAR PDF</button>
       <button class="btn btn-secondary" id="btnLimpar">↻ LIMPAR</button>
@@ -364,12 +363,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   </script>
 
   <script>
-    /* ==================== ESTADO GLOBAL ==================== */
     const estado = {
       cliente: "",
       manifestos: [],
@@ -377,28 +374,23 @@
       nfsManifesto: [],
       mapaEDI: {},
       resultadoFinal: [],
-      totais: { manifesto: 0, emitido: 0, divergencias: 0, acuracidade: 0 }
+      totais: {
+        manifesto: 0,
+        emitido: 0,
+        divergencias: 0,
+        acuracidade: 0
+      }
     };
 
-    /* ==================== INICIALIZAÇÃO ==================== */
-    window.onload = () => {
+    window.onload = function () {
       renderTelaInicial();
-
-      // Atribuição dos listeners dos botões (mantido como no seu código original)
-      document.getElementById("btnProcessar").onclick    = processarConferencia;
-      document.getElementById("btnExportar").onclick    = exportarExcel;
+      document.getElementById("btnExportar").onclick = exportarExcel;
       document.getElementById("btnExportarPDF").onclick = exportarPDF;
-      document.getElementById("btnLimpar").onclick      = limparSistema;
-      document.getElementById("btnBuscar").onclick      = buscarNaTabela;
+      document.getElementById("btnLimpar").onclick = limparSistema;
+      document.getElementById("btnBuscar").onclick = buscarNaTabela;
       document.getElementById("btnLimparBusca").onclick = limparBusca;
-
-      // Listener para a tecla Enter no campo de busca
-      document.getElementById("campoBusca").addEventListener("keydown", e => {
-        if (e.key === "Enter") buscarNaTabela();
-      });
     };
 
-    /* ==================== PROCESSAMENTO PRINCIPAL ==================== */
     async function processarConferencia() {
       try {
         document.getElementById("analise").innerHTML = "Processando arquivos...";
@@ -406,468 +398,662 @@
         capturarArquivosTela();
         validarEntrada();
 
-        // 1️⃣ Leitura dos manifestos (OCR aprimorado)
         estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
-
-        // 2️⃣ Leitura da planilha EDI
         estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
 
-        // 3️⃣ Comparação
         estado.resultadoFinal = compararManifestoComEDI(
           estado.nfsManifesto,
           estado.mapaEDI,
           estado.cliente
         );
 
-        // 4️⃣ Totais e renderização do resultado
         estado.totais = calcularTotais(estado.resultadoFinal);
+
         renderResultado();
-      } catch (e) {
-        exibirErro(e.message || "Erro ao processar a conferência.");
+      } catch (erro) {
+        exibirErro(erro.message || "Erro ao processar a conferência.");
       }
     }
 
-    /* captura e validação dos inputs */
     function capturarArquivosTela() {
-      estado.cliente     = document.getElementById("cliente").value;
-      estado.manifestos  = Array.from(document.getElementById("manifestos").files || []);
+      estado.cliente = document.getElementById("cliente").value;
+      estado.manifestos = Array.from(document.getElementById("manifestos").files || []);
       estado.planilhaEDI = document.getElementById("edi").files[0] || null;
     }
+
     function validarEntrada() {
-      if (!estado.cliente)            throw new Error("Selecione o cliente antes de processar.");
-      if (!estado.manifestos.length)  throw new Error("Envie pelo menos um manifesto.");
-      if (!estado.planilhaEDI)        throw new Error("Envie a planilha EDI para conferência.");
+      if (!estado.cliente) {
+        throw new Error("Selecione o cliente antes de processar.");
+      }
+
+      if (!estado.manifestos.length) {
+        throw new Error("Envie pelo menos um manifesto.");
+      }
+
+      if (!estado.planilhaEDI) {
+        throw new Error("Envie a planilha EDI para conferência.");
+      }
     }
 
-    /* ── LEITURA DE MANIFESTOS (com OCR aprimorado) ── */
     async function lerManifestos(arquivos, cliente) {
       const resultado = [];
       let ordemGlobal = 1;
 
-      for (let i = 0; i < arquivos.length; i++) {
-        const arq   = arquivos[i];
-        const nome  = arq.name;
-        document.getElementById("analise").innerHTML = `Lendo ${nome} (${i + 1}/${arquivos.length})...`;
+      for (const arquivo of arquivos) {
+        const nomeManifesto = arquivo.name;
+        let textoExtraido = "";
 
-        let texto = "";
-        let palavras = []; // Não será usado para confirmação, mas pode ser útil para debug
-
-        const ehPDF = arq.type === "application/pdf" || nome.toLowerCase().endsWith(".pdf");
-        if (ehPDF) {
-          const ret = await lerTextoPDF(arq);
-          texto = ret.texto;
-          palavras = ret.palavras;
-        } else if (arq.type.startsWith("image/")) {
-          const ret = await lerTextoImagem(arq);
-          texto = ret.texto;
-          palavras = ret.palavras;
+        if (
+          arquivo.type === "application/pdf" ||
+          nomeManifesto.toLowerCase().endsWith(".pdf")
+        ) {
+          textoExtraido = await lerTextoPDF(arquivo);
+        } else if (arquivo.type.startsWith("image/")) {
+          textoExtraido = await lerTextoImagem(arquivo);
         } else {
-          continue; // Tipo de arquivo não suportado
+          continue;
         }
 
-        texto = limparRuidoOCR(texto);
-        // A lógica de "confirmação de NF em caso de dúvida" foi removida.
-        // Todas as NFs extraídas com as melhorias de OCR serão consideradas válidas.
-        const nfsExtraidas = extrairNFsDoTexto(texto, palavras, cliente);
+        textoExtraido = limparRuidoOCR(textoExtraido);
 
-        nfsExtraidas.forEach(nf => {
-          resultado.push({ ordem: ordemGlobal++, manifesto: nome, nf });
+        const nfs = extrairNFsDoTexto(textoExtraido, cliente);
+
+        nfs.forEach((nf) => {
+          resultado.push({
+            ordem: ordemGlobal++,
+            manifesto: nomeManifesto,
+            nf: nf
+          });
         });
       }
+
       return resultado;
     }
 
-    /* ── LEITURA PDF (OCR aprimorado) ── */
     async function lerTextoPDF(arquivo) {
       const arrayBuffer = await arquivo.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
       let textoCompleto = "";
-      const palavras = [];
 
-      for (let p = 1; p <= pdf.numPages; p++) {
-        const page = await pdf.getPage(p);
-        const txtContent = await page.getTextContent();
-        const textoNativo = txtContent.items.map(i => i.str).join(" ").trim();
+      for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
+        const page = await pdf.getPage(pagina);
 
-        if (textoNativo.length > 30) {
+        const textContent = await page.getTextContent();
+        const textoNativo = textContent.items.map((item) => item.str).join(" ").trim();
+
+        if (textoNativo) {
           textoCompleto += "\n" + textoNativo;
-          continue; // PDF com texto nativo, alta confiança
+          continue;
         }
 
-        // PDF escaneado (imagem) → OCR com pré-processamento
-        const viewport = page.getViewport({ scale: 2.5 }); // Aumenta a escala para melhor OCR
-        const canvas   = document.createElement("canvas");
-        canvas.width   = viewport.width;
-        canvas.height  = viewport.height;
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
 
-        await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
 
-        aplicarFiltroOCR(canvas); // Aplica filtro para melhorar contraste
+        await page.render({
+          canvasContext: context,
+          viewport: viewport
+        }).promise;
 
         const { data } = await Tesseract.recognize(canvas, "por");
-        textoCompleto += "\n" + (data.text || "");
+        const textoOCR = data.text || "";
 
-        (data.words || []).forEach(w => {
-          if (/
-^
-\d+
-$
-/.test(w.text.trim())) {
-            palavras.push({ texto: w.text.trim(), confianca: w.confidence });
-          }
-        });
+        textoCompleto += "\n" + textoOCR;
       }
 
-      return { texto: textoCompleto, palavras };
+      return textoCompleto;
     }
 
-    /* ── LEITURA IMAGEM (OCR aprimorado) ── */
     async function lerTextoImagem(arquivo) {
-      const canvas = await imagemParaCanvas(arquivo);
-      aplicarFiltroOCR(canvas); // Aplica filtro para melhorar contraste
-
-      const { data } = await Tesseract.recognize(canvas, "por");
-      const palavras = (data.words || [])
-        .filter(w => /
-^
-\d+
-$
-/.test(w.text.trim()))
-        .map(w => ({ texto: w.text.trim(), confianca: w.confidence }));
-
-      return { texto: data.text || "", palavras };
+      const { data } = await Tesseract.recognize(arquivo, "por");
+      return data.text || "";
     }
 
-    /* utilitário: converte imagem para canvas dobrando a resolução */
-    async function imagemParaCanvas(arquivo) {
-      return new Promise(resolve => {
-        const url = URL.createObjectURL(arquivo);
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width  = img.width * 2; // Dobra a resolução
-          canvas.height = img.height * 2;
-          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-          URL.revokeObjectURL(url);
-          resolve(canvas);
-        };
-        img.src = url;
-      });
-    }
-
-    /* pré-processamento: escala de cinza + binarização simples para OCR */
-    function aplicarFiltroOCR(canvas) {
-      const ctx = canvas.getContext("2d");
-      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const d   = img.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const cinza = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-        const bin   = cinza > 128 ? 255 : 0; // Binarização simples
-        d[i] = d[i + 1] = d[i + 2] = bin;
-      }
-      ctx.putImageData(img, 0, 0);
-    }
-
-    /* ── EXTRAÇÃO DE NFs (com padrões e filtros) ── */
-    function extrairNFsDoTexto(texto, palavrasOCR, cliente) {
-      const limpo = limparRuidoOCR(texto || "");
+    function extrairNFsDoTexto(texto, cliente) {
+      const textoLimpo = limparRuidoOCR(texto || "");
+      const linhas = textoLimpo.split(/\n+/);
       const nfs = [];
       const vistos = new Set();
 
-      // 1) Padrões contextuais (alta confiança)
-      const padroes = [
-        /(?:NF|N\.F\.|NOTA\s*FISCAL)\s*[:#]?\s*(\d{4,})/gi, // Ex: "NF: 12345"
-        /(?:NF-e|NFe)\s*[:#]?\s*(\d{4,})/gi,               // Ex: "NFe 67890"
-        /(?:N[uú]mero|Num\.?)\s*[:#]?\s*(\d{4,})/gi        // Ex: "Número 11223"
-      ];
-      padroes.forEach(r => {
-        for (const m of limpo.matchAll(r)) {
-          const nf = normalizarNF(m[1], cliente);
-          if (nf && !vistos.has(nf)) { vistos.add(nf); nfs.push(nf); }
-        }
-      });
+      linhas.forEach((linha) => {
+        const numeros = linha.match(/\d+/g) || [];
 
-      // 2) Varredura genérica por números com pelo menos 4 dígitos
-      const linhas = limpo.split(/\n+/);
-      linhas.forEach(l => {
-        const nums = l.match(/\d{4,}/g) || []; // Mínimo de 4 dígitos
-        nums.forEach(num => {
-          const nf = normalizarNF(num, cliente);
-          if (nf && !vistos.has(nf)) { vistos.add(nf); nfs.push(nf); }
+        numeros.forEach((numero) => {
+          const nfTratada = normalizarNF(numero, cliente);
+          if (nfTratada && !vistos.has(nfTratada)) {
+            vistos.add(nfTratada);
+            nfs.push(nfTratada);
+          }
         });
       });
 
       return nfs;
     }
 
-    /* ── LEITURA DA PLANILHA EDI (mantida original) ── */
     async function lerPlanilhaEDI(arquivo, cliente) {
       return new Promise((resolve, reject) => {
         const leitor = new FileReader();
-        leitor.onload = e => {
+
+        leitor.onload = function (evento) {
           try {
-            const dados = new Uint8Array(e.target.result);
-            const wb = XLSX.read(dados, { type: "array", cellDates: false, raw: false });
-            if (!wb.SheetNames?.length) throw new Error("Planilha vazia.");
+            const dados = new Uint8Array(evento.target.result);
 
-            const sheet = wb.Sheets[wb.SheetNames[0]];
-            const linhas = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "", blankrows: false, raw: false });
-
-            const norm = txt => String(txt || "")
-              .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-              .replace(/[^a-zA-Z0-9 ]/g, " ").replace(/\s+/g, " ")
-              .trim().toUpperCase();
-
-            let cabIdx = -1, cab = [], cabNorm = [];
-
-            for (let i = 0; i < Math.min(linhas.length, 20); i++) {
-              const cur = (linhas[i] || []).map(c => String(c || "").trim());
-              const curN = cur.map(norm);
-              const temNF = curN.some(c => ["NUMERO","NF","NFE","NOTA FISCAL","NOTA"].includes(c));
-              const temAWB = curN.some(c => c.includes("AWB"));
-              const temOco = curN.some(c =>
-                c.includes("ULTIMAOCORRENCIA") || c.includes("ULTIMA OCORRENCIA") ||
-                c.includes("ULT OCORRENCIA")   || c === "OCORRENCIA");
-              if (temNF && (temAWB || temOco)) { cabIdx = i; cab = cur; cabNorm = curN; break; }
-            }
-
-            if (cabIdx === -1) throw new Error("Cabeçalho da planilha não encontrado. Verifique se existe coluna 'Numero'.");
-
-            const idxNF  = cabNorm.findIndex(c => ["NUMERO","NF","NFE","NOTA FISCAL","NOTA"].includes(c));
-            const idxAWB = cabNorm.findIndex(c => c.includes("AWB"));
-            const idxOco = cabNorm.findIndex(c =>
-              c.includes("ULTIMAOCORRENCIA") || c.includes("ULTIMA OCORRENCIA") ||
-              c.includes("ULT OCORRENCIA")   || c === "OCORRENCIA");
-
-            if (idxNF === -1) throw new Error(`Coluna de NF não encontrada na planilha. Cabeçalhos lidos: ${cabecalhos.join(" | ")}`);
-
-            const mapa = {};
-
-            for (let i = cabIdx + 1; i < linhas.length; i++) {
-              const linha = linhas[i] || [];
-              const nf = normalizarNF(linha[idxNF], cliente);
-              if (!nf) continue;
-
-              const awb = normalizarNumero(idxAWB > -1 ? linha[idxAWB] : "");
-              const oco = String(idxOco > -1 ? linha[idxOco] : "").trim().toUpperCase();
-
-              if (!mapa[nf]) mapa[nf] = { awbs: [], booked: false, emitido: false };
-              if (awb && !mapa[nf].awbs.includes(awb)) mapa[nf].awbs.push(awb);
-              if (oco === "BKD - BOOKED") mapa[nf].booked = true;
-              else                         mapa[nf].emitido = true;
-            }
-
-            Object.keys(mapa).forEach(k => {
-              mapa[k].awbFormatada = mapa[k].awbs.join(" / ");
+            const workbook = XLSX.read(dados, {
+              type: "array",
+              cellDates: false,
+              raw: false
             });
 
-            if (!Object.keys(mapa).length) throw new Error("A planilha foi lida, mas nenhuma NF válida foi encontrada.");
+            if (!workbook.SheetNames || !workbook.SheetNames.length) {
+              reject(new Error("A planilha está vazia ou sem abas."));
+              return;
+            }
 
-            resolve(mapa);
-          } catch (err) {
-            reject(new Error(`Erro ao ler a planilha EDI: ${err.message}`));
+            const primeiraAba = workbook.Sheets[workbook.SheetNames[0]];
+
+            const linhas = XLSX.utils.sheet_to_json(primeiraAba, {
+              header: 1,
+              defval: "",
+              blankrows: false,
+              raw: false
+            });
+
+            if (!linhas || !linhas.length) {
+              reject(new Error("A planilha não contém dados."));
+              return;
+            }
+
+            const normalizarCabecalho = (texto) => {
+              return String(texto || "")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-zA-Z0-9 ]/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toUpperCase();
+            };
+
+            let linhaCabecalho = -1;
+            let cabecalhos = [];
+            let cabecalhosNormalizados = [];
+
+            for (let i = 0; i < Math.min(linhas.length, 20); i++) {
+              const linhaAtual = (linhas[i] || []).map((col) => String(col || "").trim());
+              const linhaNorm = linhaAtual.map(normalizarCabecalho);
+
+              const temNF = linhaNorm.some((col) =>
+                ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
+              );
+
+              const temAWB = linhaNorm.some((col) => col.includes("AWB"));
+              const temUltimaOcorrencia = linhaNorm.some((col) =>
+                col.includes("ULTIMAOCORRENCIA") ||
+                col.includes("ULTIMA OCORRENCIA") ||
+                col.includes("ULT OCORRENCIA") ||
+                col === "OCORRENCIA"
+              );
+
+              if (temNF && (temAWB || temUltimaOcorrencia)) {
+                linhaCabecalho = i;
+                cabecalhos = linhaAtual;
+                cabecalhosNormalizados = linhaNorm;
+                break;
+              }
+            }
+
+            if (linhaCabecalho === -1) {
+              reject(
+                new Error(
+                  "Não foi possível localizar o cabeçalho da planilha. Verifique se existe coluna Numero."
+                )
+              );
+              return;
+            }
+
+            const indiceNF = cabecalhosNormalizados.findIndex((col) =>
+              ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
+            );
+
+            const indiceAWB = cabecalhosNormalizados.findIndex((col) =>
+              col.includes("AWB")
+            );
+
+            const indiceUltimaOcorrencia = cabecalhosNormalizados.findIndex((col) =>
+              col.includes("ULTIMAOCORRENCIA") ||
+              col.includes("ULTIMA OCORRENCIA") ||
+              col.includes("ULT OCORRENCIA") ||
+              col === "OCORRENCIA"
+            );
+
+            if (indiceNF === -1) {
+              reject(
+                new Error(
+                  `Coluna de NF não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}`
+                )
+              );
+              return;
+            }
+
+            const mapaEDI = {};
+
+            for (let i = linhaCabecalho + 1; i < linhas.length; i++) {
+              const linha = linhas[i] || [];
+
+              const nfOriginal = linha[indiceNF];
+              const awbOriginal = indiceAWB > -1 ? linha[indiceAWB] : "";
+              const ultimaOcorrenciaOriginal = indiceUltimaOcorrencia > -1 ? linha[indiceUltimaOcorrencia] : "";
+
+              const nf = normalizarNF(nfOriginal, cliente);
+              const awb = normalizarNumero(awbOriginal);
+              const ultimaOcorrencia = String(ultimaOcorrenciaOriginal || "").trim().toUpperCase();
+
+              if (!nf) continue;
+
+              if (!mapaEDI[nf]) {
+                mapaEDI[nf] = {
+                  awbs: [],
+                  booked: false,
+                  emitido: false
+                };
+              }
+
+              if (awb && !mapaEDI[nf].awbs.includes(awb)) {
+                mapaEDI[nf].awbs.push(awb);
+              }
+
+              if (ultimaOcorrencia === "BKD - BOOKED") {
+                mapaEDI[nf].booked = true;
+              } else {
+                mapaEDI[nf].emitido = true;
+              }
+            }
+
+            Object.keys(mapaEDI).forEach((nf) => {
+              mapaEDI[nf].awbFormatada = mapaEDI[nf].awbs.join(" / ");
+            });
+
+            if (!Object.keys(mapaEDI).length) {
+              reject(
+                new Error(
+                  "A planilha foi lida, mas nenhuma NF válida foi encontrada."
+                )
+              );
+              return;
+            }
+
+            resolve(mapaEDI);
+          } catch (erro) {
+            console.error("Erro interno ao ler Excel:", erro);
+            reject(new Error(`Erro ao ler a planilha EDI: ${erro.message}`));
           }
         };
-        leitor.onerror = () => reject(new Error("Falha ao abrir a planilha EDI."));
+
+        leitor.onerror = function () {
+          reject(new Error("Falha ao abrir a planilha EDI."));
+        };
+
         leitor.readAsArrayBuffer(arquivo);
       });
     }
 
-    /* ── COMPARAÇÃO MANIFESTO COM EDI ── */
-    function compararManifestoComEDI(nfsManifesto, mapaEDI, cliente) {
-      return nfsManifesto.map((item, idx) => {
-        const reg = mapaEDI[item.nf];
-        let emitido = "NÃO", awb = "", status = "COLETADA E NÃO EMITIDA", obs = "";
+    function compararManifestoComEDI(nfsManifesto, mapaEDI) {
+      const resultado = [];
 
-        if (reg) {
-          awb = reg.awbFormatada || "";
-          if (reg.booked) {
+      nfsManifesto.forEach((item, index) => {
+        const registroEDI = mapaEDI[item.nf];
+
+        let emitido = "NÃO";
+        let awb = "";
+        let status = "COLETADA E NÃO EMITIDA";
+        let observacao = "";
+
+        if (registroEDI) {
+          awb = registroEDI.awbFormatada || "";
+
+          if (registroEDI.booked) {
+            emitido = "NÃO";
             status = "CARGA NÃO EMITIDA - BOOK";
-            obs    = "ULTIMAOCORRENCIA = BKD - BOOKED";
-          } else if (reg.emitido) {
+            observacao = "ULTIMAOCORRENCIA = BKD - BOOKED";
+          } else if (registroEDI.emitido) {
             emitido = "SIM";
-            status  = "OK";
+            status = "OK";
           }
         }
 
-        return { ordem: idx + 1, manifesto: item.manifesto, nf: item.nf, emitido, awb, status, observacao: obs };
+        resultado.push({
+          ordem: index + 1,
+          manifesto: item.manifesto,
+          nf: item.nf,
+          emitido,
+          awb,
+          status,
+          observacao
+        });
       });
+
+      return resultado;
     }
 
-    /* ── CÁLCULO DE TOTAIS ── */
-    function calcularTotais(res) {
-      const total = res.length;
-      const emit  = res.filter(r => r.emitido === "SIM").length;
-      const div   = res.filter(r => r.status !== "OK").length;
-      const acc   = total > 0 ? ((emit / total) * 100).toFixed(2) : 0;
-      return { manifesto: total, emitido: emit, divergencias: div, acuracidade: acc };
+    function calcularTotais(resultado) {
+      const totalManifesto = resultado.length;
+      const totalEmitido = resultado.filter((item) => item.emitido === "SIM").length;
+      const totalDivergencias = resultado.filter((item) => item.status !== "OK").length;
+
+      let acuracidade = 0;
+      if (totalManifesto > 0) {
+        acuracidade = ((totalEmitido / totalManifesto) * 100).toFixed(2);
+      }
+
+      return {
+        manifesto: totalManifesto,
+        emitido: totalEmitido,
+        divergencias: totalDivergencias,
+        acuracidade
+      };
     }
 
-    /* ==================== FUNÇÕES DE RENDERIZAÇÃO DA UI ==================== */
     function renderTelaInicial() {
-      atualizarCards({ manifesto: 0, emitido: 0, divergencias: 0, acuracidade: "0,00" });
-      document.getElementById("resumoGeral").innerHTML = "Nenhum processamento realizado até o momento.";
-      document.getElementById("analise").innerHTML = "Sem análise disponível.";
-      document.getElementById("tabelaResultado").innerHTML =
-        `<tr><td colspan="7" class="muted">Nenhum dado processado.</td></tr>`;
+      atualizarCards({
+        manifesto: 0,
+        emitido: 0,
+        divergencias: 0,
+        acuracidade: 0
+      });
+
+      document.getElementById("resumoGeral").innerHTML =
+        "Nenhum processamento realizado até o momento.";
+
+      document.getElementById("analise").innerHTML =
+        "Sem análise disponível.";
+
+      document.getElementById("tabelaResultado").innerHTML = `
+        <tr>
+          <td colspan="7" class="muted">Nenhum dado processado.</td>
+        </tr>
+      `;
     }
+
     function renderResultado() {
       atualizarCards(estado.totais);
       renderResumoGeral();
       renderAnalise();
       renderTabela(estado.resultadoFinal);
     }
-    function atualizarCards(t) {
-      document.getElementById("cardManifesto").textContent    = t.manifesto;
-      document.getElementById("cardEmitido").textContent      = t.emitido;
-      document.getElementById("cardDivergencias").textContent = t.divergencias;
-      document.getElementById("cardAcuracidade").textContent  = `${t.acuracidade}%`;
+
+    function atualizarCards(totais) {
+      document.getElementById("cardManifesto").textContent = totais.manifesto;
+      document.getElementById("cardEmitido").textContent = totais.emitido;
+      document.getElementById("cardDivergencias").textContent = totais.divergencias;
+      document.getElementById("cardAcuracidade").textContent = `${totais.acuracidade}%`;
     }
+
     function renderResumoGeral() {
-      const naoEmit = estado.resultadoFinal.filter(i => i.status === "COLETADA E NÃO EMITIDA").length;
-      const books   = estado.resultadoFinal.filter(i => i.status === "CARGA NÃO EMITIDA - BOOK").length;
+      const faltantesNaoEmitidos = estado.resultadoFinal.filter(
+        (item) => item.status === "COLETADA E NÃO EMITIDA"
+      ).length;
+
+      const faltantesBook = estado.resultadoFinal.filter(
+        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
+      ).length;
+
+      const quantidadeManifestos = estado.manifestos.length;
+
       document.getElementById("resumoGeral").innerHTML = `
         <strong>Cliente:</strong> ${formatarCliente(estado.cliente)}<br>
-        <strong>Manifestos processados:</strong> ${estado.manifestos.length}<br>
+        <strong>Manifestos processados:</strong> ${quantidadeManifestos}<br>
         <strong>Total de NFs no manifesto:</strong> ${estado.totais.manifesto}<br>
         <strong>Total emitido no Excel:</strong> ${estado.totais.emitido}<br>
-        <strong>Faltante do manifesto não emitido:</strong> ${naoEmit}<br>
-        <strong>Carga não emitida - book:</strong> ${books}<br>
+        <strong>Faltante do manifesto não emitido:</strong> ${faltantesNaoEmitidos}<br>
+        <strong>Carga não emitida - book:</strong> ${faltantesBook}<br>
         <strong>Percentual de acuracidade:</strong> ${estado.totais.acuracidade}%
       `;
     }
+
     function renderAnalise() {
-      const falt = estado.resultadoFinal.filter(i => i.status === "COLETADA E NÃO EMITIDA");
-      const book = estado.resultadoFinal.filter(i => i.status === "CARGA NÃO EMITIDA - BOOK");
-      const msgs = [`Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`];
-      if (falt.length) msgs.push(`Existem ${falt.length} NF(s) com status COLETADA E NÃO EMITIDA.`);
-      if (book.length) msgs.push(`Existem ${book.length} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
-      if (!falt.length && !book.length) msgs.push("Conferência concluída sem alerta estrutural identificado.");
-      document.getElementById("analise").innerHTML = msgs.map(t => `<div>• ${t}</div>`).join("");
-    }
-    function renderTabela(dados) {
-      const tbody = document.getElementById("tabelaResultado");
-      if (!dados.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">Nenhum dado processado.</td></tr>`;
-        return;
+      const faltantes = estado.resultadoFinal.filter(
+        (item) => item.status === "COLETADA E NÃO EMITIDA"
+      );
+
+      const books = estado.resultadoFinal.filter(
+        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
+      );
+
+      const mensagens = [];
+
+      mensagens.push(`Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`);
+
+      if (faltantes.length) {
+        mensagens.push(`Existem ${faltantes.length} NF(s) com status COLETADA E NÃO EMITIDA.`);
       }
-      tbody.innerHTML = dados.map(i => `
-        <tr>
-          <td>${i.ordem}</td>
-          <td>${i.manifesto}</td>
-          <td>${i.nf}</td>
-          <td>${i.emitido}</td>
-          <td>${i.awb || "-"}</td>
-          <td class="${classeStatus(i.status)}">${i.status}</td>
-          <td>${i.observacao || "-"}</td>
-        </tr>
-      `).join("");
-    }
-    function classeStatus(s) {
-      if (s === "OK") return "status-ok";
-      if (s === "COLETADA E NÃO EMITIDA") return "status-pendente";
-      return "status-alerta"; // Para "CARGA NÃO EMITIDA - BOOK" e outros
+
+      if (books.length) {
+        mensagens.push(`Existem ${books.length} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
+      }
+
+      if (!faltantes.length && !books.length) {
+        mensagens.push("Conferência concluída sem alerta estrutural identificado.");
+      }
+
+      document.getElementById("analise").innerHTML = mensagens
+        .map((texto) => `<div>• ${texto}</div>`)
+        .join("");
     }
 
-    /* ── BUSCA NA TABELA ── */
+    function renderTabela(dados) {
+      const tbody = document.getElementById("tabelaResultado");
+
+      if (!dados.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="muted">Nenhum dado processado.</td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = dados
+        .map(
+          (item) => `
+          <tr>
+            <td>${item.ordem}</td>
+            <td>${item.manifesto}</td>
+            <td>${item.nf}</td>
+            <td>${item.emitido}</td>
+            <td>${item.awb || "-"}</td>
+            <td class="${classeStatus(item.status)}">${item.status}</td>
+            <td>${item.observacao || "-"}</td>
+          </tr>
+        `
+        )
+        .join("");
+    }
+
+    function classeStatus(status) {
+      if (status === "OK") return "status-ok";
+      if (status === "COLETADA E NÃO EMITIDA") return "status-pendente";
+      if (status === "CARGA NÃO EMITIDA - BOOK") return "status-alerta";
+      return "status-alerta";
+    }
+
     function buscarNaTabela() {
       const termo = document.getElementById("campoBusca").value.trim().toUpperCase();
-      if (!termo) { renderTabela(estado.resultadoFinal); return; }
-      const filtrado = estado.resultadoFinal.filter(i =>
-        String(i.nf).toUpperCase().includes(termo) ||
-        String(i.awb).toUpperCase().includes(termo) ||
-        String(i.status).toUpperCase().includes(termo)
+
+      if (!termo) {
+        renderTabela(estado.resultadoFinal);
+        return;
+      }
+
+      const filtrado = estado.resultadoFinal.filter(
+        (item) =>
+          String(item.nf).toUpperCase().includes(termo) ||
+          String(item.awb).toUpperCase().includes(termo) ||
+          String(item.status).toUpperCase().includes(termo)
       );
+
       renderTabela(filtrado);
     }
+
     function limparBusca() {
       document.getElementById("campoBusca").value = "";
       renderTabela(estado.resultadoFinal);
     }
 
-    /* ── EXPORTAR EXCEL ── */
     function exportarExcel() {
-      if (!estado.resultadoFinal.length) { alert("Não há resultado para exportar."); return; }
-      const dados = estado.resultadoFinal.map(i => ({
-        ORDEM: i.ordem, MANIFESTO: i.manifesto, NF: i.nf,
-        EMITIDO: i.emitido, AWB: i.awb, STATUS: i.status, OBSERVACAO: i.observacao
+      if (!estado.resultadoFinal.length) {
+        alert("Não há resultado para exportar.");
+        return;
+      }
+
+      const dadosExportacao = estado.resultadoFinal.map((item) => ({
+        ORDEM: item.ordem,
+        MANIFESTO: item.manifesto,
+        NF: item.nf,
+        EMITIDO: item.emitido,
+        AWB: item.awb,
+        STATUS: item.status,
+        OBSERVACAO: item.observacao
       }));
-      const ws = XLSX.utils.json_to_sheet(dados);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "CONFERENCIA");
-      XLSX.writeFile(wb, "resultado_conferencia_manifestos.xlsx");
+
+      const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
+      const workbook = XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, "CONFERENCIA");
+      XLSX.writeFile(workbook, "resultado_conferencia_manifestos.xlsx");
     }
 
-    /* ── EXPORTAR PDF ── */
     function exportarPDF() {
-      if (!estado.resultadoFinal.length) { alert("Não há resultado para exportar em PDF."); return; }
+      if (!estado.resultadoFinal.length) {
+        alert("Não há resultado para exportar em PDF.");
+        return;
+      }
+
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF("p", "mm", "a4");
 
-      const cliente = formatarCliente(estado.cliente);
-      const data    = new Date().toLocaleString("pt-BR");
-      const naoEmit = estado.resultadoFinal.filter(i => i.status === "COLETADA E NÃO EMITIDA").length;
-      const books   = estado.resultadoFinal.filter(i => i.status === "CARGA NÃO EMITIDA - BOOK").length;
+      const clienteFormatado = formatarCliente(estado.cliente);
+      const dataGeracao = new Date().toLocaleString("pt-BR");
 
-      const linhas = estado.resultadoFinal.map(i => [
-        i.ordem, i.manifesto, i.nf, i.emitido,
-        i.awb || "-", i.status, i.observacao || "-"
+      const faltantesNaoEmitidos = estado.resultadoFinal.filter(
+        (item) => item.status === "COLETADA E NÃO EMITIDA"
+      ).length;
+
+      const faltantesBook = estado.resultadoFinal.filter(
+        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
+      ).length;
+
+      const linhasTabela = estado.resultadoFinal.map((item) => [
+        item.ordem,
+        item.manifesto,
+        item.nf,
+        item.emitido,
+        item.awb || "-",
+        item.status,
+        item.observacao || "-"
       ]);
 
       let y = 15;
-      doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
       doc.text("CONFERÊNCIA DE MANIFESTOS", 14, y);
+
       y += 8;
-      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-      doc.text(`Cliente: ${cliente}`, 14, y);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Cliente: ${clienteFormatado}`, 14, y);
+
       y += 5;
-      doc.text(`Data de geração: ${data}`, 14, y);
+      doc.text(`Data de geração: ${dataGeracao}`, 14, y);
+
       y += 8;
-      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
       doc.text("RESUMO GERAL", 14, y);
+
       y += 6;
-      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-      [
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+
+      const resumoLinhas = [
         `Manifestos processados: ${estado.manifestos.length}`,
         `Total de NFs no manifesto: ${estado.totais.manifesto}`,
         `Total emitido no Excel: ${estado.totais.emitido}`,
-        `Faltante do manifesto não emitido: ${naoEmit}`,
-        `Carga não emitida - book: ${books}`,
+        `Faltante do manifesto não emitido: ${faltantesNaoEmitidos}`,
+        `Carga não emitida - book: ${faltantesBook}`,
         `Divergências: ${estado.totais.divergencias}`,
         `Percentual de acuracidade: ${estado.totais.acuracidade}%`
-      ].forEach(l => { doc.text(l, 14, y); y += 5; });
-
-      y += 4;
-      doc.setFont("helvetica", "bold"); doc.setFontSize(12);
-      doc.text("ANÁLISE", 14, y);
-      y += 6;
-      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-      const analise = [
-        `Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`
       ];
-      if (naoEmit > 0) analise.push(`Existem ${naoEmit} NF(s) com status COLETADA E NÃO EMITIDA.`);
-      if (books > 0)   analise.push(`Existem ${books} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
-      if (!naoEmit && !books) analise.push("Conferência concluída sem alerta estrutural identificado.");
-      analise.forEach(l => {
-        const txt = doc.splitTextToSize(l, 180);
-        doc.text(txt, 14, y);
-        y += txt.length * 5;
+
+      resumoLinhas.forEach((linha) => {
+        doc.text(linha, 14, y);
+        y += 5;
       });
 
       y += 4;
-      // Proteção de overflow de página para a tabela
-      if (y > 250) { doc.addPage(); y = 15; }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("ANÁLISE", 14, y);
+
+      y += 6;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+
+      const analiseLinhas = [
+        `Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`
+      ];
+
+      if (faltantesNaoEmitidos > 0) {
+        analiseLinhas.push(`Existem ${faltantesNaoEmitidos} NF(s) com status COLETADA E NÃO EMITIDA.`);
+      }
+
+      if (faltantesBook > 0) {
+        analiseLinhas.push(`Existem ${faltantesBook} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
+      }
+
+      if (faltantesNaoEmitidos === 0 && faltantesBook === 0) {
+        analiseLinhas.push("Conferência concluída sem alerta estrutural identificado.");
+      }
+
+      analiseLinhas.forEach((linha) => {
+        const textoQuebrado = doc.splitTextToSize(linha, 180);
+        doc.text(textoQuebrado, 14, y);
+        y += textoQuebrado.length * 5;
+      });
+
+      y += 4;
 
       doc.autoTable({
         startY: y,
-        head: [["ORDEM","MANIFESTO","NF","EMITIDO","AWB","STATUS","OBSERVAÇÃO"]],
-        body: linhas,
-        styles: { fontSize: 8, cellPadding: 2, overflow: "linebreak" },
-        headStyles: { fillColor: [23, 72, 140] },
+        head: [[
+          "ORDEM",
+          "MANIFESTO",
+          "NF",
+          "EMITIDO",
+          "AWB",
+          "STATUS",
+          "OBSERVAÇÃO"
+        ]],
+        body: linhasTabela,
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+          overflow: "linebreak"
+        },
+        headStyles: {
+          fillColor: [23, 72, 140]
+        },
         columnStyles: {
-          0: { cellWidth: 15 }, 1: { cellWidth: 35 }, 2: { cellWidth: 25 },
-          3: { cellWidth: 18 }, 4: { cellWidth: 28 }, 5: { cellWidth: 35 }, 6: { cellWidth: 34 }
+          0: { cellWidth: 15 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 18 },
+          4: { cellWidth: 28 },
+          5: { cellWidth: 35 },
+          6: { cellWidth: 34 }
         },
         margin: { left: 14, right: 14 }
       });
@@ -875,27 +1061,37 @@ $
       doc.save("resultado_conferencia_manifestos.pdf");
     }
 
-    /* ── LIMPAR SISTEMA ── */
     function limparSistema() {
-      document.getElementById("cliente").value   = "";
+      document.getElementById("cliente").value = "";
       document.getElementById("manifestos").value = "";
-      document.getElementById("edi").value        = "";
+      document.getElementById("edi").value = "";
       document.getElementById("campoBusca").value = "";
 
-      estado.cliente       = "";
-      estado.manifestos    = [];
-      estado.planilhaEDI   = null;
-      estado.nfsManifesto  = [];
-      estado.mapaEDI       = {};
+      estado.cliente = "";
+      estado.manifestos = [];
+      estado.planilhaEDI = null;
+      estado.nfsManifesto = [];
+      estado.mapaEDI = {};
       estado.resultadoFinal = [];
-      estado.totais = { manifesto: 0, emitido: 0, divergencias: 0, acuracidade: 0 };
+      estado.totais = {
+        manifesto: 0,
+        emitido: 0,
+        divergencias: 0,
+        acuracidade: 0
+      };
 
       renderTelaInicial();
     }
 
-    /* ==================== FUNÇÕES UTILITÁRIAS ==================== */
     function formatarCliente(cliente) {
-      return { riachuelo: "Riachuelo", "3coracoes": "3 Corações", stone: "Stone", generico: "Genérico" }[cliente] || cliente;
+      const mapa = {
+        riachuelo: "Riachuelo",
+        "3coracoes": "3 Corações",
+        stone: "Stone",
+        generico: "Genérico"
+      };
+
+      return mapa[cliente] || cliente;
     }
 
     function normalizarNumero(valor) {
@@ -904,15 +1100,19 @@ $
 
     function limparRuidoOCR(texto) {
       if (!texto) return "";
+
       return texto
-        .replace(/CANCELAO/gi, "").replace(/CANCELADA/gi, "")
-        .replace(/CANCEL/gi, "").replace(/CAMSCANNER/gi, "")
+        .replace(/CANCELAO/gi, "")
+        .replace(/CANCELADA/gi, "")
+        .replace(/CANCEL/gi, "")
+        .replace(/CAMSCANNER/gi, "")
         .trim();
     }
 
     function normalizarNF(nf, cliente) {
       let valor = normalizarNumero(nf);
-      if (!valor || valor.length < 4) return ""; // Mínimo de 4 dígitos para ser uma NF
+
+      if (!valor) return "";
 
       if (cliente === "riachuelo") {
         if (!(valor.length === 8 || valor.length === 9)) return "";
@@ -926,10 +1126,10 @@ $
     }
 
     function exibirErro(mensagem) {
-      const msg = `${mensagem} Se o arquivo estiver em .xls, salve como .xlsx e tente novamente.`;
-      document.getElementById("analise").innerHTML = `<div class="status-pendente">${msg}</div>`;
-      alert(msg);
-      console.error(msg);
+      const mensagemFinal = `${mensagem} Se o arquivo estiver em .xls, salve como .xlsx e tente novamente.`;
+      document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagemFinal}</div>`;
+      alert(mensagemFinal);
+      console.error(mensagemFinal);
     }
   </script>
 </body>
