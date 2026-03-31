@@ -117,11 +117,6 @@
       color: #ffffff;
     }
 
-    .btn-warning {
-      background: #d97706;
-      color: #ffffff;
-    }
-
     .btn:hover {
       opacity: 0.92;
     }
@@ -224,118 +219,6 @@
 
     .muted {
       color: #6b7280;
-    }
-
-    /* ── Modal de confirmação ── */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.55);
-      z-index: 9999;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-overlay.ativo {
-      display: flex;
-    }
-
-    .modal-box {
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 32px;
-      max-width: 560px;
-      width: 95%;
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
-    }
-
-    .modal-box h3 {
-      font-size: 20px;
-      color: #17488c;
-      margin-bottom: 8px;
-    }
-
-    .modal-box p {
-      font-size: 14px;
-      color: #4b5563;
-      margin-bottom: 16px;
-      line-height: 1.6;
-    }
-
-    .modal-progresso {
-      font-size: 13px;
-      font-weight: 700;
-      color: #1e40af;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 8px;
-      padding: 8px 12px;
-      margin-bottom: 12px;
-    }
-
-    .modal-contexto {
-      background: #fef9c3;
-      border: 1px solid #fde68a;
-      border-radius: 8px;
-      padding: 10px 14px;
-      font-size: 12px;
-      font-family: monospace;
-      color: #78350f;
-      white-space: pre-wrap;
-      max-height: 80px;
-      overflow-y: auto;
-      margin-bottom: 16px;
-    }
-
-    .modal-lista-nfs {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 260px;
-      overflow-y: auto;
-      margin-bottom: 20px;
-    }
-
-    .modal-nf-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: #f3f4f6;
-      border-radius: 10px;
-      padding: 10px 14px;
-    }
-
-    .modal-nf-item input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-
-    .modal-nf-item .nf-numero {
-      font-weight: 700;
-      font-size: 15px;
-      color: #111827;
-      flex: 1;
-      cursor: pointer;
-    }
-
-    .nf-confianca {
-      font-size: 12px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-    }
-
-    .conf-baixa { background: #fee2e2; color: #b91c1c; }
-    .conf-media { background: #fef3c7; color: #92400e; }
-
-    .modal-acoes {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      flex-wrap: wrap;
     }
 
     @media (max-width: 1100px) {
@@ -473,25 +356,6 @@
     </section>
   </div>
 
-  <!-- Modal de confirmação de NFs duvidosas -->
-  <div class="modal-overlay" id="modalConfirmacao">
-    <div class="modal-box">
-      <h3>⚠️ Confirme as NFs detectadas</h3>
-      <p>
-        O sistema detectou os números abaixo com <strong>baixa ou média confiança</strong> no OCR.
-        Revise e marque apenas os que são realmente Notas Fiscais válidas.
-      </p>
-      <div class="modal-progresso" id="modalProgresso"></div>
-      <div class="modal-contexto" id="modalContexto"></div>
-      <div class="modal-lista-nfs" id="modalListaNfs"></div>
-      <div class="modal-acoes">
-        <button class="btn btn-secondary" onclick="confirmarNFs(false)">Ignorar todos</button>
-        <button class="btn btn-warning" onclick="marcarTodos()">Marcar todos</button>
-        <button class="btn btn-primary" onclick="confirmarNFs(true)">✔ Confirmar selecionados</button>
-      </div>
-    </div>
-  </div>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -521,8 +385,6 @@
         acuracidade: 0
       }
     };
-
-    let resolverConfirmacao = null;
 
     // ─────────────────────────────────────────────
     //  INIT
@@ -611,22 +473,13 @@
 
         textoExtraido = limparRuidoOCR(textoExtraido);
 
-        const { certas, duvidosas } = classificarNFs(textoExtraido, palavrasOCR, cliente);
+        // A lógica de "confirmação de NF em caso de dúvida" foi removida para manter a estrutura.
+        // Todas as NFs extraídas com as melhorias de OCR serão consideradas.
+        const nfsExtraidas = extrairNFsDoTexto(textoExtraido, palavrasOCR, cliente);
 
-        // NFs com alta confiança entram direto
-        certas.forEach((nf) => {
+        nfsExtraidas.forEach((nf) => {
           resultado.push({ ordem: ordemGlobal++, manifesto: nomeManifesto, nf });
         });
-
-        // NFs duvidosas vão para confirmação do usuário
-        if (duvidosas.length > 0) {
-          const confirmadas = await pedirConfirmacao(
-            duvidosas, nomeManifesto, idx + 1, arquivos.length
-          );
-          confirmadas.forEach((nf) => {
-            resultado.push({ ordem: ordemGlobal++, manifesto: nomeManifesto, nf });
-          });
-        }
       }
 
       return resultado;
@@ -741,25 +594,14 @@ $
     }
 
     // ─────────────────────────────────────────────
-    //  CLASSIFICAÇÃO DE NFs: CERTAS x DUVIDOSAS
+    //  EXTRAÇÃO DE NFs (sem confirmação explícita)
     // ─────────────────────────────────────────────
-    function classificarNFs(texto, palavrasOCR, cliente) {
+    function extrairNFsDoTexto(texto, palavrasOCR, cliente) {
       const textoLimpo = limparRuidoOCR(texto || "");
+      const nfs        = [];
+      const vistos     = new Set();
 
-      // Mapa de confiança por número (vindo do OCR)
-      const mapaConfianca = {};
-      palavrasOCR.forEach((p) => {
-        const n = normalizarNumero(p.texto);
-        if (n && mapaConfianca[n] === undefined) {
-          mapaConfianca[n] = p.confianca;
-        }
-      });
-
-      const certas    = [];
-      const duvidosas = [];
-      const vistos    = new Set();
-
-      // 1) Padrões contextuais → alta confiança independente do OCR
+      // 1) Padrões contextuais
       const padroesContextuais = [
         /(?:NF|N\.F\.|NOTA\s*FISCAL)\s*[:\-#]?\s*(\d{4,})/gi,
         /(?:NF-e|NFe)\s*[:\-]?\s*(\d{4,})/gi,
@@ -771,7 +613,7 @@ $
           const nf = normalizarNF(normalizarNumero(m[1] || ""), cliente);
           if (nf && !vistos.has(nf)) {
             vistos.add(nf);
-            certas.push(nf);
+            nfs.push(nf);
           }
         }
       });
@@ -785,87 +627,11 @@ $
           const nf   = normalizarNF(numero, cliente);
           if (!nf || vistos.has(nf)) return;
           vistos.add(nf);
-
-          const chave = normalizarNumero(numero);
-          const conf  = mapaConfianca[chave]; // undefined = texto nativo
-
-          if (conf === undefined || conf >= 85) {
-            // Texto nativo ou OCR confiável
-            certas.push(nf);
-          } else {
-            // OCR com baixa/média confiança → pede confirmação
-            duvidosas.push({
-              nf,
-              confianca: conf,
-              contexto: linha.trim().substring(0, 120)
-            });
-          }
+          nfs.push(nf);
         });
       });
 
-      return { certas, duvidosas };
-    }
-
-    // ─────────────────────────────────────────────
-    //  MODAL DE CONFIRMAÇÃO
-    // ─────────────────────────────────────────────
-    function pedirConfirmacao(duvidosas, nomeArquivo, atual, total) {
-      return new Promise((resolve) => {
-        resolverConfirmacao = resolve;
-
-        document.getElementById("modalProgresso").textContent =
-          `Arquivo ${atual} de ${total}: ${nomeArquivo}`;
-
-        document.getElementById("modalContexto").textContent =
-          duvidosas[0]?.contexto || "";
-
-        const lista = document.getElementById("modalListaNfs");
-        lista.innerHTML = duvidosas.map((d, i) => `
-          <div class="modal-nf-item">
-            <input type="checkbox" id="nfck_${i}" value="${d.nf}" checked />
-            <label for="nfck_${i}" class="nf-numero">${d.nf}</label>
-            <span class="nf-confianca ${d.confianca < 70 ? "conf-baixa" : "conf-media"}">
-              ${d.confianca < 70 ? "⚠ Baixa" : "~ Média"} ${Math.round(d.confianca)}%
-            </span>
-          </div>
-        `).join("");
-
-        // Ao clicar em um item, mostra o contexto correspondente
-        duvidosas.forEach((d, i) => {
-          const cb = document.getElementById(`nfck_${i}`);
-          if (cb) {
-            cb.addEventListener("change", () => {
-              document.getElementById("modalContexto").textContent = d.contexto;
-            });
-          }
-        });
-
-        document.getElementById("modalConfirmacao").classList.add("ativo");
-      });
-    }
-
-    function confirmarNFs(usarSelecionados) {
-      document.getElementById("modalConfirmacao").classList.remove("ativo");
-
-      if (!resolverConfirmacao) return;
-
-      if (!usarSelecionados) {
-        resolverConfirmacao([]);
-        resolverConfirmacao = null;
-        return;
-      }
-
-      const marcados = Array.from(
-        document.querySelectorAll("#modalListaNfs input[type='checkbox']:checked")
-      ).map((cb) => cb.value);
-
-      resolverConfirmacao(marcados);
-      resolverConfirmacao = null;
-    }
-
-    function marcarTodos() {
-      document.querySelectorAll("#modalListaNfs input[type='checkbox']")
-        .forEach((cb) => { cb.checked = true; });
+      return nfs;
     }
 
     // ─────────────────────────────────────────────
@@ -1199,7 +965,7 @@ $
 
       doc.autoTable({
         startY: y,
-        head: [["ORDEM","MANIFESTO","NF","EMITIDO","AWB","STATUS","OBSERVAÇÃO"]],
+        head: [["ORDEM","MANIFESTO","NF","EMITIDO","AWB","STATUS","OBSERVÇÃO"]],
         body: linhasTabela,
         styles: { fontSize: 8, cellPadding: 2, overflow: "linebreak" },
         headStyles: { fillColor: [23, 72, 140] },
@@ -1211,26 +977,6 @@ $
       });
 
       doc.save("resultado_conferencia_manifestos.pdf");
-    }
-
-    // ─────────────────────────────────────────────
-    //  LIMPAR
-    // ─────────────────────────────────────────────
-    function limparSistema() {
-      document.getElementById("cliente").value   = "";
-      document.getElementById("manifestos").value = "";
-      document.getElementById("edi").value        = "";
-      document.getElementById("campoBusca").value = "";
-
-      estado.cliente       = "";
-      estado.manifestos    = [];
-      estado.planilhaEDI   = null;
-      estado.nfsManifesto  = [];
-      estado.mapaEDI       = {};
-      estado.resultadoFinal = [];
-      estado.totais = { manifesto: 0, emitido: 0, divergencias: 0, acuracidade: 0 };
-
-      renderTelaInicial();
     }
 
     // ─────────────────────────────────────────────
@@ -1254,7 +1000,7 @@ $
 
     function normalizarNF(nf, cliente) {
       let valor = normalizarNumero(nf);
-      if (!valor || valor.length < 4) return "";
+      if (!valor || valor.length < 4) return ""; // Mínimo de 4 dígitos para ser uma NF
 
       if (cliente === "riachuelo") {
         if (!(valor.length === 8 || valor.length === 9)) return "";
