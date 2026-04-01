@@ -1,1148 +1,1138 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Conferência de Manifestos</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conferência de Manifestos</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
 
-<style>
-*{box-sizing:border-box;}
-body{
-  font-family:Arial,sans-serif;
-  background:#eef1f5;
-  margin:0;
-  padding:20px;
-}
-.container{
-  max-width:960px;
-  margin:auto;
-  background:white;
-  padding:30px;
-  border-radius:10px;
-  box-shadow:0 2px 12px rgba(0,0,0,0.08);
-}
-.logo{height:40px;}
-h1{color:#1e4f91;margin:6px 0 2px 0;}
-.subtitle{color:#666;margin-bottom:20px;font-size:14px;}
-.uploads{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
-.box{
-  background:#f3f4f7;
-  padding:15px;
-  border-radius:8px;
-  flex:1;
-  min-width:180px;
-}
-.box b{display:block;margin-bottom:6px;font-size:13px;}
-button{
-  border:none;
-  padding:10px 18px;
-  border-radius:6px;
-  cursor:pointer;
-  font-size:14px;
-  font-weight:bold;
-  margin-right:8px;
-  margin-bottom:8px;
-}
-.process{background:#1e73be;color:white;}
-.process:hover{background:#155fa0;}
-.excel{background:#2e9f4b;color:white;}
-.excel:hover{background:#25803c;}
-.pdfbtn{background:#285ea8;color:white;}
-.pdfbtn:hover{background:#214d89;}
-.whats{background:#1fa855;color:white;}
-.whats:hover{background:#188746;}
-.clear{background:#7a8798;color:white;}
-.clear:hover{background:#5f6b78;}
-.counts{display:flex;gap:16px;margin:15px 0;flex-wrap:wrap;}
-.count{
-  background:#f3f4f7;
-  padding:12px 16px;
-  border-radius:8px;
-  text-align:center;
-  min-width:90px;
-  font-size:13px;
-}
-.count b{display:block;font-size:22px;color:#1e4f91;}
-table{width:100%;border-collapse:collapse;font-size:13px;}
-thead{background:#1e4f91;color:white;}
-td,th{padding:8px 10px;text-align:left;border-bottom:1px solid #e4e8ee;}
-tbody tr:hover{background:#f0f4fb;}
-.summary-box{
-  background:#f3f4f7;
-  padding:14px;
-  border-radius:8px;
-  margin:10px 0;
-  line-height:1.8;
-  font-size:14px;
-}
-.section-title{
-  font-weight:bold;
-  margin:14px 0 6px 0;
-  color:#1e4f91;
-  font-size:15px;
-}
-.status-ok{color:#2e7d32;font-weight:bold;}
-.status-warn{color:#c62828;font-weight:bold;}
-.status-book{color:#b26a00;font-weight:bold;}
-.status-validar{color:#d97706;font-weight:bold;}
-.search{margin:12px 0;}
-select,input[type="text"]{
-  padding:8px 10px;
-  border:1px solid #bfc7d1;
-  border-radius:6px;
-  font-size:13px;
-}
-input[type="text"]{width:300px;}
-#progressBar{
-  display:none;
-  margin:12px 0;
-}
-#progressBar .bar-track{
-  background:#dde3ea;
-  border-radius:6px;
-  height:14px;
-  overflow:hidden;
-}
-#progressBar .bar-fill{
-  background:#1e73be;
-  height:100%;
-  width:0%;
-  transition:width 0.2s;
-  border-radius:6px;
-}
-#progressBar .bar-label{
-  font-size:12px;
-  color:#555;
-  margin-top:4px;
-}
-#status{
-  font-size:13px;
-  color:#444;
-  margin:8px 0;
-  min-height:20px;
-}
-.st-ok{color:#2e7d32;font-weight:bold;}
-.st-nao{color:#c62828;font-weight:bold;}
-.st-book{color:#b26a00;font-weight:bold;}
-.st-validar{color:#d97706;font-weight:bold;}
-.debug-info{font-size:11px;color:#888;margin-top:4px;white-space:pre-wrap;}
-.linha-validar{background:#fff6e8;}
-.linha-validar:hover{background:#ffefcf !important;}
-.helper{
-  margin-top:6px;
-  font-size:11px;
-  color:#6b7280;
-}
-</style>
+    body {
+      background: #f3f4f6;
+      color: #1f2937;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .header {
+      margin-bottom: 28px;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+      color: #0f4c9a;
+      margin-bottom: 8px;
+    }
+
+    .title {
+      font-size: 44px;
+      font-weight: 700;
+      color: #17488c;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: #4b5563;
+    }
+
+    .grid-inputs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 28px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: #f3f4f6;
+      border-radius: 14px;
+      padding: 18px;
+      min-height: 120px;
+    }
+
+    .card label {
+      display: block;
+      font-weight: 700;
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #111827;
+    }
+
+    .card select,
+    .card input[type="file"],
+    .search-box input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: #ffffff;
+      font-size: 15px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-primary {
+      background: #1f6fbe;
+      color: #ffffff;
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: #ffffff;
+    }
+
+    .btn-secondary {
+      background: #7b8794;
+      color: #ffffff;
+    }
+
+    .btn:hover {
+      opacity: 0.92;
+    }
+
+    .cards-resumo {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .mini-card {
+      background: #f3f4f6;
+      border-radius: 14px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .mini-card .label {
+      font-size: 15px;
+      margin-bottom: 8px;
+      color: #374151;
+    }
+
+    .mini-card .value {
+      font-size: 34px;
+      font-weight: 700;
+      color: #17488c;
+    }
+
+    .mini-card .value.red {
+      color: #c62828;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section h2 {
+      font-size: 28px;
+      color: #17488c;
+      margin-bottom: 14px;
+    }
+
+    .box {
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 68px;
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .search-box {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+    }
+
+    thead {
+      background: #17488c;
+      color: #ffffff;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+      vertical-align: top;
+    }
+
+    .status-ok {
+      color: #1f7a1f;
+      font-weight: 700;
+    }
+
+    .status-pendente {
+      color: #b91c1c;
+      font-weight: 700;
+    }
+
+    .status-alerta {
+      color: #b45309;
+      font-weight: 700;
+    }
+
+    .muted {
+      color: #6b7280;
+    }
+
+    @media (max-width: 1100px) {
+      .grid-inputs,
+      .cards-resumo {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .grid-inputs,
+      .cards-resumo,
+      .search-box {
+        grid-template-columns: 1fr;
+      }
+
+      .title {
+        font-size: 32px;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
-
 <body>
-<div class="container">
+  <div class="container">
 
-  <img src="logo-azulcargo.png" class="logo" onerror="this.style.display='none'">
-  <h1>Conferência de Manifestos</h1>
-  <div class="subtitle">Manifesto PDF/Imagem + EDI Excel</div>
+    <header class="header">
+      <div class="logo">Azul Cargo Express</div>
+      <h1 class="title">Conferência de Manifestos</h1>
+      <p class="subtitle">Manifesto PDF/Imagem + EDI Excel</p>
+    </header>
 
-  <div class="uploads">
-    <div class="box">
-      <b>Cliente</b>
-      <select id="cliente">
-        <option value="riachuelo">Riachuelo</option>
-        <option value="3coracoes">3 Corações</option>
-        <option value="generico">Genérico</option>
-      </select>
-    </div>
+    <section class="grid-inputs">
+      <div class="card">
+        <label for="cliente">Cliente</label>
+        <select id="cliente">
+          <option value="">Selecione</option>
+          <option value="riachuelo">Riachuelo</option>
+          <option value="3coracoes">3 Corações</option>
+          <option value="stone">Stone</option>
+          <option value="generico">Genérico</option>
+        </select>
+      </div>
 
-    <div class="box">
-      <b>Upload Manifestos (PDF ou Imagem)</b>
-      <input type="file" id="manifesto" multiple accept=".pdf,image/*">
-      <div class="helper">Pode enviar mais de um manifesto, desde que seja do mesmo cliente.</div>
-    </div>
+      <div class="card">
+        <label for="manifestos">Upload Manifestos (PDF ou Imagem)</label>
+        <input type="file" id="manifestos" accept=".pdf,image/*" multiple />
+        <small class="muted">Pode enviar mais de um manifesto, desde que sejam do mesmo cliente.</small>
+      </div>
 
-    <div class="box">
-      <b>Upload Planilha EDI (Excel)</b>
-      <input type="file" id="edi" accept=".xls,.xlsx,.csv">
-      <div class="helper">Para Riachuelo e 3 Corações, a NF pode estar na coluna "Numero".</div>
-    </div>
+      <div class="card">
+        <label for="edi">Upload Planilha EDI (Excel)</label>
+        <input type="file" id="edi" accept=".xls,.xlsx,.csv" />
+        <small class="muted">Para Riachuelo e 3 Corações, a coluna NF é “Numero”.</small>
+      </div>
+    </section>
+
+    <section class="actions">
+      <button type="button" class="btn btn-primary" id="btnProcessar">▶ PROCESSAR CONFERÊNCIA</button>
+      <button type="button" class="btn btn-success" id="btnExportar">↓ BAIXAR EXCEL</button>
+      <button type="button" class="btn btn-primary" id="btnExportarPDF">🧾 BAIXAR PDF</button>
+      <button type="button" class="btn btn-secondary" id="btnLimpar">↻ LIMPAR</button>
+    </section>
+
+    <section class="cards-resumo">
+      <div class="mini-card">
+        <div class="label">Manifesto</div>
+        <div class="value" id="cardManifesto">0</div>
+      </div>
+
+      <div class="mini-card">
+        <div class="label">Emitido</div>
+        <div class="value" id="cardEmitido">0</div>
+      </div>
+
+      <div class="mini-card">
+        <div class="label">Divergências</div>
+        <div class="value red" id="cardDivergencias">0</div>
+      </div>
+
+      <div class="mini-card">
+        <div class="label">Acuracidade</div>
+        <div class="value" id="cardAcuracidade">0%</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Resumo Geral</h2>
+      <div class="box" id="resumoGeral">Nenhum processamento realizado até o momento.</div>
+    </section>
+
+    <section class="section">
+      <h2>Análise</h2>
+      <div class="box" id="analise">Sem análise disponível.</div>
+    </section>
+
+    <section class="section">
+      <h2>Busca</h2>
+      <div class="search-box">
+        <input type="text" id="campoBusca" placeholder="Buscar por NF ou AWB no manifesto carregado" />
+        <button type="button" class="btn btn-primary" id="btnBuscar">Buscar</button>
+        <button type="button" class="btn btn-secondary" id="btnLimparBusca">Limpar busca</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Tabela Detalhada</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Ordem</th>
+              <th>Manifesto</th>
+              <th>NF</th>
+              <th>Emitido</th>
+              <th>AWB</th>
+              <th>Status</th>
+              <th>Observação</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaResultado">
+            <tr>
+              <td colspan="7" class="muted">Nenhum dado processado.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
-  <div>
-    <button type="button" class="process" id="btnProcessar">PROCESSAR CONFERÊNCIA</button>
-    <button type="button" class="excel" id="btnExcel">Baixar Excel</button>
-    <button type="button" class="pdfbtn" id="btnPDF">Baixar PDF</button>
-    <button type="button" class="whats" id="btnWhatsapp">Gerar WhatsApp</button>
-    <button type="button" class="clear" id="btnLimpar">Limpar</button>
-  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
-  <div id="status"></div>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  </script>
 
-  <div id="progressBar">
-    <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
-    <div class="bar-label" id="barLabel"></div>
-  </div>
-
-  <div class="counts">
-    <div class="count">Manifesto<b id="manifestoCount">0</b></div>
-    <div class="count">Emitido<b id="emitidoCount">0</b></div>
-    <div class="count">Divergências<b id="divCount" style="color:#c62828">0</b></div>
-    <div class="count">Acuracidade<b id="acuracidadeCount">0%</b></div>
-  </div>
-
-  <div class="section-title">Resumo Geral</div>
-  <div id="resumoGeral" class="summary-box"></div>
-
-  <div class="section-title">Análise</div>
-  <div id="analise" class="summary-box"></div>
-
-  <div class="search">
-    <input type="text" id="busca" placeholder="Buscar NF, AWB ou status...">
-  </div>
-
-  <table id="tabela">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>NF</th>
-        <th>Emitido</th>
-        <th>AWB</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <div class="helper" style="margin-top:10px;">
-    Quando a linha estiver como <b>VALIDAR LEITURA</b>, dê duplo clique para corrigir a NF manualmente.
-  </div>
-
-  <div id="debugInfo" class="debug-info"></div>
-</div>
-
-<script>
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-
-var resultado = [];
-var manifestNFs = [];
-var clienteAtual = "riachuelo";
-var debugLog = [];
-var mapaEDIAtual = {};
-
-function normalizarNumero(valor){
-  if(valor === null || valor === undefined) return "";
-  return String(valor).replace(/\D/g, "").trim();
-}
-
-function setStatus(msg){
-  document.getElementById("status").innerText = msg || "";
-}
-
-function setProgress(pct, label){
-  var bar = document.getElementById("progressBar");
-  bar.style.display = "block";
-  document.getElementById("barFill").style.width = pct + "%";
-  document.getElementById("barLabel").innerText = label || "";
-}
-
-function hideProgress(){
-  document.getElementById("progressBar").style.display = "none";
-}
-
-function normalizarNF(nf, cliente){
-  var valor = String(nf || "").replace(/[^\d]/g, "").trim();
-  if(!valor) return "";
-
-  if(cliente === "3coracoes"){
-    if(valor.length > 9) valor = valor.slice(-9);
-    if(valor.length < 8) return "";
-    while(valor.length < 9){
-      valor = "0" + valor;
-    }
-    return valor;
-  }
-
-  if(cliente === "riachuelo"){
-    if(valor.length === 8 || valor.length === 9) return valor;
-    return "";
-  }
-
-  if(valor.length >= 7 && valor.length <= 12) return valor;
-  return "";
-}
-
-function limparRuidoOCR(texto){
-  return String(texto || "")
-    .replace(/CANCELAO/gi, " ")
-    .replace(/CANCELADA/gi, " ")
-    .replace(/CANCELADO/gi, " ")
-    .replace(/CANCEL/gi, " ")
-    .replace(/CAMSCANNER/gi, " ")
-    .replace(/DIGITALIZADO/gi, " ")
-    .replace(/PAGINA\s+\d+/gi, " ")
-    .replace(/[|]/g, " ")
-    .replace(/\s+/g, " ");
-}
-
-function corrigirOCR(texto){
-  var t = limparRuidoOCR(texto);
-  t = t.replace(/O/g, "0");
-  t = t.replace(/o/g, "0");
-  t = t.replace(/I/g, "1");
-  t = t.replace(/l/g, "1");
-  t = t.replace(/S/g, "5");
-  t = t.replace(/B/g, "8");
-  return t;
-}
-
-function contarDigitos(texto){
-  var match = String(texto || "").match(/\d/g);
-  return match ? match.length : 0;
-}
-
-async function extrairTextoNativo(pdf){
-  var textoTotal = "";
-  var paginasComTexto = 0;
-
-  for(var i = 1; i <= pdf.numPages; i++){
-    try{
-      var page = await pdf.getPage(i);
-      var content = await page.getTextContent();
-      var items = content.items || [];
-      var linhas = {};
-
-      for(var j = 0; j < items.length; j++){
-        var item = items[j];
-        var y = Math.round(item.transform[5]);
-        if(!linhas[y]) linhas[y] = [];
-        linhas[y].push({ x: item.transform[4], str: item.str || "" });
+  <script>
+    const estado = {
+      cliente: "",
+      manifestos: [],
+      planilhaEDI: null,
+      nfsManifesto: [],
+      mapaEDI: {},
+      resultadoFinal: [],
+      totais: {
+        manifesto: 0,
+        emitido: 0,
+        divergencias: 0,
+        acuracidade: 0
       }
-
-      var ys = Object.keys(linhas).map(Number).sort(function(a,b){ return b-a; });
-      var textoPagina = "";
-
-      for(var k = 0; k < ys.length; k++){
-        var linha = linhas[ys[k]].sort(function(a,b){ return a.x - b.x; }).map(function(v){ return v.str; }).join(" ");
-        textoPagina += linha + "\n";
-      }
-
-      if(textoPagina.trim().length > 20) paginasComTexto++;
-      textoTotal += textoPagina + "\n";
-    }catch(e){}
-  }
-
-  if(paginasComTexto < Math.ceil(pdf.numPages / 2)) return null;
-  return textoTotal;
-}
-
-async function renderizarPagina(page, scale){
-  var viewport = page.getViewport({ scale: scale });
-  var canvas = document.createElement("canvas");
-  var ctx = canvas.getContext("2d", { willReadFrequently: true });
-  canvas.width = Math.ceil(viewport.width);
-  canvas.height = Math.ceil(viewport.height);
-  await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-  return canvas;
-}
-
-function fileParaCanvas(file){
-  return new Promise(function(resolve, reject){
-    var img = new Image();
-    img.onload = function(){
-      var canvas = document.createElement("canvas");
-      var maxWidth = 2400;
-      var proporcao = Math.min(1, maxWidth / img.width);
-      canvas.width = Math.round(img.width * proporcao);
-      canvas.height = Math.round(img.height * proporcao);
-      var ctx = canvas.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(img.src);
-      resolve(canvas);
     };
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
 
-function preprocessarCanvas(canvasOriginal){
-  var canvas = document.createElement("canvas");
-  var ctx = canvas.getContext("2d", { willReadFrequently: true });
-  canvas.width = canvasOriginal.width;
-  canvas.height = canvasOriginal.height;
-  ctx.drawImage(canvasOriginal, 0, 0);
+    window.onload = function () {
+      renderTelaInicial();
 
-  var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  var data = imageData.data;
+      document.getElementById("btnProcessar").addEventListener("click", processarConferencia);
+      document.getElementById("btnExportar").addEventListener("click", exportarExcel);
+      document.getElementById("btnExportarPDF").addEventListener("click", exportarPDF);
+      document.getElementById("btnLimpar").addEventListener("click", limparSistema);
+      document.getElementById("btnBuscar").addEventListener("click", buscarNaTabela);
+      document.getElementById("btnLimparBusca").addEventListener("click", limparBusca);
+    };
 
-  for(var i = 0; i < data.length; i += 4){
-    var r = data[i];
-    var g = data[i + 1];
-    var b = data[i + 2];
-    var cinza = (r * 0.299) + (g * 0.587) + (b * 0.114);
+    async function processarConferencia() {
+      try {
+        document.getElementById("analise").innerHTML = "Processando arquivos...";
 
-    if(cinza > 185) cinza = 255;
-    else if(cinza < 120) cinza = 0;
+        capturarArquivosTela();
+        validarEntrada();
 
-    cinza = Math.max(0, Math.min(255, cinza * 1.08));
+        estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
+        estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
 
-    data[i] = cinza;
-    data[i + 1] = cinza;
-    data[i + 2] = cinza;
-  }
+        estado.resultadoFinal = compararManifestoComEDI(
+          estado.nfsManifesto,
+          estado.mapaEDI,
+          estado.cliente
+        );
 
-  ctx.putImageData(imageData, 0, 0);
-  return canvas;
-}
+        estado.totais = calcularTotais(estado.resultadoFinal);
 
-async function ocrCanvas(canvas){
-  var canvasTratado = preprocessarCanvas(canvas);
-  var resp = await Tesseract.recognize(canvasTratado, "por", {
-    logger: function(){},
-    preserve_interword_spaces: "1"
-  });
-  return corrigirOCR(resp.data.text || "");
-}
-
-function normalizarLinhaParaExtracao(linha){
-  return limparRuidoOCR(
-    String(linha || "")
-      .replace(/NF[\s:\-]*/gi, " ")
-      .replace(/NOTA\s+FISCAL[\s:\-]*/gi, " ")
-      .replace(/NFE[\s:\-]*/gi, " ")
-  ).trim();
-}
-
-function extrairCandidatosDaLinha(linha, cliente){
-  var candidatos = [];
-  var vistos = {};
-  var matches = linha.match(/\d{7,12}/g) || [];
-
-  for(var i = 0; i < matches.length; i++){
-    var nf = normalizarNF(matches[i], cliente);
-    if(nf && !vistos[nf]){
-      vistos[nf] = true;
-      candidatos.push(nf);
-    }
-  }
-
-  return candidatos;
-}
-
-function extrairNFsDoTexto(texto, cliente){
-  var textoBase = limparRuidoOCR(texto || "");
-  var linhasOriginais = textoBase.split(/\r?\n/);
-  var nfs = [];
-  var vistos = {};
-
-  for(var i = 0; i < linhasOriginais.length; i++){
-    var linha = normalizarLinhaParaExtracao(linhasOriginais[i] || "");
-    if(!linha) continue;
-
-    var candidatosLinha = extrairCandidatosDaLinha(linha, cliente);
-
-    for(var j = 0; j < candidatosLinha.length; j++){
-      var candidato = candidatosLinha[j];
-      if(!vistos[candidato]){
-        vistos[candidato] = true;
-        nfs.push(candidato);
+        renderResultado();
+      } catch (erro) {
+        exibirErro(erro.message || "Erro ao processar a conferência.");
       }
     }
 
-    if(!candidatosLinha.length && i < linhasOriginais.length - 1){
-      var prox = normalizarLinhaParaExtracao(linhasOriginais[i + 1] || "");
-      var combinada = linha + " " + prox;
-      var candidatosComb = extrairCandidatosDaLinha(combinada, cliente);
+    function capturarArquivosTela() {
+      estado.cliente = document.getElementById("cliente").value;
+      estado.manifestos = Array.from(document.getElementById("manifestos").files || []);
+      estado.planilhaEDI = document.getElementById("edi").files[0] || null;
+    }
 
-      for(var k = 0; k < candidatosComb.length; k++){
-        var candidato2 = candidatosComb[k];
-        if(!vistos[candidato2]){
-          vistos[candidato2] = true;
-          nfs.push(candidato2);
-        }
+    function validarEntrada() {
+      if (!estado.cliente) {
+        throw new Error("Selecione o cliente antes de processar.");
+      }
+
+      if (!estado.manifestos.length) {
+        throw new Error("Envie pelo menos um manifesto.");
+      }
+
+      if (!estado.planilhaEDI) {
+        throw new Error("Envie a planilha EDI para conferência.");
       }
     }
-  }
 
-  return nfs;
-}
+    async function lerManifestos(arquivos, cliente) {
+      const resultado = [];
+      let ordemGlobal = 1;
 
-async function extrairNotasArquivo(file, cliente, indiceArquivo, totalArquivos){
-  var nome = (file.name || "").toLowerCase();
+      for (const arquivo of arquivos) {
+        const nomeManifesto = arquivo.name;
+        let textoExtraido = "";
 
-  if(nome.endsWith(".jpg") || nome.endsWith(".jpeg") || nome.endsWith(".png") || (file.type && file.type.indexOf("image/") === 0)){
-    setStatus("Lendo imagem " + file.name + "...");
-    var canvasImg = await fileParaCanvas(file);
-    var textoImg = await ocrCanvas(canvasImg);
-    var nfsImg = extrairNFsDoTexto(textoImg, cliente);
-    return { nfs: nfsImg, metodo: "ocr-imagem" };
-  }
-
-  try{
-    var buffer = await file.arrayBuffer();
-    var pdf = await pdfjsLib.getDocument({
-      data: buffer,
-      stopAtErrors: false,
-      useSystemFonts: true
-    }).promise;
-
-    setStatus("Analisando " + file.name + "...");
-    var textoNativo = await extrairTextoNativo(pdf);
-
-    if(textoNativo !== null && contarDigitos(textoNativo) >= 20){
-      debugLog.push(file.name + ": texto NATIVO extraído");
-      var nfsNat = extrairNFsDoTexto(textoNativo, cliente);
-      return { nfs: nfsNat, metodo: "nativo" };
-    }
-
-    debugLog.push(file.name + ": PDF escaneado -> usando OCR");
-    var notas = [];
-
-    for(var i = 1; i <= pdf.numPages; i++){
-      var pct = Math.round(((indiceArquivo + (i / pdf.numPages)) / totalArquivos) * 100);
-      setProgress(pct, "OCR: " + file.name + " - página " + i + "/" + pdf.numPages);
-      var page = await pdf.getPage(i);
-      var canvas = await renderizarPagina(page, 2.8);
-      var texto = await ocrCanvas(canvas);
-      var nfs = extrairNFsDoTexto(texto, cliente);
-      notas = notas.concat(nfs);
-    }
-
-    return { nfs: notas, metodo: "ocr-pdf" };
-  }catch(err){
-    throw new Error('O arquivo "' + file.name + '" parece estar corrompido ou não é um PDF válido.');
-  }
-}
-
-function normalizarCabecalho(texto){
-  return String(texto || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9 ]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase();
-}
-
-function encontrarIndiceCabecalho(linhas){
-  for(var i = 0; i < Math.min(linhas.length, 20); i++){
-    var linhaAtual = (linhas[i] || []).map(function(v){ return String(v || "").trim(); });
-    var linhaNorm = linhaAtual.map(normalizarCabecalho);
-
-    var temNF = linhaNorm.some(function(col){
-      return ["NUMERO","NUMERO NF","NF","NFE","NOTA FISCAL","NOTA"].indexOf(col) > -1;
-    });
-
-    var temAWB = linhaNorm.some(function(col){ return col.indexOf("AWB") > -1; });
-
-    var temUltimaOcorrencia = linhaNorm.some(function(col){
-      return col.indexOf("ULTIMAOCORRENCIA") > -1 ||
-             col.indexOf("ULTIMA OCORRENCIA") > -1 ||
-             col.indexOf("ULT OCORRENCIA") > -1 ||
-             col === "OCORRENCIA";
-    });
-
-    if(temNF && (temAWB || temUltimaOcorrencia)){
-      return { indice: i, cabecalhosNormalizados: linhaNorm, cabecalhosOriginais: linhaAtual };
-    }
-  }
-  return null;
-}
-
-function lerExcel(file, cliente){
-  return new Promise(function(resolve, reject){
-    var reader = new FileReader();
-    reader.onload = function(e){
-      try{
-        var data = new Uint8Array(e.target.result);
-        var workbook = XLSX.read(data, { type: "array", raw: false });
-        var sheet = workbook.Sheets[workbook.SheetNames[0]];
-        var linhas = XLSX.utils.sheet_to_json(sheet, {
-          header: 1,
-          defval: "",
-          blankrows: false,
-          raw: false
-        });
-
-        if(!linhas || !linhas.length){
-          reject(new Error("A planilha não contém dados."));
-          return;
+        if (
+          arquivo.type === "application/pdf" ||
+          nomeManifesto.toLowerCase().endsWith(".pdf")
+        ) {
+          textoExtraido = await lerTextoPDF(arquivo);
+        } else if (arquivo.type.startsWith("image/")) {
+          textoExtraido = await lerTextoImagem(arquivo);
+        } else {
+          continue;
         }
 
-        var infoCab = encontrarIndiceCabecalho(linhas);
-        if(!infoCab){
-          reject(new Error("Não foi possível localizar o cabeçalho da planilha EDI."));
-          return;
+        textoExtraido = limparRuidoOCR(textoExtraido);
+
+        const nfs = extrairNFsDoTexto(textoExtraido, cliente);
+
+        nfs.forEach((nf) => {
+          resultado.push({
+            ordem: ordemGlobal++,
+            manifesto: nomeManifesto,
+            nf: nf
+          });
+        });
+      }
+
+      return resultado;
+    }
+
+    async function lerTextoPDF(arquivo) {
+      const arrayBuffer = await arquivo.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+      let textoCompleto = "";
+
+      for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
+        const page = await pdf.getPage(pagina);
+
+        const textContent = await page.getTextContent();
+        const textoNativo = textContent.items.map((item) => item.str).join(" ").trim();
+
+        if (textoNativo) {
+          textoCompleto += "\n" + textoNativo;
+          continue;
         }
 
-        var indice = infoCab.indice;
-        var cabecalhosNormalizados = infoCab.cabecalhosNormalizados;
-        var cabecalhosOriginais = infoCab.cabecalhosOriginais;
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
 
-        var indiceNF = cabecalhosNormalizados.findIndex(function(col){
-          return ["NUMERO","NUMERO NF","NF","NFE","NOTA FISCAL","NOTA"].indexOf(col) > -1;
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({
+          canvasContext: context,
+          viewport: viewport
+        }).promise;
+
+        const { data } = await Tesseract.recognize(canvas, "por");
+        const textoOCR = data.text || "";
+
+        textoCompleto += "\n" + textoOCR;
+      }
+
+      return textoCompleto;
+    }
+
+    async function lerTextoImagem(arquivo) {
+      const { data } = await Tesseract.recognize(arquivo, "por");
+      return data.text || "";
+    }
+
+    function extrairNFsDoTexto(texto, cliente) {
+      const textoLimpo = limparRuidoOCR(texto || "");
+      const linhas = textoLimpo.split(/\n+/);
+      const nfs = [];
+      const vistos = new Set();
+
+      linhas.forEach((linha) => {
+        const numeros = linha.match(/\d+/g) || [];
+
+        numeros.forEach((numero) => {
+          const nfTratada = normalizarNF(numero, cliente);
+          if (nfTratada && !vistos.has(nfTratada)) {
+            vistos.add(nfTratada);
+            nfs.push(nfTratada);
+          }
         });
+      });
 
-        var indiceAWB = cabecalhosNormalizados.findIndex(function(col){
-          return col.indexOf("AWB") > -1;
-        });
+      return nfs;
+    }
 
-        var indiceUltimaOcorrencia = cabecalhosNormalizados.findIndex(function(col){
-          return col.indexOf("ULTIMAOCORRENCIA") > -1 ||
-                 col.indexOf("ULTIMA OCORRENCIA") > -1 ||
-                 col.indexOf("ULT OCORRENCIA") > -1 ||
-                 col === "OCORRENCIA";
-        });
+    async function lerPlanilhaEDI(arquivo, cliente) {
+      return new Promise((resolve, reject) => {
+        const leitor = new FileReader();
 
-        if(indiceNF === -1){
-          reject(new Error("Coluna NF não encontrada. Cabeçalhos: " + cabecalhosOriginais.join(" | ")));
-          return;
-        }
+        leitor.onload = function (evento) {
+          try {
+            const dados = new Uint8Array(evento.target.result);
 
-        var mapa = {};
+            const workbook = XLSX.read(dados, {
+              type: "array",
+              cellDates: false,
+              raw: false
+            });
 
-        for(var i = indice + 1; i < linhas.length; i++){
-          var linha = linhas[i] || [];
-          var nfOriginal = linha[indiceNF];
-          var awbOriginal = indiceAWB > -1 ? linha[indiceAWB] : "";
-          var ultimaOcorrenciaOriginal = indiceUltimaOcorrencia > -1 ? linha[indiceUltimaOcorrencia] : "";
+            if (!workbook.SheetNames || !workbook.SheetNames.length) {
+              reject(new Error("A planilha está vazia ou sem abas."));
+              return;
+            }
 
-          var nf = normalizarNF(nfOriginal, cliente);
-          var awb = normalizarNumero(awbOriginal);
-          var ultimaOcorrencia = String(ultimaOcorrenciaOriginal || "").trim().toUpperCase();
+            const primeiraAba = workbook.Sheets[workbook.SheetNames[0]];
 
-          if(!nf) continue;
+            const linhas = XLSX.utils.sheet_to_json(primeiraAba, {
+              header: 1,
+              defval: "",
+              blankrows: false,
+              raw: false
+            });
 
-          if(!mapa[nf]){
-            mapa[nf] = {
-              awbs: [],
-              booked: false,
-              emitido: false
+            if (!linhas || !linhas.length) {
+              reject(new Error("A planilha não contém dados."));
+              return;
+            }
+
+            const normalizarCabecalho = (texto) => {
+              return String(texto || "")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-zA-Z0-9 ]/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toUpperCase();
             };
-          }
 
-          if(awb && mapa[nf].awbs.indexOf(awb) === -1){
-            mapa[nf].awbs.push(awb);
-          }
+            let linhaCabecalho = -1;
+            let cabecalhos = [];
+            let cabecalhosNormalizados = [];
 
-          if(ultimaOcorrencia === "BKD - BOOKED"){
-            mapa[nf].booked = true;
-          }else{
-            mapa[nf].emitido = true;
+            for (let i = 0; i < Math.min(linhas.length, 20); i++) {
+              const linhaAtual = (linhas[i] || []).map((col) => String(col || "").trim());
+              const linhaNorm = linhaAtual.map(normalizarCabecalho);
+
+              const temNF = linhaNorm.some((col) =>
+                ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
+              );
+
+              const temAWB = linhaNorm.some((col) => col.includes("AWB"));
+              const temUltimaOcorrencia = linhaNorm.some((col) =>
+                col.includes("ULTIMAOCORRENCIA") ||
+                col.includes("ULTIMA OCORRENCIA") ||
+                col.includes("ULT OCORRENCIA") ||
+                col === "OCORRENCIA"
+              );
+
+              if (temNF && (temAWB || temUltimaOcorrencia)) {
+                linhaCabecalho = i;
+                cabecalhos = linhaAtual;
+                cabecalhosNormalizados = linhaNorm;
+                break;
+              }
+            }
+
+            if (linhaCabecalho === -1) {
+              reject(
+                new Error(
+                  "Não foi possível localizar o cabeçalho da planilha. Verifique se existe coluna Numero."
+                )
+              );
+              return;
+            }
+
+            const indiceNF = cabecalhosNormalizados.findIndex((col) =>
+              ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
+            );
+
+            const indiceAWB = cabecalhosNormalizados.findIndex((col) =>
+              col.includes("AWB")
+            );
+
+            const indiceUltimaOcorrencia = cabecalhosNormalizados.findIndex((col) =>
+              col.includes("ULTIMAOCORRENCIA") ||
+              col.includes("ULTIMA OCORRENCIA") ||
+              col.includes("ULT OCORRENCIA") ||
+              col === "OCORRENCIA"
+            );
+
+            if (indiceNF === -1) {
+              reject(
+                new Error(
+                  Coluna de NF não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}
+                )
+              );
+              return;
+            }
+
+            const mapaEDI = {};
+
+            for (let i = linhaCabecalho + 1; i < linhas.length; i++) {
+              const linha = linhas[i] || [];
+
+              const nfOriginal = linha[indiceNF];
+              const awbOriginal = indiceAWB > -1 ? linha[indiceAWB] : "";
+              const ultimaOcorrenciaOriginal = indiceUltimaOcorrencia > -1 ? linha[indiceUltimaOcorrencia] : "";
+
+              const nf = normalizarNF(nfOriginal, cliente);
+              const awb = normalizarNumero(awbOriginal);
+              const ultimaOcorrencia = String(ultimaOcorrenciaOriginal || "").trim().toUpperCase();
+
+              if (!nf) continue;
+
+              if (!mapaEDI[nf]) {
+                mapaEDI[nf] = {
+                  awbs: [],
+                  booked: false,
+                  emitido: false
+                };
+              }
+
+              if (awb && !mapaEDI[nf].awbs.includes(awb)) {
+                mapaEDI[nf].awbs.push(awb);
+              }
+
+              if (ultimaOcorrencia === "BKD - BOOKED") {
+                mapaEDI[nf].booked = true;
+              } else {
+                mapaEDI[nf].emitido = true;
+              }
+            }
+
+            Object.keys(mapaEDI).forEach((nf) => {
+              mapaEDI[nf].awbFormatada = mapaEDI[nf].awbs.join(" / ");
+            });
+
+            if (!Object.keys(mapaEDI).length) {
+              reject(
+                new Error(
+                  "A planilha foi lida, mas nenhuma NF válida foi encontrada."
+                )
+              );
+              return;
+            }
+
+            resolve(mapaEDI);
+          } catch (erro) {
+            console.error("Erro interno ao ler Excel:", erro);
+            reject(new Error(Erro ao ler a planilha EDI: ${erro.message}));
+          }
+        };
+
+        leitor.onerror = function () {
+          reject(new Error("Falha ao abrir a planilha EDI."));
+        };
+
+        leitor.readAsArrayBuffer(arquivo);
+      });
+    }
+
+    function compararManifestoComEDI(nfsManifesto, mapaEDI) {
+      const resultado = [];
+
+      nfsManifesto.forEach((item, index) => {
+        const registroEDI = mapaEDI[item.nf];
+
+        let emitido = "NÃO";
+        let awb = "";
+        let status = "COLETADA E NÃO EMITIDA";
+        let observacao = "";
+
+        if (registroEDI) {
+          awb = registroEDI.awbFormatada || "";
+
+          if (registroEDI.booked) {
+            emitido = "NÃO";
+            status = "CARGA NÃO EMITIDA - BOOK";
+            observacao = "ULTIMAOCORRENCIA = BKD - BOOKED";
+          } else if (registroEDI.emitido) {
+            emitido = "SIM";
+            status = "OK";
           }
         }
 
-        Object.keys(mapa).forEach(function(nf){
-          mapa[nf].awb = mapa[nf].awbs.join(" / ");
+        resultado.push({
+          ordem: index + 1,
+          manifesto: item.manifesto,
+          nf: item.nf,
+          emitido,
+          awb,
+          status,
+          observacao
         });
+      });
 
-        resolve(mapa);
-      }catch(err){
-        reject(new Error("Erro ao ler a planilha EDI: " + err.message));
-      }
-    };
-    reader.onerror = function(){
-      reject(new Error("Falha ao abrir a planilha EDI."));
-    };
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-function distanciaLevenshtein(a, b){
-  a = String(a || "");
-  b = String(b || "");
-
-  var matriz = [];
-  for(var i = 0; i <= a.length; i++){
-    matriz[i] = [];
-    for(var j = 0; j <= b.length; j++){
-      matriz[i][j] = 0;
+      return resultado;
     }
-  }
 
-  for(i = 0; i <= a.length; i++) matriz[i][0] = i;
-  for(j = 0; j <= b.length; j++) matriz[0][j] = j;
+    function calcularTotais(resultado) {
+      const totalManifesto = resultado.length;
+      const totalEmitido = resultado.filter((item) => item.emitido === "SIM").length;
+      const totalDivergencias = resultado.filter((item) => item.status !== "OK").length;
 
-  for(i = 1; i <= a.length; i++){
-    for(j = 1; j <= b.length; j++){
-      var custo = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
-      matriz[i][j] = Math.min(
-        matriz[i - 1][j] + 1,
-        matriz[i][j - 1] + 1,
-        matriz[i - 1][j - 1] + custo
+      let acuracidade = 0;
+      if (totalManifesto > 0) {
+        acuracidade = ((totalEmitido / totalManifesto) * 100).toFixed(2);
+      }
+
+      return {
+        manifesto: totalManifesto,
+        emitido: totalEmitido,
+        divergencias: totalDivergencias,
+        acuracidade
+      };
+    }
+
+    function renderTelaInicial() {
+      atualizarCards({
+        manifesto: 0,
+        emitido: 0,
+        divergencias: 0,
+        acuracidade: 0
+      });
+
+      document.getElementById("resumoGeral").innerHTML =
+        "Nenhum processamento realizado até o momento.";
+
+      document.getElementById("analise").innerHTML =
+        "Sem análise disponível.";
+
+      document.getElementById("tabelaResultado").innerHTML = `
+        <tr>
+          <td colspan="7" class="muted">Nenhum dado processado.</td>
+        </tr>
+      `;
+    }
+
+    function renderResultado() {
+      atualizarCards(estado.totais);
+      renderResumoGeral();
+      renderAnalise();
+      renderTabela(estado.resultadoFinal);
+    }
+
+    function atualizarCards(totais) {
+      document.getElementById("cardManifesto").textContent = totais.manifesto;
+      document.getElementById("cardEmitido").textContent = totais.emitido;
+      document.getElementById("cardDivergencias").textContent = totais.divergencias;
+      document.getElementById("cardAcuracidade").textContent = ${totais.acuracidade}%;
+    }
+
+    function renderResumoGeral() {
+      const faltantesNaoEmitidos = estado.resultadoFinal.filter(
+        (item) => item.status === "COLETADA E NÃO EMITIDA"
+      ).length;
+
+      const faltantesBook = estado.resultadoFinal.filter(
+        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
+      ).length;
+
+      const quantidadeManifestos = estado.manifestos.length;
+
+      document.getElementById("resumoGeral").innerHTML = `
+        <strong>Cliente:</strong> ${formatarCliente(estado.cliente)}<br>
+        <strong>Manifestos processados:</strong> ${quantidadeManifestos}<br>
+        <strong>Total de NFs no manifesto:</strong> ${estado.totais.manifesto}<br>
+        <strong>Total emitido no Excel:</strong> ${estado.totais.emitido}<br>
+        <strong>Faltante do manifesto não emitido:</strong> ${faltantesNaoEmitidos}<br>
+        <strong>Carga não emitida - book:</strong> ${faltantesBook}<br>
+        <strong>Percentual de acuracidade:</strong> ${estado.totais.acuracidade}%
+      `;
+    }
+
+    function renderAnalise() {
+      const faltantes = estado.resultadoFinal.filter(
+        (item) => item.status === "COLETADA E NÃO EMITIDA"
       );
-    }
-  }
 
-  return matriz[a.length][b.length];
-}
+      const books = estado.resultadoFinal.filter(
+        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
+      );
 
-function encontrarNFProxima(nfLida, mapaEDI){
-  var chaves = Object.keys(mapaEDI || {});
-  if(!nfLida || !chaves.length) return null;
+      const mensagens = [];
 
-  var melhor = null;
+      mensagens.push(Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length});
 
-  for(var i = 0; i < chaves.length; i++){
-    var nfEDI = chaves[i];
-    if(String(nfEDI).length !== String(nfLida).length) continue;
-
-    var distancia = distanciaLevenshtein(nfLida, nfEDI);
-
-    if(distancia <= 1){
-      if(!melhor || distancia < melhor.distancia){
-        melhor = { nf: nfEDI, distancia: distancia };
+      if (faltantes.length) {
+        mensagens.push(Existem ${faltantes.length} NF(s) com status COLETADA E NÃO EMITIDA.);
       }
-    }
-  }
 
-  return melhor;
-}
+      if (books.length) {
+        mensagens.push(Existem ${books.length} NF(s) com status CARGA NÃO EMITIDA - BOOK.);
+      }
 
-function reavaliarLinha(item, mapaEDI){
-  var registroEDI = mapaEDI[item.nf];
+      if (!faltantes.length && !books.length) {
+        mensagens.push("Conferência concluída sem alerta estrutural identificado.");
+      }
 
-  item.emitido = "NÃO";
-  item.awb = "";
-  item.status = "COLETADA E NÃO EMITIDA";
-  item.observacao = "";
-  item.sugestaoNF = "";
-  item.requerCorrecao = false;
-
-  if(registroEDI){
-    item.awb = registroEDI.awb || "";
-
-    if(registroEDI.booked){
-      item.emitido = "NÃO";
-      item.status = "CARGA NÃO EMITIDA - BOOK";
-      item.observacao = "ULTIMAOCORRENCIA = BKD - BOOKED";
-    }else if(registroEDI.emitido){
-      item.emitido = "SIM";
-      item.status = "OK";
-      item.observacao = "";
+      document.getElementById("analise").innerHTML = mensagens
+        .map((texto) => <div>• ${texto}</div>)
+        .join("");
     }
 
-    return item;
-  }
+    function renderTabela(dados) {
+      const tbody = document.getElementById("tabelaResultado");
 
-  var sugestao = encontrarNFProxima(item.nf, mapaEDI);
+      if (!dados.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="muted">Nenhum dado processado.</td>
+          </tr>
+        `;
+        return;
+      }
 
-  if(sugestao){
-    item.status = "VALIDAR LEITURA";
-    item.observacao = "Possível NF correta: " + sugestao.nf;
-    item.sugestaoNF = sugestao.nf;
-    item.requerCorrecao = true;
-  }
+      tbody.innerHTML = dados
+        .map(
+          (item) => `
+          <tr>
+            <td>${item.ordem}</td>
+            <td>${item.manifesto}</td>
+            <td>${item.nf}</td>
+            <td>${item.emitido}</td>
+            <td>${item.awb || "-"}</td>
+            <td class="${classeStatus(item.status)}">${item.status}</td>
+            <td>${item.observacao || "-"}</td>
+          </tr>
+        `
+        )
+        .join("");
+    }
 
-  return item;
-}
+    function classeStatus(status) {
+      if (status === "OK") return "status-ok";
+      if (status === "COLETADA E NÃO EMITIDA") return "status-pendente";
+      if (status === "CARGA NÃO EMITIDA - BOOK") return "status-alerta";
+      return "status-alerta";
+    }
 
-function compararManifestoComEDI(nfsManifesto, mapaEDI){
-  var resultadoLocal = [];
+    function buscarNaTabela() {
+      const termo = document.getElementById("campoBusca").value.trim().toUpperCase();
 
-  for(var i = 0; i < nfsManifesto.length; i++){
-    var linha = {
-      ordem: i + 1,
-      nf: nfsManifesto[i],
-      emitido: "NÃO",
-      awb: "",
-      status: "COLETADA E NÃO EMITIDA",
-      observacao: "",
-      sugestaoNF: "",
-      requerCorrecao: false
-    };
+      if (!termo) {
+        renderTabela(estado.resultadoFinal);
+        return;
+      }
 
-    reavaliarLinha(linha, mapaEDI);
-    resultadoLocal.push(linha);
-  }
+      const filtrado = estado.resultadoFinal.filter(
+        (item) =>
+          String(item.nf).toUpperCase().includes(termo) ||
+          String(item.awb).toUpperCase().includes(termo) ||
+          String(item.status).toUpperCase().includes(termo)
+      );
 
-  return resultadoLocal;
-}
+      renderTabela(filtrado);
+    }
 
-function calcularTotais(resultadoBase){
-  var totalManifesto = resultadoBase.length;
-  var totalEmitido = resultadoBase.filter(function(item){ return item.emitido === "SIM"; }).length;
-  var totalDivergencias = resultadoBase.filter(function(item){ return item.status !== "OK"; }).length;
-  var acuracidade = totalManifesto > 0 ? ((totalEmitido / totalManifesto) * 100).toFixed(2) : "0.00";
+    function limparBusca() {
+      document.getElementById("campoBusca").value = "";
+      renderTabela(estado.resultadoFinal);
+    }
 
-  return {
-    manifesto: totalManifesto,
-    emitido: totalEmitido,
-    divergencias: totalDivergencias,
-    acuracidade: acuracidade
-  };
-}
+    function exportarExcel() {
+      if (!estado.resultadoFinal.length) {
+        alert("Não há resultado para exportar.");
+        return;
+      }
 
-function obterPendenciasOrdenadas(){
-  return resultado.filter(function(item){ return item.status !== "OK"; });
-}
+      const dadosExportacao = estado.resultadoFinal.map((item) => ({
+        ORDEM: item.ordem,
+        MANIFESTO: item.manifesto,
+        NF: item.nf,
+        EMITIDO: item.emitido,
+        AWB: item.awb,
+        STATUS: item.status,
+        OBSERVACAO: item.observacao
+      }));
 
-function classeStatus(status){
-  if(status === "OK") return "st-ok";
-  if(status === "COLETADA E NÃO EMITIDA") return "st-nao";
-  if(status === "CARGA NÃO EMITIDA - BOOK") return "st-book";
-  if(status === "VALIDAR LEITURA") return "st-validar";
-  return "st-nao";
-}
+      const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
+      const workbook = XLSX.utils.book_new();
 
-function atualizarInterface(metodos){
-  var tbody = document.querySelector("#tabela tbody");
-  tbody.innerHTML = "";
+      XLSX.utils.book_append_sheet(workbook, worksheet, "CONFERENCIA");
+      XLSX.writeFile(workbook, "resultado_conferencia_manifestos.xlsx");
+    }
 
-  for(var i = 0; i < resultado.length; i++){
-    (function(index){
-      var r = resultado[index];
-      var tr = document.createElement("tr");
-      var cls = classeStatus(r.status);
+    function exportarPDF() {
+      if (!estado.resultadoFinal.length) {
+        alert("Não há resultado para exportar em PDF.");
+        return;
+      }
 
-      if(r.status === "VALIDAR LEITURA") tr.classList.add("linha-validar");
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("p", "mm", "a4");
 
-      tr.innerHTML =
-        "<td>" + r.ordem + "</td>" +
-        "<td>" + r.nf + "</td>" +
-        "<td>" + r.emitido + "</td>" +
-        "<td>" + (r.awb || "—") + "</td>" +
-        "<td class='" + cls + "'>" + r.status + "</td>";
+      const clienteFormatado = formatarCliente(estado.cliente);
+      const dataGeracao = new Date().toLocaleString("pt-BR");
 
-      tr.ondblclick = function(){
-        if(r.requerCorrecao){
-          corrigirNF(index);
-        }
+      const faltantesNaoEmitidos = estado.resultadoFinal.filter(
+        (item) => item.status === "COLETADA E NÃO EMITIDA"
+      ).length;
+
+      const faltantesBook = estado.resultadoFinal.filter(
+        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
+      ).length;
+
+      const linhasTabela = estado.resultadoFinal.map((item) => [
+        item.ordem,
+        item.manifesto,
+        item.nf,
+        item.emitido,
+        item.awb || "-",
+        item.status,
+        item.observacao || "-"
+      ]);
+
+      let y = 15;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("CONFERÊNCIA DE MANIFESTOS", 14, y);
+
+      y += 8;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(Cliente: ${clienteFormatado}, 14, y);
+
+      y += 5;
+      doc.text(Data de geração: ${dataGeracao}, 14, y);
+
+      y += 8;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("RESUMO GERAL", 14, y);
+
+      y += 6;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+
+      const resumoLinhas = [
+        Manifestos processados: ${estado.manifestos.length},
+        Total de NFs no manifesto: ${estado.totais.manifesto},
+        Total emitido no Excel: ${estado.totais.emitido},
+        Faltante do manifesto não emitido: ${faltantesNaoEmitidos},
+        Carga não emitida - book: ${faltantesBook},
+        Divergências: ${estado.totais.divergencias},
+        Percentual de acuracidade: ${estado.totais.acuracidade}%
+      ];
+
+      resumoLinhas.forEach((linha) => {
+        doc.text(linha, 14, y);
+        y += 5;
+      });
+
+      y += 4;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("ANÁLISE", 14, y);
+
+      y += 6;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+
+      const analiseLinhas = [
+        Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}
+      ];
+
+      if (faltantesNaoEmitidos > 0) {
+        analiseLinhas.push(Existem ${faltantesNaoEmitidos} NF(s) com status COLETADA E NÃO EMITIDA.);
+      }
+
+      if (faltantesBook > 0) {
+        analiseLinhas.push(Existem ${faltantesBook} NF(s) com status CARGA NÃO EMITIDA - BOOK.);
+      }
+
+      if (faltantesNaoEmitidos === 0 && faltantesBook === 0) {
+        analiseLinhas.push("Conferência concluída sem alerta estrutural identificado.");
+      }
+
+      analiseLinhas.forEach((linha) => {
+        const textoQuebrado = doc.splitTextToSize(linha, 180);
+        doc.text(textoQuebrado, 14, y);
+        y += textoQuebrado.length * 5;
+      });
+
+      y += 4;
+
+      doc.autoTable({
+        startY: y,
+        head: [[
+          "ORDEM",
+          "MANIFESTO",
+          "NF",
+          "EMITIDO",
+          "AWB",
+          "STATUS",
+          "OBSERVAÇÃO"
+        ]],
+        body: linhasTabela,
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+          overflow: "linebreak"
+        },
+        headStyles: {
+          fillColor: [23, 72, 140]
+        },
+        columnStyles: {
+          0: { cellWidth: 15 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 18 },
+          4: { cellWidth: 28 },
+          5: { cellWidth: 35 },
+          6: { cellWidth: 34 }
+        },
+        margin: { left: 14, right: 14 }
+      });
+
+      doc.save("resultado_conferencia_manifestos.pdf");
+    }
+
+    function limparSistema() {
+      document.getElementById("cliente").value = "";
+      document.getElementById("manifestos").value = "";
+      document.getElementById("edi").value = "";
+      document.getElementById("campoBusca").value = "";
+
+      estado.cliente = "";
+      estado.manifestos = [];
+      estado.planilhaEDI = null;
+      estado.nfsManifesto = [];
+      estado.mapaEDI = {};
+      estado.resultadoFinal = [];
+      estado.totais = {
+        manifesto: 0,
+        emitido: 0,
+        divergencias: 0,
+        acuracidade: 0
       };
 
-      tbody.appendChild(tr);
-    })(i);
-  }
-
-  var totais = calcularTotais(resultado);
-  var naoEmitidas = resultado.filter(function(r){ return r.status === "COLETADA E NÃO EMITIDA"; });
-  var books = resultado.filter(function(r){ return r.status === "CARGA NÃO EMITIDA - BOOK"; });
-  var validar = resultado.filter(function(r){ return r.status === "VALIDAR LEITURA"; });
-
-  document.getElementById("manifestoCount").innerText = totais.manifesto;
-  document.getElementById("emitidoCount").innerText = totais.emitido;
-  document.getElementById("divCount").innerText = totais.divergencias;
-  document.getElementById("acuracidadeCount").innerText = totais.acuracidade + "%";
-
-  document.getElementById("resumoGeral").innerHTML =
-    "<b>Cliente:</b> " + clienteAtual + "<br>" +
-    "<b>Total Manifesto:</b> " + totais.manifesto + "<br>" +
-    "<b>Total Emitido:</b> " + totais.emitido + "<br>" +
-    "<b>Faltante do manifesto não emitido:</b> " + naoEmitidas.length + "<br>" +
-    "<b>Carga não emitida - book:</b> " + books.length + "<br>" +
-    "<b>Leituras para validar:</b> " + validar.length + "<br>" +
-    "<b>Acuracidade:</b> " + totais.acuracidade + "%<br>" +
-    "<b>Método:</b> " + metodos.map(function(m){ return m.arquivo + ": " + m.metodo; }).join(" | ");
-
-  var html = "";
-  html += "<div>Total de NFs extraídas do manifesto: " + manifestNFs.length + "</div>";
-
-  if(naoEmitidas.length){
-    html += "<div class='status-warn'>• " + naoEmitidas.length + " NF(s) com status COLETADA E NÃO EMITIDA.</div>";
-  }
-
-  if(books.length){
-    html += "<div class='status-book'>• " + books.length + " NF(s) com status CARGA NÃO EMITIDA - BOOK.</div>";
-  }
-
-  if(validar.length){
-    html += "<div class='status-validar'>• " + validar.length + " NF(s) com leitura suspeita. Dê duplo clique na linha para corrigir.</div>";
-  }
-
-  if(!naoEmitidas.length && !books.length && !validar.length){
-    html += "<div class='status-ok'>Conferência concluída sem alerta estrutural identificado.</div>";
-  }
-
-  document.getElementById("analise").innerHTML = html;
-}
-
-function corrigirNF(indice){
-  var item = resultado[indice];
-  if(!item) return;
-
-  var sugestao = item.sugestaoNF || item.nf || "";
-  var novaNF = prompt("Confirme ou corrija a NF:", sugestao);
-
-  if(novaNF === null) return;
-
-  var nfTratada = normalizarNF(novaNF, clienteAtual);
-
-  if(!nfTratada){
-    alert("NF inválida. Digite apenas a nota correta.");
-    return;
-  }
-
-  item.nf = nfTratada;
-  item.observacao = "NF corrigida manualmente";
-  item.sugestaoNF = "";
-  item.requerCorrecao = false;
-
-  reavaliarLinha(item, mapaEDIAtual);
-
-  if(item.status === "OK"){
-    item.observacao = "NF corrigida manualmente";
-  }else if(item.status === "CARGA NÃO EMITIDA - BOOK"){
-    item.observacao = "NF corrigida manualmente | ULTIMAOCORRENCIA = BKD - BOOKED";
-  }else if(item.status === "COLETADA E NÃO EMITIDA"){
-    item.observacao = "NF corrigida manualmente | Não localizada no EDI";
-  }
-
-  atualizarInterface([{ arquivo: "reprocessamento manual", metodo: "correção manual" }]);
-  setStatus("NF corrigida e reavaliada com sucesso.");
-}
-
-async function processar(){
-  try{
-    debugLog = [];
-    setStatus("Iniciando...");
-    clienteAtual = document.getElementById("cliente").value;
-
-    var manifestos = document.getElementById("manifesto").files;
-    var ediFile = document.getElementById("edi").files[0];
-
-    if(!manifestos.length){
-      setStatus("Selecione ao menos um arquivo de manifesto.");
-      return;
+      renderTelaInicial();
     }
 
-    if(!ediFile){
-      setStatus("Selecione a planilha EDI.");
-      return;
+    function formatarCliente(cliente) {
+      const mapa = {
+        riachuelo: "Riachuelo",
+        "3coracoes": "3 Corações",
+        stone: "Stone",
+        generico: "Genérico"
+      };
+
+      return mapa[cliente] || cliente;
     }
 
-    var notasManifestoBrutas = [];
-    var metodos = [];
-
-    for(var idx = 0; idx < manifestos.length; idx++){
-      var retorno = await extrairNotasArquivo(manifestos[idx], clienteAtual, idx, manifestos.length);
-      notasManifestoBrutas = notasManifestoBrutas.concat(retorno.nfs);
-      metodos.push({ arquivo: manifestos[idx].name, metodo: retorno.metodo });
+    function normalizarNumero(valor) {
+      return String(valor || "").replace(/\D/g, "");
     }
 
-    hideProgress();
+    function limparRuidoOCR(texto) {
+      if (!texto) return "";
 
-    manifestNFs = notasManifestoBrutas;
-
-    if(!manifestNFs.length){
-      setStatus("Nenhuma NF válida foi identificada no manifesto.");
-      return;
+      return texto
+        .replace(/CANCELAO/gi, "")
+        .replace(/CANCELADA/gi, "")
+        .replace(/CANCEL/gi, "")
+        .replace(/CAMSCANNER/gi, "")
+        .trim();
     }
 
-    mapaEDIAtual = await lerExcel(ediFile, clienteAtual);
-    resultado = compararManifestoComEDI(manifestNFs, mapaEDIAtual);
+    function normalizarNF(nf, cliente) {
+      let valor = normalizarNumero(nf);
 
-    atualizarInterface(metodos);
-    setStatus("Conferência concluída. " + manifestNFs.length + " NF(s) processadas.");
-    document.getElementById("debugInfo").innerText = debugLog.join("\n");
-  }catch(err){
-    console.error(err);
-    setStatus("Erro: " + err.message + " Se o arquivo estiver em .xls, salve como .xlsx e tente novamente.");
-    hideProgress();
-  }
-}
+      if (!valor) return "";
 
-function filtrar(){
-  var v = document.getElementById("busca").value.toLowerCase();
-  document.querySelectorAll("#tabela tbody tr").forEach(function(l){
-    l.style.display = l.innerText.toLowerCase().indexOf(v) > -1 ? "" : "none";
-  });
-}
+      if (cliente === "riachuelo") {
+        if (!(valor.length === 8 || valor.length === 9)) return "";
+      }
 
-function baixarExcel(){
-  if(!resultado.length){
-    alert("Não há resultado para exportar.");
-    return;
-  }
+      if (cliente === "3coracoes") {
+        valor = valor.padStart(9, "0");
+      }
 
-  var dados = resultado.map(function(item){
-    return {
-      ORDEM: item.ordem,
-      NF: item.nf,
-      EMITIDO: item.emitido,
-      AWB: item.awb,
-      STATUS: item.status,
-      OBSERVACAO: item.observacao || "",
-      SUGESTAO_NF: item.sugestaoNF || ""
-    };
-  });
-
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dados), "Conferencia");
-  XLSX.writeFile(wb, "conferencia.xlsx");
-}
-
-function baixarPDF(){
-  if(!resultado.length){
-    alert("Não há resultado para exportar em PDF.");
-    return;
-  }
-
-  var jsPDF = window.jspdf.jsPDF;
-  var doc = new jsPDF("p", "mm", "a4");
-  var pageWidth = 210;
-  var pageHeight = 297;
-  var margin = 10;
-  var usableWidth = pageWidth - (margin * 2);
-
-  var pendencias = obterPendenciasOrdenadas();
-  var naoEmitidas = pendencias.filter(function(item){ return item.status === "COLETADA E NÃO EMITIDA"; });
-  var books = pendencias.filter(function(item){ return item.status === "CARGA NÃO EMITIDA - BOOK"; });
-  var validar = pendencias.filter(function(item){ return item.status === "VALIDAR LEITURA"; });
-  var totais = calcularTotais(resultado);
-
-  var y = 10;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(15);
-  doc.text("CONFERÊNCIA DE MANIFESTOS", margin, y);
-
-  y += 6;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text("Cliente: " + clienteAtual, margin, y);
-
-  y += 4;
-  doc.text(
-    "Manifestos: " + document.getElementById("manifesto").files.length +
-    " | Total NF: " + totais.manifesto +
-    " | Emitido: " + totais.emitido +
-    " | Acuracidade: " + totais.acuracidade + "%",
-    margin,
-    y
-  );
-
-  y += 6;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("ANÁLISE", margin, y);
-
-  y += 4;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-
-  var analiseLinhas = [
-    "NFs não emitidas: " + naoEmitidas.length,
-    "NFs não emitidas - book: " + books.length,
-    "NFs para validar leitura: " + validar.length,
-    "Divergências totais: " + totais.divergencias
-  ];
-
-  analiseLinhas.forEach(function(linha){
-    doc.text(linha, margin, y);
-    y += 4;
-  });
-
-  y += 2;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("PENDÊNCIAS", margin, y);
-  y += 4;
-
-  if(!pendencias.length){
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.text("Nenhuma pendência identificada.", margin, y);
-    doc.save("resultado_conferencia_manifestos.pdf");
-    return;
-  }
-
-  var linhasPendencias = pendencias.map(function(item){
-    var prefixo = "NAO EMITIDA";
-    if(item.status === "CARGA NÃO EMITIDA - BOOK") prefixo = "BOOK";
-    if(item.status === "VALIDAR LEITURA") prefixo = "VALIDAR";
-    return item.nf + " - " + prefixo;
-  });
-
-  var areaDisponivel = pageHeight - y - 10;
-  var colunas = 2;
-  var gap = 6;
-  var larguraColuna = (usableWidth - gap) / colunas;
-  var fonte = 8;
-  var alturaLinha = 3.5;
-  var linhasPorColuna = Math.floor(areaDisponivel / alturaLinha);
-  var capacidadeTotal = linhasPorColuna * colunas;
-
-  if(linhasPendencias.length > capacidadeTotal){
-    var vagas = Math.max(0, capacidadeTotal - 1);
-    var excedente = linhasPendencias.length - vagas;
-    linhasPendencias = linhasPendencias.slice(0, vagas);
-    linhasPendencias.push("... E MAIS " + excedente + " REGISTRO(S). VER TELA/EXCEL.");
-  }
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(fonte);
-
-  for(var i = 0; i < linhasPendencias.length; i++){
-    var coluna = Math.floor(i / linhasPorColuna);
-    var linhaNaColuna = i % linhasPorColuna;
-    var x = margin + (coluna * (larguraColuna + gap));
-    var yLinha = y + (linhaNaColuna * alturaLinha);
-    doc.text(linhasPendencias[i], x, yLinha);
-  }
-
-  doc.save("resultado_conferencia_manifestos.pdf");
-}
-
-async function gerarWhatsapp(){
-  if(!resultado.length){
-    alert("Não há resultado processado para gerar mensagem.");
-    return;
-  }
-
-  var pendencias = obterPendenciasOrdenadas();
-  var naoEmitidas = pendencias.filter(function(item){ return item.status === "COLETADA E NÃO EMITIDA"; });
-  var books = pendencias.filter(function(item){ return item.status === "CARGA NÃO EMITIDA - BOOK"; });
-  var validar = pendencias.filter(function(item){ return item.status === "VALIDAR LEITURA"; });
-  var totais = calcularTotais(resultado);
-
-  var mensagem = "";
-  mensagem += "*CONFERÊNCIA DE MANIFESTOS*\n";
-  mensagem += "CLIENTE: " + clienteAtual.toUpperCase() + "\n";
-  mensagem += "TOTAL NF MANIFESTO: " + totais.manifesto + "\n";
-  mensagem += "TOTAL EMITIDO: " + totais.emitido + "\n";
-  mensagem += "ACURACIDADE: " + totais.acuracidade + "%\n";
-  mensagem += "NÃO EMITIDAS: " + naoEmitidas.length + "\n";
-  mensagem += "NÃO EMITIDAS - BOOK: " + books.length + "\n";
-  mensagem += "VALIDAR LEITURA: " + validar.length + "\n";
-
-  if(naoEmitidas.length){
-    mensagem += "\n*COLETADA E NÃO EMITIDA*\n";
-    mensagem += naoEmitidas.map(function(item){ return item.nf; }).join("\n") + "\n";
-  }
-
-  if(books.length){
-    mensagem += "\n*CARGA NÃO EMITIDA - BOOK*\n";
-    mensagem += books.map(function(item){ return item.nf; }).join("\n") + "\n";
-  }
-
-  if(validar.length){
-    mensagem += "\n*VALIDAR LEITURA*\n";
-    mensagem += validar.map(function(item){
-      return item.nf + (item.sugestaoNF ? " -> possível " + item.sugestaoNF : "");
-    }).join("\n");
-  }
-
-  mensagem = mensagem.trim();
-
-  try{
-    if(navigator.clipboard && window.isSecureContext){
-      await navigator.clipboard.writeText(mensagem);
+      return valor;
     }
-  }catch(e){}
 
-  window.open("https://wa.me/?text=" + encodeURIComponent(mensagem), "_blank");
-}
-
-document.addEventListener("DOMContentLoaded", function(){
-  document.getElementById("btnProcessar").addEventListener("click", processar);
-  document.getElementById("btnExcel").addEventListener("click", baixarExcel);
-  document.getElementById("btnPDF").addEventListener("click", baixarPDF);
-  document.getElementById("btnWhatsapp").addEventListener("click", gerarWhatsapp);
-  document.getElementById("btnLimpar").addEventListener("click", function(){ location.reload(); });
-  document.getElementById("busca").addEventListener("keyup", filtrar);
-});
-</script>
+    function exibirErro(mensagem) {
+      const mensagemFinal = ${mensagem} Se o arquivo estiver em .xls, salve como .xlsx e tente novamente.;
+      document.getElementById("analise").innerHTML = <div class="status-pendente">${mensagemFinal}</div>;
+      alert(mensagemFinal);
+      console.error(mensagemFinal);
+    }
+  </script>
 </body>
 </html>
