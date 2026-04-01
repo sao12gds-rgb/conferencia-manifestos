@@ -171,11 +171,11 @@ input[type="text"]{width:300px;}
   </div>
 
   <div>
-    <button class="process" onclick="processar()">&#9654; PROCESSAR CONFERÊNCIA</button>
-    <button class="excel" onclick="baixarExcel()">&#8595; Baixar Excel</button>
-    <button class="pdfbtn" onclick="baixarPDF()">🧾 Baixar PDF</button>
-    <button class="whats" onclick="gerarWhatsapp()">📲 Gerar WhatsApp</button>
-    <button class="clear" onclick="location.reload()">&#8635; Limpar</button>
+    <button type="button" class="process" id="btnProcessar">PROCESSAR CONFERÊNCIA</button>
+    <button type="button" class="excel" id="btnExcel">Baixar Excel</button>
+    <button type="button" class="pdfbtn" id="btnPDF">Baixar PDF</button>
+    <button type="button" class="whats" id="btnWhatsapp">Gerar WhatsApp</button>
+    <button type="button" class="clear" id="btnLimpar">Limpar</button>
   </div>
 
   <div id="status"></div>
@@ -199,7 +199,7 @@ input[type="text"]{width:300px;}
   <div id="analise" class="summary-box"></div>
 
   <div class="search">
-    <input type="text" id="busca" placeholder="Buscar NF, AWB ou status..." onkeyup="filtrar()">
+    <input type="text" id="busca" placeholder="Buscar NF, AWB ou status...">
   </div>
 
   <table id="tabela">
@@ -216,7 +216,7 @@ input[type="text"]{width:300px;}
   </table>
 
   <div class="helper" style="margin-top:10px;">
-    Dica: quando a linha estiver como <b>VALIDAR LEITURA</b>, dê duplo clique na linha para corrigir a NF manualmente.
+    Quando a linha estiver como <b>VALIDAR LEITURA</b>, dê duplo clique para corrigir a NF manualmente.
   </div>
 
   <div id="debugInfo" class="debug-info"></div>
@@ -226,12 +226,11 @@ input[type="text"]{width:300px;}
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-let resultado = [];
-let manifestNFs = [];
-let clienteAtual = "riachuelo";
-let debugLog = [];
-let mapaEDIAtual = {};
-let totalEmitidoAtual = 0;
+var resultado = [];
+var manifestNFs = [];
+var clienteAtual = "riachuelo";
+var debugLog = [];
+var mapaEDIAtual = {};
 
 function normalizarNumero(valor){
   if(valor === null || valor === undefined) return "";
@@ -243,7 +242,7 @@ function setStatus(msg){
 }
 
 function setProgress(pct, label){
-  const bar = document.getElementById("progressBar");
+  var bar = document.getElementById("progressBar");
   bar.style.display = "block";
   document.getElementById("barFill").style.width = pct + "%";
   document.getElementById("barLabel").innerText = label || "";
@@ -254,16 +253,16 @@ function hideProgress(){
 }
 
 function normalizarNF(nf, cliente){
-  let valor = String(nf || "")
-    .replace(/[^\d]/g, "")
-    .trim();
-
+  var valor = String(nf || "").replace(/[^\d]/g, "").trim();
   if(!valor) return "";
 
   if(cliente === "3coracoes"){
     if(valor.length > 9) valor = valor.slice(-9);
     if(valor.length < 8) return "";
-    return valor.padStart(9, "0");
+    while(valor.length < 9){
+      valor = "0" + valor;
+    }
+    return valor;
   }
 
   if(cliente === "riachuelo"){
@@ -284,67 +283,55 @@ function limparRuidoOCR(texto){
     .replace(/CAMSCANNER/gi, " ")
     .replace(/DIGITALIZADO/gi, " ")
     .replace(/PAGINA\s+\d+/gi, " ")
-    .replace(/[‘’`´]/g, "")
     .replace(/[|]/g, " ")
-    .replace(/[^\S\r\n]+/g, " ");
+    .replace(/\s+/g, " ");
 }
 
 function corrigirOCR(texto){
-  return limparRuidoOCR(texto)
-    .replace(/(?<=\d)[oO](?=\d)/g, "0")
-    .replace(/(?<=\d)[iIlL](?=\d)/g, "1")
-    .replace(/(?<=\d)[sS](?=\d)/g, "5")
-    .replace(/(?<=\d)[bB](?=\d)/g, "8")
-    .replace(/[Oo](?=\d)/g, "0")
-    .replace(/(?<=\d)[Oo]/g, "0")
-    .replace(/[IiLl](?=\d)/g, "1")
-    .replace(/(?<=\d)[IiLl]/g, "1")
-    .replace(/[Ss](?=\d)/g, "5")
-    .replace(/(?<=\d)[Ss]/g, "5")
-    .replace(/[Bb](?=\d)/g, "8")
-    .replace(/(?<=\d)[Bb]/g, "8")
-    .replace(/(?<=\d)\s+(?=\d)/g, "")
-    .replace(/(?<=\d)[\.\,\-\/](?=\d)/g, "");
+  var t = limparRuidoOCR(texto);
+  t = t.replace(/O/g, "0");
+  t = t.replace(/o/g, "0");
+  t = t.replace(/I/g, "1");
+  t = t.replace(/l/g, "1");
+  t = t.replace(/S/g, "5");
+  t = t.replace(/B/g, "8");
+  return t;
 }
 
 function contarDigitos(texto){
-  const match = String(texto || "").match(/\d/g);
+  var match = String(texto || "").match(/\d/g);
   return match ? match.length : 0;
 }
 
 async function extrairTextoNativo(pdf){
-  let textoTotal = "";
-  let paginasComTexto = 0;
+  var textoTotal = "";
+  var paginasComTexto = 0;
 
-  for(let i = 1; i <= pdf.numPages; i++){
+  for(var i = 1; i <= pdf.numPages; i++){
     try{
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const items = content.items || [];
-      const linhas = {};
+      var page = await pdf.getPage(i);
+      var content = await page.getTextContent();
+      var items = content.items || [];
+      var linhas = {};
 
-      for(const item of items){
-        const y = Math.round(item.transform[5]);
+      for(var j = 0; j < items.length; j++){
+        var item = items[j];
+        var y = Math.round(item.transform[5]);
         if(!linhas[y]) linhas[y] = [];
         linhas[y].push({ x: item.transform[4], str: item.str || "" });
       }
 
-      const ysOrdenados = Object.keys(linhas).map(Number).sort((a,b) => b - a);
-      let textoPagina = "";
+      var ys = Object.keys(linhas).map(Number).sort(function(a,b){ return b-a; });
+      var textoPagina = "";
 
-      for(const y of ysOrdenados){
-        const linha = linhas[y]
-          .sort((a,b) => a.x - b.x)
-          .map(v => v.str)
-          .join(" ");
+      for(var k = 0; k < ys.length; k++){
+        var linha = linhas[ys[k]].sort(function(a,b){ return a.x - b.x; }).map(function(v){ return v.str; }).join(" ");
         textoPagina += linha + "\n";
       }
 
       if(textoPagina.trim().length > 20) paginasComTexto++;
       textoTotal += textoPagina + "\n";
-    }catch(e){
-      console.warn("Erro ao ler texto nativo da página " + i, e);
-    }
+    }catch(e){}
   }
 
   if(paginasComTexto < Math.ceil(pdf.numPages / 2)) return null;
@@ -352,25 +339,25 @@ async function extrairTextoNativo(pdf){
 }
 
 async function renderizarPagina(page, scale){
-  const viewport = page.getViewport({ scale });
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  var viewport = page.getViewport({ scale: scale });
+  var canvas = document.createElement("canvas");
+  var ctx = canvas.getContext("2d", { willReadFrequently: true });
   canvas.width = Math.ceil(viewport.width);
   canvas.height = Math.ceil(viewport.height);
-  await page.render({ canvasContext: ctx, viewport }).promise;
+  await page.render({ canvasContext: ctx, viewport: viewport }).promise;
   return canvas;
 }
 
 function fileParaCanvas(file){
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const maxWidth = 2400;
-      const proporcao = Math.min(1, maxWidth / img.width);
+  return new Promise(function(resolve, reject){
+    var img = new Image();
+    img.onload = function(){
+      var canvas = document.createElement("canvas");
+      var maxWidth = 2400;
+      var proporcao = Math.min(1, maxWidth / img.width);
       canvas.width = Math.round(img.width * proporcao);
       canvas.height = Math.round(img.height * proporcao);
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      var ctx = canvas.getContext("2d", { willReadFrequently: true });
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(img.src);
       resolve(canvas);
@@ -381,22 +368,24 @@ function fileParaCanvas(file){
 }
 
 function preprocessarCanvas(canvasOriginal){
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  var canvas = document.createElement("canvas");
+  var ctx = canvas.getContext("2d", { willReadFrequently: true });
   canvas.width = canvasOriginal.width;
   canvas.height = canvasOriginal.height;
   ctx.drawImage(canvasOriginal, 0, 0);
 
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
+  var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  var data = imageData.data;
 
-  for(let i = 0; i < data.length; i += 4){
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
+  for(var i = 0; i < data.length; i += 4){
+    var r = data[i];
+    var g = data[i + 1];
+    var b = data[i + 2];
+    var cinza = (r * 0.299) + (g * 0.587) + (b * 0.114);
 
-    let cinza = (r * 0.299) + (g * 0.587) + (b * 0.114);
-    cinza = cinza > 185 ? 255 : cinza < 120 ? 0 : cinza;
+    if(cinza > 185) cinza = 255;
+    else if(cinza < 120) cinza = 0;
+
     cinza = Math.max(0, Math.min(255, cinza * 1.08));
 
     data[i] = cinza;
@@ -409,60 +398,69 @@ function preprocessarCanvas(canvasOriginal){
 }
 
 async function ocrCanvas(canvas){
-  const canvasTratado = preprocessarCanvas(canvas);
-  const { data } = await Tesseract.recognize(canvasTratado, "por", {
-    logger: () => {},
-    tessedit_pageseg_mode: 6,
+  var canvasTratado = preprocessarCanvas(canvas);
+  var resp = await Tesseract.recognize(canvasTratado, "por", {
+    logger: function(){},
     preserve_interword_spaces: "1"
   });
-  return corrigirOCR(data.text || "");
+  return corrigirOCR(resp.data.text || "");
 }
 
 function normalizarLinhaParaExtracao(linha){
-  return corrigirOCR(
+  return limparRuidoOCR(
     String(linha || "")
-      .replace(/N[FO0][\s:\-]*/gi, " ")
+      .replace(/NF[\s:\-]*/gi, " ")
       .replace(/NOTA\s+FISCAL[\s:\-]*/gi, " ")
       .replace(/NFE[\s:\-]*/gi, " ")
   ).trim();
 }
 
 function extrairCandidatosDaLinha(linha, cliente){
-  const candidatos = new Set();
-  const matches = linha.match(/\d[\d\s\.\,\-\/]{5,20}\d|\d{7,12}/g) || [];
-  matches.forEach((m) => {
-    const nf = normalizarNF(m, cliente);
-    if(nf) candidatos.add(nf);
-  });
-  return Array.from(candidatos);
+  var candidatos = [];
+  var vistos = {};
+  var matches = linha.match(/\d{7,12}/g) || [];
+
+  for(var i = 0; i < matches.length; i++){
+    var nf = normalizarNF(matches[i], cliente);
+    if(nf && !vistos[nf]){
+      vistos[nf] = true;
+      candidatos.push(nf);
+    }
+  }
+
+  return candidatos;
 }
 
 function extrairNFsDoTexto(texto, cliente){
-  const textoBase = limparRuidoOCR(texto || "");
-  const linhasOriginais = textoBase.split(/\r?\n/);
-  const nfs = [];
-  const vistos = new Set();
+  var textoBase = limparRuidoOCR(texto || "");
+  var linhasOriginais = textoBase.split(/\r?\n/);
+  var nfs = [];
+  var vistos = {};
 
-  for(let i = 0; i < linhasOriginais.length; i++){
-    const linha = normalizarLinhaParaExtracao(linhasOriginais[i] || "");
+  for(var i = 0; i < linhasOriginais.length; i++){
+    var linha = normalizarLinhaParaExtracao(linhasOriginais[i] || "");
     if(!linha) continue;
 
-    const candidatosLinha = extrairCandidatosDaLinha(linha, cliente);
-    for(const candidato of candidatosLinha){
-      if(!vistos.has(candidato)){
-        vistos.add(candidato);
+    var candidatosLinha = extrairCandidatosDaLinha(linha, cliente);
+
+    for(var j = 0; j < candidatosLinha.length; j++){
+      var candidato = candidatosLinha[j];
+      if(!vistos[candidato]){
+        vistos[candidato] = true;
         nfs.push(candidato);
       }
     }
 
     if(!candidatosLinha.length && i < linhasOriginais.length - 1){
-      const prox = normalizarLinhaParaExtracao(linhasOriginais[i + 1] || "");
-      const combinada = linha + " " + prox;
-      const candidatosComb = extrairCandidatosDaLinha(combinada, cliente);
-      for(const candidato of candidatosComb){
-        if(!vistos.has(candidato)){
-          vistos.add(candidato);
-          nfs.push(candidato);
+      var prox = normalizarLinhaParaExtracao(linhasOriginais[i + 1] || "");
+      var combinada = linha + " " + prox;
+      var candidatosComb = extrairCandidatosDaLinha(combinada, cliente);
+
+      for(var k = 0; k < candidatosComb.length; k++){
+        var candidato2 = candidatosComb[k];
+        if(!vistos[candidato2]){
+          vistos[candidato2] = true;
+          nfs.push(candidato2);
         }
       }
     }
@@ -472,50 +470,49 @@ function extrairNFsDoTexto(texto, cliente){
 }
 
 async function extrairNotasArquivo(file, cliente, indiceArquivo, totalArquivos){
-  const nome = (file.name || "").toLowerCase();
+  var nome = (file.name || "").toLowerCase();
 
-  if(nome.endsWith(".jpg") || nome.endsWith(".jpeg") || nome.endsWith(".png") || file.type.startsWith("image/")){
-    setStatus(`Lendo imagem ${file.name}...`);
-    const canvas = await fileParaCanvas(file);
-    const texto = await ocrCanvas(canvas);
-    const nfs = extrairNFsDoTexto(texto, cliente);
-    return { nfs, metodo: "ocr-imagem" };
+  if(nome.endsWith(".jpg") || nome.endsWith(".jpeg") || nome.endsWith(".png") || (file.type && file.type.indexOf("image/") === 0)){
+    setStatus("Lendo imagem " + file.name + "...");
+    var canvasImg = await fileParaCanvas(file);
+    var textoImg = await ocrCanvas(canvasImg);
+    var nfsImg = extrairNFsDoTexto(textoImg, cliente);
+    return { nfs: nfsImg, metodo: "ocr-imagem" };
   }
 
   try{
-    const buffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({
+    var buffer = await file.arrayBuffer();
+    var pdf = await pdfjsLib.getDocument({
       data: buffer,
       stopAtErrors: false,
       useSystemFonts: true
     }).promise;
 
-    setStatus(`Analisando ${file.name}...`);
-    const textoNativo = await extrairTextoNativo(pdf);
+    setStatus("Analisando " + file.name + "...");
+    var textoNativo = await extrairTextoNativo(pdf);
 
     if(textoNativo !== null && contarDigitos(textoNativo) >= 20){
-      debugLog.push(`${file.name}: texto NATIVO extraído`);
-      const nfs = extrairNFsDoTexto(textoNativo, cliente);
-      return { nfs, metodo: "nativo" };
+      debugLog.push(file.name + ": texto NATIVO extraído");
+      var nfsNat = extrairNFsDoTexto(textoNativo, cliente);
+      return { nfs: nfsNat, metodo: "nativo" };
     }
 
-    debugLog.push(`${file.name}: PDF escaneado -> usando OCR`);
-    const notas = [];
+    debugLog.push(file.name + ": PDF escaneado -> usando OCR");
+    var notas = [];
 
-    for(let i = 1; i <= pdf.numPages; i++){
-      const pct = Math.round(((indiceArquivo + (i / pdf.numPages)) / totalArquivos) * 100);
-      setProgress(pct, `OCR: ${file.name} — página ${i}/${pdf.numPages}`);
-      const page = await pdf.getPage(i);
-      const canvas = await renderizarPagina(page, 2.8);
-      const texto = await ocrCanvas(canvas);
-      const nfs = extrairNFsDoTexto(texto, cliente);
-      notas.push(...nfs);
+    for(var i = 1; i <= pdf.numPages; i++){
+      var pct = Math.round(((indiceArquivo + (i / pdf.numPages)) / totalArquivos) * 100);
+      setProgress(pct, "OCR: " + file.name + " - página " + i + "/" + pdf.numPages);
+      var page = await pdf.getPage(i);
+      var canvas = await renderizarPagina(page, 2.8);
+      var texto = await ocrCanvas(canvas);
+      var nfs = extrairNFsDoTexto(texto, cliente);
+      notas = notas.concat(nfs);
     }
 
     return { nfs: notas, metodo: "ocr-pdf" };
   }catch(err){
-    console.error("Erro ao processar PDF: " + file.name, err);
-    throw new Error(`O arquivo "${file.name}" parece estar corrompido ou não é um PDF válido. Tente salvar novamente.`);
+    throw new Error('O arquivo "' + file.name + '" parece estar corrompido ou não é um PDF válido.');
   }
 }
 
@@ -530,21 +527,22 @@ function normalizarCabecalho(texto){
 }
 
 function encontrarIndiceCabecalho(linhas){
-  for(let i = 0; i < Math.min(linhas.length, 20); i++){
-    const linhaAtual = (linhas[i] || []).map(v => String(v || "").trim());
-    const linhaNorm = linhaAtual.map(normalizarCabecalho);
+  for(var i = 0; i < Math.min(linhas.length, 20); i++){
+    var linhaAtual = (linhas[i] || []).map(function(v){ return String(v || "").trim(); });
+    var linhaNorm = linhaAtual.map(normalizarCabecalho);
 
-    const temNF = linhaNorm.some((col) =>
-      ["NUMERO","NUMERO NF","NF","NFE","NOTA FISCAL","NOTA"].includes(col)
-    );
+    var temNF = linhaNorm.some(function(col){
+      return ["NUMERO","NUMERO NF","NF","NFE","NOTA FISCAL","NOTA"].indexOf(col) > -1;
+    });
 
-    const temAWB = linhaNorm.some((col) => col.includes("AWB"));
-    const temUltimaOcorrencia = linhaNorm.some((col) =>
-      col.includes("ULTIMAOCORRENCIA") ||
-      col.includes("ULTIMA OCORRENCIA") ||
-      col.includes("ULT OCORRENCIA") ||
-      col === "OCORRENCIA"
-    );
+    var temAWB = linhaNorm.some(function(col){ return col.indexOf("AWB") > -1; });
+
+    var temUltimaOcorrencia = linhaNorm.some(function(col){
+      return col.indexOf("ULTIMAOCORRENCIA") > -1 ||
+             col.indexOf("ULTIMA OCORRENCIA") > -1 ||
+             col.indexOf("ULT OCORRENCIA") > -1 ||
+             col === "OCORRENCIA";
+    });
 
     if(temNF && (temAWB || temUltimaOcorrencia)){
       return { indice: i, cabecalhosNormalizados: linhaNorm, cabecalhosOriginais: linhaAtual };
@@ -554,14 +552,14 @@ function encontrarIndiceCabecalho(linhas){
 }
 
 function lerExcel(file, cliente){
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => {
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onload = function(e){
       try{
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: "array", raw: false });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const linhas = XLSX.utils.sheet_to_json(sheet, {
+        var data = new Uint8Array(e.target.result);
+        var workbook = XLSX.read(data, { type: "array", raw: false });
+        var sheet = workbook.Sheets[workbook.SheetNames[0]];
+        var linhas = XLSX.utils.sheet_to_json(sheet, {
           header: 1,
           defval: "",
           blankrows: false,
@@ -573,41 +571,47 @@ function lerExcel(file, cliente){
           return;
         }
 
-        const infoCab = encontrarIndiceCabecalho(linhas);
+        var infoCab = encontrarIndiceCabecalho(linhas);
         if(!infoCab){
           reject(new Error("Não foi possível localizar o cabeçalho da planilha EDI."));
           return;
         }
 
-        const { indice, cabecalhosNormalizados, cabecalhosOriginais } = infoCab;
+        var indice = infoCab.indice;
+        var cabecalhosNormalizados = infoCab.cabecalhosNormalizados;
+        var cabecalhosOriginais = infoCab.cabecalhosOriginais;
 
-        const indiceNF = cabecalhosNormalizados.findIndex((col) =>
-          ["NUMERO","NUMERO NF","NF","NFE","NOTA FISCAL","NOTA"].includes(col)
-        );
-        const indiceAWB = cabecalhosNormalizados.findIndex((col) => col.includes("AWB"));
-        const indiceUltimaOcorrencia = cabecalhosNormalizados.findIndex((col) =>
-          col.includes("ULTIMAOCORRENCIA") ||
-          col.includes("ULTIMA OCORRENCIA") ||
-          col.includes("ULT OCORRENCIA") ||
-          col === "OCORRENCIA"
-        );
+        var indiceNF = cabecalhosNormalizados.findIndex(function(col){
+          return ["NUMERO","NUMERO NF","NF","NFE","NOTA FISCAL","NOTA"].indexOf(col) > -1;
+        });
+
+        var indiceAWB = cabecalhosNormalizados.findIndex(function(col){
+          return col.indexOf("AWB") > -1;
+        });
+
+        var indiceUltimaOcorrencia = cabecalhosNormalizados.findIndex(function(col){
+          return col.indexOf("ULTIMAOCORRENCIA") > -1 ||
+                 col.indexOf("ULTIMA OCORRENCIA") > -1 ||
+                 col.indexOf("ULT OCORRENCIA") > -1 ||
+                 col === "OCORRENCIA";
+        });
 
         if(indiceNF === -1){
-          reject(new Error(`Coluna NF não encontrada. Cabeçalhos: ${cabecalhosOriginais.join(" | ")}`));
+          reject(new Error("Coluna NF não encontrada. Cabeçalhos: " + cabecalhosOriginais.join(" | ")));
           return;
         }
 
-        const mapa = {};
+        var mapa = {};
 
-        for(let i = indice + 1; i < linhas.length; i++){
-          const linha = linhas[i] || [];
-          const nfOriginal = linha[indiceNF];
-          const awbOriginal = indiceAWB > -1 ? linha[indiceAWB] : "";
-          const ultimaOcorrenciaOriginal = indiceUltimaOcorrencia > -1 ? linha[indiceUltimaOcorrencia] : "";
+        for(var i = indice + 1; i < linhas.length; i++){
+          var linha = linhas[i] || [];
+          var nfOriginal = linha[indiceNF];
+          var awbOriginal = indiceAWB > -1 ? linha[indiceAWB] : "";
+          var ultimaOcorrenciaOriginal = indiceUltimaOcorrencia > -1 ? linha[indiceUltimaOcorrencia] : "";
 
-          const nf = normalizarNF(nfOriginal, cliente);
-          const awb = normalizarNumero(awbOriginal);
-          const ultimaOcorrencia = String(ultimaOcorrenciaOriginal || "").trim().toUpperCase();
+          var nf = normalizarNF(nfOriginal, cliente);
+          var awb = normalizarNumero(awbOriginal);
+          var ultimaOcorrencia = String(ultimaOcorrenciaOriginal || "").trim().toUpperCase();
 
           if(!nf) continue;
 
@@ -619,7 +623,7 @@ function lerExcel(file, cliente){
             };
           }
 
-          if(awb && !mapa[nf].awbs.includes(awb)){
+          if(awb && mapa[nf].awbs.indexOf(awb) === -1){
             mapa[nf].awbs.push(awb);
           }
 
@@ -630,7 +634,7 @@ function lerExcel(file, cliente){
           }
         }
 
-        Object.keys(mapa).forEach((nf) => {
+        Object.keys(mapa).forEach(function(nf){
           mapa[nf].awb = mapa[nf].awbs.join(" / ");
         });
 
@@ -639,7 +643,9 @@ function lerExcel(file, cliente){
         reject(new Error("Erro ao ler a planilha EDI: " + err.message));
       }
     };
-    reader.onerror = () => reject(new Error("Falha ao abrir a planilha EDI."));
+    reader.onerror = function(){
+      reject(new Error("Falha ao abrir a planilha EDI."));
+    };
     reader.readAsArrayBuffer(file);
   });
 }
@@ -648,16 +654,20 @@ function distanciaLevenshtein(a, b){
   a = String(a || "");
   b = String(b || "");
 
-  const matriz = Array.from({ length: a.length + 1 }, () =>
-    Array(b.length + 1).fill(0)
-  );
+  var matriz = [];
+  for(var i = 0; i <= a.length; i++){
+    matriz[i] = [];
+    for(var j = 0; j <= b.length; j++){
+      matriz[i][j] = 0;
+    }
+  }
 
-  for(let i = 0; i <= a.length; i++) matriz[i][0] = i;
-  for(let j = 0; j <= b.length; j++) matriz[0][j] = j;
+  for(i = 0; i <= a.length; i++) matriz[i][0] = i;
+  for(j = 0; j <= b.length; j++) matriz[0][j] = j;
 
-  for(let i = 1; i <= a.length; i++){
-    for(let j = 1; j <= b.length; j++){
-      const custo = a[i - 1] === b[j - 1] ? 0 : 1;
+  for(i = 1; i <= a.length; i++){
+    for(j = 1; j <= b.length; j++){
+      var custo = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
       matriz[i][j] = Math.min(
         matriz[i - 1][j] + 1,
         matriz[i][j - 1] + 1,
@@ -670,19 +680,20 @@ function distanciaLevenshtein(a, b){
 }
 
 function encontrarNFProxima(nfLida, mapaEDI){
-  const chaves = Object.keys(mapaEDI || {});
+  var chaves = Object.keys(mapaEDI || {});
   if(!nfLida || !chaves.length) return null;
 
-  let melhor = null;
+  var melhor = null;
 
-  for(const nfEDI of chaves){
+  for(var i = 0; i < chaves.length; i++){
+    var nfEDI = chaves[i];
     if(String(nfEDI).length !== String(nfLida).length) continue;
 
-    const distancia = distanciaLevenshtein(nfLida, nfEDI);
+    var distancia = distanciaLevenshtein(nfLida, nfEDI);
 
     if(distancia <= 1){
       if(!melhor || distancia < melhor.distancia){
-        melhor = { nf: nfEDI, distancia };
+        melhor = { nf: nfEDI, distancia: distancia };
       }
     }
   }
@@ -691,7 +702,7 @@ function encontrarNFProxima(nfLida, mapaEDI){
 }
 
 function reavaliarLinha(item, mapaEDI){
-  const registroEDI = mapaEDI[item.nf];
+  var registroEDI = mapaEDI[item.nf];
 
   item.emitido = "NÃO";
   item.awb = "";
@@ -716,10 +727,11 @@ function reavaliarLinha(item, mapaEDI){
     return item;
   }
 
-  const sugestao = encontrarNFProxima(item.nf, mapaEDI);
+  var sugestao = encontrarNFProxima(item.nf, mapaEDI);
+
   if(sugestao){
     item.status = "VALIDAR LEITURA";
-    item.observacao = `Possível NF correta: ${sugestao.nf}`;
+    item.observacao = "Possível NF correta: " + sugestao.nf;
     item.sugestaoNF = sugestao.nf;
     item.requerCorrecao = true;
   }
@@ -728,12 +740,12 @@ function reavaliarLinha(item, mapaEDI){
 }
 
 function compararManifestoComEDI(nfsManifesto, mapaEDI){
-  const resultadoLocal = [];
+  var resultadoLocal = [];
 
-  nfsManifesto.forEach((item, index) => {
-    const linha = {
-      ordem: index + 1,
-      nf: item,
+  for(var i = 0; i < nfsManifesto.length; i++){
+    var linha = {
+      ordem: i + 1,
+      nf: nfsManifesto[i],
       emitido: "NÃO",
       awb: "",
       status: "COLETADA E NÃO EMITIDA",
@@ -744,29 +756,27 @@ function compararManifestoComEDI(nfsManifesto, mapaEDI){
 
     reavaliarLinha(linha, mapaEDI);
     resultadoLocal.push(linha);
-  });
+  }
 
   return resultadoLocal;
 }
 
 function calcularTotais(resultadoBase){
-  const totalManifesto = resultadoBase.length;
-  const totalEmitido = resultadoBase.filter((item) => item.emitido === "SIM").length;
-  const totalDivergencias = resultadoBase.filter((item) => item.status !== "OK").length;
-  const acuracidade = totalManifesto > 0
-    ? ((totalEmitido / totalManifesto) * 100).toFixed(2)
-    : "0.00";
+  var totalManifesto = resultadoBase.length;
+  var totalEmitido = resultadoBase.filter(function(item){ return item.emitido === "SIM"; }).length;
+  var totalDivergencias = resultadoBase.filter(function(item){ return item.status !== "OK"; }).length;
+  var acuracidade = totalManifesto > 0 ? ((totalEmitido / totalManifesto) * 100).toFixed(2) : "0.00";
 
   return {
     manifesto: totalManifesto,
     emitido: totalEmitido,
     divergencias: totalDivergencias,
-    acuracidade
+    acuracidade: acuracidade
   };
 }
 
 function obterPendenciasOrdenadas(){
-  return resultado.filter((item) => item.status !== "OK");
+  return resultado.filter(function(item){ return item.status !== "OK"; });
 }
 
 function classeStatus(status){
@@ -778,35 +788,38 @@ function classeStatus(status){
 }
 
 function atualizarInterface(metodos){
-  const tbody = document.querySelector("#tabela tbody");
+  var tbody = document.querySelector("#tabela tbody");
   tbody.innerHTML = "";
 
-  resultado.forEach((r, index) => {
-    const tr = document.createElement("tr");
-    const cls = classeStatus(r.status);
-    if(r.status === "VALIDAR LEITURA") tr.classList.add("linha-validar");
+  for(var i = 0; i < resultado.length; i++){
+    (function(index){
+      var r = resultado[index];
+      var tr = document.createElement("tr");
+      var cls = classeStatus(r.status);
 
-    tr.innerHTML = `
-      <td>${r.ordem}</td>
-      <td>${r.nf}</td>
-      <td>${r.emitido}</td>
-      <td>${r.awb || "—"}</td>
-      <td class="${cls}">${r.status}</td>
-    `;
+      if(r.status === "VALIDAR LEITURA") tr.classList.add("linha-validar");
 
-    tr.ondblclick = () => {
-      if(r.requerCorrecao){
-        corrigirNF(index);
-      }
-    };
+      tr.innerHTML =
+        "<td>" + r.ordem + "</td>" +
+        "<td>" + r.nf + "</td>" +
+        "<td>" + r.emitido + "</td>" +
+        "<td>" + (r.awb || "—") + "</td>" +
+        "<td class='" + cls + "'>" + r.status + "</td>";
 
-    tbody.appendChild(tr);
-  });
+      tr.ondblclick = function(){
+        if(r.requerCorrecao){
+          corrigirNF(index);
+        }
+      };
 
-  const totais = calcularTotais(resultado);
-  const naoEmitidas = resultado.filter(r => r.status === "COLETADA E NÃO EMITIDA");
-  const books = resultado.filter(r => r.status === "CARGA NÃO EMITIDA - BOOK");
-  const validar = resultado.filter(r => r.status === "VALIDAR LEITURA");
+      tbody.appendChild(tr);
+    })(i);
+  }
+
+  var totais = calcularTotais(resultado);
+  var naoEmitidas = resultado.filter(function(r){ return r.status === "COLETADA E NÃO EMITIDA"; });
+  var books = resultado.filter(function(r){ return r.status === "CARGA NÃO EMITIDA - BOOK"; });
+  var validar = resultado.filter(function(r){ return r.status === "VALIDAR LEITURA"; });
 
   document.getElementById("manifestoCount").innerText = totais.manifesto;
   document.getElementById("emitidoCount").innerText = totais.emitido;
@@ -814,47 +827,47 @@ function atualizarInterface(metodos){
   document.getElementById("acuracidadeCount").innerText = totais.acuracidade + "%";
 
   document.getElementById("resumoGeral").innerHTML =
-    `<b>Cliente:</b> ${clienteAtual}<br>` +
-    `<b>Total Manifesto:</b> ${totais.manifesto}<br>` +
-    `<b>Total Emitido:</b> ${totais.emitido}<br>` +
-    `<b>Faltante do manifesto não emitido:</b> ${naoEmitidas.length}<br>` +
-    `<b>Carga não emitida - book:</b> ${books.length}<br>` +
-    `<b>Leituras para validar:</b> ${validar.length}<br>` +
-    `<b>Acuracidade:</b> ${totais.acuracidade}%<br>` +
-    `<b>Método:</b> ${metodos.map(m => `${m.arquivo}: ${m.metodo}`).join(" | ")}`;
+    "<b>Cliente:</b> " + clienteAtual + "<br>" +
+    "<b>Total Manifesto:</b> " + totais.manifesto + "<br>" +
+    "<b>Total Emitido:</b> " + totais.emitido + "<br>" +
+    "<b>Faltante do manifesto não emitido:</b> " + naoEmitidas.length + "<br>" +
+    "<b>Carga não emitida - book:</b> " + books.length + "<br>" +
+    "<b>Leituras para validar:</b> " + validar.length + "<br>" +
+    "<b>Acuracidade:</b> " + totais.acuracidade + "%<br>" +
+    "<b>Método:</b> " + metodos.map(function(m){ return m.arquivo + ": " + m.metodo; }).join(" | ");
 
-  let html = "";
-  html += `<div>Total de NFs extraídas do manifesto: ${manifestNFs.length}</div>`;
+  var html = "";
+  html += "<div>Total de NFs extraídas do manifesto: " + manifestNFs.length + "</div>";
 
   if(naoEmitidas.length){
-    html += `<div class="status-warn">• ${naoEmitidas.length} NF(s) com status COLETADA E NÃO EMITIDA.</div>`;
+    html += "<div class='status-warn'>• " + naoEmitidas.length + " NF(s) com status COLETADA E NÃO EMITIDA.</div>";
   }
 
   if(books.length){
-    html += `<div class="status-book">• ${books.length} NF(s) com status CARGA NÃO EMITIDA - BOOK.</div>`;
+    html += "<div class='status-book'>• " + books.length + " NF(s) com status CARGA NÃO EMITIDA - BOOK.</div>";
   }
 
   if(validar.length){
-    html += `<div class="status-validar">• ${validar.length} NF(s) com leitura suspeita. Dê duplo clique na linha para corrigir.</div>`;
+    html += "<div class='status-validar'>• " + validar.length + " NF(s) com leitura suspeita. Dê duplo clique na linha para corrigir.</div>";
   }
 
   if(!naoEmitidas.length && !books.length && !validar.length){
-    html += `<div class="status-ok">✅ Conferência concluída sem alerta estrutural identificado.</div>`;
+    html += "<div class='status-ok'>Conferência concluída sem alerta estrutural identificado.</div>";
   }
 
   document.getElementById("analise").innerHTML = html;
 }
 
 function corrigirNF(indice){
-  const item = resultado[indice];
+  var item = resultado[indice];
   if(!item) return;
 
-  const sugestao = item.sugestaoNF || item.nf || "";
-  const novaNF = prompt("Confirme ou corrija a NF:", sugestao);
+  var sugestao = item.sugestaoNF || item.nf || "";
+  var novaNF = prompt("Confirme ou corrija a NF:", sugestao);
 
   if(novaNF === null) return;
 
-  const nfTratada = normalizarNF(novaNF, clienteAtual);
+  var nfTratada = normalizarNF(novaNF, clienteAtual);
 
   if(!nfTratada){
     alert("NF inválida. Digite apenas a nota correta.");
@@ -885,8 +898,9 @@ async function processar(){
     debugLog = [];
     setStatus("Iniciando...");
     clienteAtual = document.getElementById("cliente").value;
-    const manifestos = document.getElementById("manifesto").files;
-    const ediFile = document.getElementById("edi").files[0];
+
+    var manifestos = document.getElementById("manifesto").files;
+    var ediFile = document.getElementById("edi").files[0];
 
     if(!manifestos.length){
       setStatus("Selecione ao menos um arquivo de manifesto.");
@@ -898,13 +912,13 @@ async function processar(){
       return;
     }
 
-    let notasManifestoBrutas = [];
-    const metodos = [];
+    var notasManifestoBrutas = [];
+    var metodos = [];
 
-    for(let idx = 0; idx < manifestos.length; idx++){
-      const { nfs, metodo } = await extrairNotasArquivo(manifestos[idx], clienteAtual, idx, manifestos.length);
-      notasManifestoBrutas.push(...nfs);
-      metodos.push({ arquivo: manifestos[idx].name, metodo });
+    for(var idx = 0; idx < manifestos.length; idx++){
+      var retorno = await extrairNotasArquivo(manifestos[idx], clienteAtual, idx, manifestos.length);
+      notasManifestoBrutas = notasManifestoBrutas.concat(retorno.nfs);
+      metodos.push({ arquivo: manifestos[idx].name, metodo: retorno.metodo });
     }
 
     hideProgress();
@@ -919,10 +933,8 @@ async function processar(){
     mapaEDIAtual = await lerExcel(ediFile, clienteAtual);
     resultado = compararManifestoComEDI(manifestNFs, mapaEDIAtual);
 
-    totalEmitidoAtual = resultado.filter(r => r.emitido === "SIM").length;
-
     atualizarInterface(metodos);
-    setStatus(`Conferência concluída. ${manifestNFs.length} NF(s) processadas.`);
+    setStatus("Conferência concluída. " + manifestNFs.length + " NF(s) processadas.");
     document.getElementById("debugInfo").innerText = debugLog.join("\n");
   }catch(err){
     console.error(err);
@@ -932,9 +944,9 @@ async function processar(){
 }
 
 function filtrar(){
-  const v = document.getElementById("busca").value.toLowerCase();
-  document.querySelectorAll("#tabela tbody tr").forEach(l => {
-    l.style.display = l.innerText.toLowerCase().includes(v) ? "" : "none";
+  var v = document.getElementById("busca").value.toLowerCase();
+  document.querySelectorAll("#tabela tbody tr").forEach(function(l){
+    l.style.display = l.innerText.toLowerCase().indexOf(v) > -1 ? "" : "none";
   });
 }
 
@@ -944,17 +956,19 @@ function baixarExcel(){
     return;
   }
 
-  const dados = resultado.map((item) => ({
-    ORDEM: item.ordem,
-    NF: item.nf,
-    EMITIDO: item.emitido,
-    AWB: item.awb,
-    STATUS: item.status,
-    OBSERVACAO: item.observacao || "",
-    SUGESTAO_NF: item.sugestaoNF || ""
-  }));
+  var dados = resultado.map(function(item){
+    return {
+      ORDEM: item.ordem,
+      NF: item.nf,
+      EMITIDO: item.emitido,
+      AWB: item.awb,
+      STATUS: item.status,
+      OBSERVACAO: item.observacao || "",
+      SUGESTAO_NF: item.sugestaoNF || ""
+    };
+  });
 
-  const wb = XLSX.utils.book_new();
+  var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dados), "Conferencia");
   XLSX.writeFile(wb, "conferencia.xlsx");
 }
@@ -965,20 +979,20 @@ function baixarPDF(){
     return;
   }
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF("p", "mm", "a4");
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const margin = 10;
-  const usableWidth = pageWidth - (margin * 2);
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF("p", "mm", "a4");
+  var pageWidth = 210;
+  var pageHeight = 297;
+  var margin = 10;
+  var usableWidth = pageWidth - (margin * 2);
 
-  const pendencias = obterPendenciasOrdenadas();
-  const naoEmitidas = pendencias.filter((item) => item.status === "COLETADA E NÃO EMITIDA");
-  const books = pendencias.filter((item) => item.status === "CARGA NÃO EMITIDA - BOOK");
-  const validar = pendencias.filter((item) => item.status === "VALIDAR LEITURA");
-  const totais = calcularTotais(resultado);
+  var pendencias = obterPendenciasOrdenadas();
+  var naoEmitidas = pendencias.filter(function(item){ return item.status === "COLETADA E NÃO EMITIDA"; });
+  var books = pendencias.filter(function(item){ return item.status === "CARGA NÃO EMITIDA - BOOK"; });
+  var validar = pendencias.filter(function(item){ return item.status === "VALIDAR LEITURA"; });
+  var totais = calcularTotais(resultado);
 
-  let y = 10;
+  var y = 10;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
@@ -987,11 +1001,14 @@ function baixarPDF(){
   y += 6;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(`Cliente: ${clienteAtual}`, margin, y);
+  doc.text("Cliente: " + clienteAtual, margin, y);
 
   y += 4;
   doc.text(
-    `Manifestos: ${document.getElementById("manifesto").files.length} | Total NF: ${totais.manifesto} | Emitido: ${totais.emitido} | Acuracidade: ${totais.acuracidade}%`,
+    "Manifestos: " + document.getElementById("manifesto").files.length +
+    " | Total NF: " + totais.manifesto +
+    " | Emitido: " + totais.emitido +
+    " | Acuracidade: " + totais.acuracidade + "%",
     margin,
     y
   );
@@ -1004,14 +1021,15 @@ function baixarPDF(){
   y += 4;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  const analiseLinhas = [
-    `NFs não emitidas: ${naoEmitidas.length}`,
-    `NFs não emitidas - book: ${books.length}`,
-    `NFs para validar leitura: ${validar.length}`,
-    `Divergências totais: ${totais.divergencias}`
+
+  var analiseLinhas = [
+    "NFs não emitidas: " + naoEmitidas.length,
+    "NFs não emitidas - book: " + books.length,
+    "NFs para validar leitura: " + validar.length,
+    "Divergências totais: " + totais.divergencias
   ];
 
-  analiseLinhas.forEach((linha) => {
+  analiseLinhas.forEach(function(linha){
     doc.text(linha, margin, y);
     y += 4;
   });
@@ -1030,59 +1048,38 @@ function baixarPDF(){
     return;
   }
 
-  const linhasPendencias = pendencias.map((item) => {
-    let prefixo = "NAO EMITIDA";
+  var linhasPendencias = pendencias.map(function(item){
+    var prefixo = "NAO EMITIDA";
     if(item.status === "CARGA NÃO EMITIDA - BOOK") prefixo = "BOOK";
-    if(item.status === "VALIDAR LEITURA") prefixo = `VALIDAR (${item.sugestaoNF || "SEM SUGESTAO"})`;
-    return `${item.nf} - ${prefixo}`;
+    if(item.status === "VALIDAR LEITURA") prefixo = "VALIDAR";
+    return item.nf + " - " + prefixo;
   });
 
-  const areaDisponivel = pageHeight - y - 10;
-  const colunas = 2;
-  const gap = 6;
-  const larguraColuna = (usableWidth - gap) / colunas;
-  let fonte = 8.5;
-  let alturaLinha = 3.8;
-  let linhasPorColuna = 0;
-  let cabe = false;
+  var areaDisponivel = pageHeight - y - 10;
+  var colunas = 2;
+  var gap = 6;
+  var larguraColuna = (usableWidth - gap) / colunas;
+  var fonte = 8;
+  var alturaLinha = 3.5;
+  var linhasPorColuna = Math.floor(areaDisponivel / alturaLinha);
+  var capacidadeTotal = linhasPorColuna * colunas;
 
-  while(fonte >= 6){
-    doc.setFontSize(fonte);
-    alturaLinha = fonte <= 6.5 ? 3.0 : fonte <= 7 ? 3.2 : fonte <= 8 ? 3.5 : 3.8;
-    linhasPorColuna = Math.floor(areaDisponivel / alturaLinha);
-    const capacidadeTotal = linhasPorColuna * colunas;
-    if(linhasPendencias.length <= capacidadeTotal){
-      cabe = true;
-      break;
-    }
-    fonte -= 0.5;
-  }
-
-  if(!cabe){
-    doc.setFontSize(6);
-    alturaLinha = 3;
-    linhasPorColuna = Math.floor(areaDisponivel / alturaLinha);
+  if(linhasPendencias.length > capacidadeTotal){
+    var vagas = Math.max(0, capacidadeTotal - 1);
+    var excedente = linhasPendencias.length - vagas;
+    linhasPendencias = linhasPendencias.slice(0, vagas);
+    linhasPendencias.push("... E MAIS " + excedente + " REGISTRO(S). VER TELA/EXCEL.");
   }
 
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(fonte);
 
-  const capacidadeTotalFinal = linhasPorColuna * colunas;
-  let listaFinal = [...linhasPendencias];
-
-  if(listaFinal.length > capacidadeTotalFinal){
-    const vagasParaTexto = Math.max(0, capacidadeTotalFinal - 1);
-    const excedente = listaFinal.length - vagasParaTexto;
-    listaFinal = listaFinal.slice(0, vagasParaTexto);
-    listaFinal.push(`... E MAIS ${excedente} REGISTRO(S). VER TELA/EXCEL.`);
-  }
-
-  for(let i = 0; i < listaFinal.length; i++){
-    const coluna = Math.floor(i / linhasPorColuna);
-    const linhaNaColuna = i % linhasPorColuna;
-    const x = margin + (coluna * (larguraColuna + gap));
-    const yLinha = y + (linhaNaColuna * alturaLinha);
-    const texto = doc.splitTextToSize(listaFinal[i], larguraColuna - 1);
-    doc.text(texto[0], x, yLinha);
+  for(var i = 0; i < linhasPendencias.length; i++){
+    var coluna = Math.floor(i / linhasPorColuna);
+    var linhaNaColuna = i % linhasPorColuna;
+    var x = margin + (coluna * (larguraColuna + gap));
+    var yLinha = y + (linhaNaColuna * alturaLinha);
+    doc.text(linhasPendencias[i], x, yLinha);
   }
 
   doc.save("resultado_conferencia_manifestos.pdf");
@@ -1094,35 +1091,37 @@ async function gerarWhatsapp(){
     return;
   }
 
-  const pendencias = obterPendenciasOrdenadas();
-  const naoEmitidas = pendencias.filter((item) => item.status === "COLETADA E NÃO EMITIDA");
-  const books = pendencias.filter((item) => item.status === "CARGA NÃO EMITIDA - BOOK");
-  const validar = pendencias.filter((item) => item.status === "VALIDAR LEITURA");
-  const totais = calcularTotais(resultado);
+  var pendencias = obterPendenciasOrdenadas();
+  var naoEmitidas = pendencias.filter(function(item){ return item.status === "COLETADA E NÃO EMITIDA"; });
+  var books = pendencias.filter(function(item){ return item.status === "CARGA NÃO EMITIDA - BOOK"; });
+  var validar = pendencias.filter(function(item){ return item.status === "VALIDAR LEITURA"; });
+  var totais = calcularTotais(resultado);
 
-  let mensagem = "";
+  var mensagem = "";
   mensagem += "*CONFERÊNCIA DE MANIFESTOS*\n";
-  mensagem += `CLIENTE: ${clienteAtual.toUpperCase()}\n`;
-  mensagem += `TOTAL NF MANIFESTO: ${totais.manifesto}\n`;
-  mensagem += `TOTAL EMITIDO: ${totais.emitido}\n`;
-  mensagem += `ACURACIDADE: ${totais.acuracidade}%\n`;
-  mensagem += `NÃO EMITIDAS: ${naoEmitidas.length}\n`;
-  mensagem += `NÃO EMITIDAS - BOOK: ${books.length}\n`;
-  mensagem += `VALIDAR LEITURA: ${validar.length}\n`;
+  mensagem += "CLIENTE: " + clienteAtual.toUpperCase() + "\n";
+  mensagem += "TOTAL NF MANIFESTO: " + totais.manifesto + "\n";
+  mensagem += "TOTAL EMITIDO: " + totais.emitido + "\n";
+  mensagem += "ACURACIDADE: " + totais.acuracidade + "%\n";
+  mensagem += "NÃO EMITIDAS: " + naoEmitidas.length + "\n";
+  mensagem += "NÃO EMITIDAS - BOOK: " + books.length + "\n";
+  mensagem += "VALIDAR LEITURA: " + validar.length + "\n";
 
   if(naoEmitidas.length){
-    mensagem += `\n*COLETADA E NÃO EMITIDA*\n`;
-    mensagem += naoEmitidas.map((item) => item.nf).join("\n") + "\n";
+    mensagem += "\n*COLETADA E NÃO EMITIDA*\n";
+    mensagem += naoEmitidas.map(function(item){ return item.nf; }).join("\n") + "\n";
   }
 
   if(books.length){
-    mensagem += `\n*CARGA NÃO EMITIDA - BOOK*\n`;
-    mensagem += books.map((item) => item.nf).join("\n") + "\n";
+    mensagem += "\n*CARGA NÃO EMITIDA - BOOK*\n";
+    mensagem += books.map(function(item){ return item.nf; }).join("\n") + "\n";
   }
 
   if(validar.length){
-    mensagem += `\n*VALIDAR LEITURA*\n`;
-    mensagem += validar.map((item) => `${item.nf}${item.sugestaoNF ? " -> possível " + item.sugestaoNF : ""}`).join("\n");
+    mensagem += "\n*VALIDAR LEITURA*\n";
+    mensagem += validar.map(function(item){
+      return item.nf + (item.sugestaoNF ? " -> possível " + item.sugestaoNF : "");
+    }).join("\n");
   }
 
   mensagem = mensagem.trim();
@@ -1133,9 +1132,17 @@ async function gerarWhatsapp(){
     }
   }catch(e){}
 
-  const link = "https://wa.me/?text=" + encodeURIComponent(mensagem);
-  window.open(link, "_blank");
+  window.open("https://wa.me/?text=" + encodeURIComponent(mensagem), "_blank");
 }
+
+document.addEventListener("DOMContentLoaded", function(){
+  document.getElementById("btnProcessar").addEventListener("click", processar);
+  document.getElementById("btnExcel").addEventListener("click", baixarExcel);
+  document.getElementById("btnPDF").addEventListener("click", baixarPDF);
+  document.getElementById("btnWhatsapp").addEventListener("click", gerarWhatsapp);
+  document.getElementById("btnLimpar").addEventListener("click", function(){ location.reload(); });
+  document.getElementById("busca").addEventListener("keyup", filtrar);
+});
 </script>
 </body>
 </html>
