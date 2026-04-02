@@ -315,10 +315,10 @@
     </section>
 
     <section class="actions">
-      <button type="button" class="btn btn-primary" id="btnProcessar" onclick="processarConferencia()">▶ PROCESSAR CONFERÊNCIA</button>
-      <button type="button" class="btn btn-success" id="btnExportar" onclick="exportarExcel()">↓ BAIXAR EXCEL</button>
-      <button type="button" class="btn btn-primary" id="btnExportarPDF" onclick="exportarPDF()">🧾 BAIXAR PDF</button>
-      <button type="button" class="btn btn-secondary" id="btnLimpar" onclick="limparSistema()">↻ LIMPAR</button>
+      <button type="button" class="btn btn-primary" id="btnProcessar">▶ PROCESSAR CONFERÊNCIA</button>
+      <button type="button" class="btn btn-success" id="btnExportar">↓ BAIXAR EXCEL</button>
+      <button type="button" class="btn btn-primary" id="btnExportarPDF">🧾 BAIXAR PDF</button>
+      <button type="button" class="btn btn-secondary" id="btnLimpar">↻ LIMPAR</button>
     </section>
 
     <section class="cards-resumo">
@@ -357,8 +357,8 @@
       <h2>Busca</h2>
       <div class="search-box">
         <input type="text" id="campoBusca" placeholder="Buscar por NF ou AWB no manifesto carregado" />
-        <button type="button" class="btn btn-primary" id="btnBuscar" onclick="buscarNaTabela()">Buscar</button>
-        <button type="button" class="btn btn-secondary" id="btnLimparBusca" onclick="limparBusca()">Limpar busca</button>
+        <button type="button" class="btn btn-primary" id="btnBuscar">Buscar</button>
+        <button type="button" class="btn btn-secondary" id="btnLimparBusca">Limpar busca</button>
       </div>
     </section>
 
@@ -417,6 +417,13 @@
     document.addEventListener("DOMContentLoaded", function () {
       try {
         renderTelaInicial();
+
+        document.getElementById("btnProcessar").addEventListener("click", processarConferencia);
+        document.getElementById("btnExportar").addEventListener("click", exportarExcel);
+        document.getElementById("btnExportarPDF").addEventListener("click", exportarPDF);
+        document.getElementById("btnLimpar").addEventListener("click", limparSistema);
+        document.getElementById("btnBuscar").addEventListener("click", buscarNaTabela);
+        document.getElementById("btnLimparBusca").addEventListener("click", limparBusca);
       } catch (erro) {
         console.error("Erro ao iniciar tela:", erro);
         alert("Erro ao iniciar a tela: " + erro.message);
@@ -585,7 +592,6 @@
             }
 
             const primeiraAba = workbook.Sheets[workbook.SheetNames[0]];
-
             const linhas = XLSX.utils.sheet_to_json(primeiraAba, {
               header: 1,
               defval: "",
@@ -645,9 +651,7 @@
               ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
             );
 
-            const indiceAWB = cabecalhosNormalizados.findIndex((col) =>
-              col.includes("AWB")
-            );
+            const indiceAWB = cabecalhosNormalizados.findIndex((col) => col.includes("AWB"));
 
             const indiceUltimaOcorrencia = cabecalhosNormalizados.findIndex((col) =>
               col.includes("ULTIMAOCORRENCIA") ||
@@ -665,7 +669,6 @@
 
             for (let i = linhaCabecalho + 1; i < linhas.length; i++) {
               const linha = linhas[i] || [];
-
               const nfOriginal = linha[indiceNF];
               const awbOriginal = indiceAWB > -1 ? linha[indiceAWB] : "";
               const ultimaOcorrenciaOriginal = indiceUltimaOcorrencia > -1 ? linha[indiceUltimaOcorrencia] : "";
@@ -796,7 +799,9 @@
       atualizarCards(estado.totais);
       renderResumoGeral();
       renderAnalise();
-      renderTabela(estado.resultadoFinal);
+      renderTabela(
+        estado.resultadoFinal.map((item, index) => ({ ...item, _index: index }))
+      );
     }
 
     function atualizarCards(totais) {
@@ -838,7 +843,6 @@
       );
 
       const mensagens = [];
-
       mensagens.push(Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length});
 
       if (faltantes.length) {
@@ -870,50 +874,48 @@
         return;
       }
 
-      tbody.innerHTML = dados
-        .map((item, index) => {
-          const indiceReal = estado.resultadoFinal.findIndex((r) =>
-            r.ordem === item.ordem &&
-            r.manifesto === item.manifesto &&
-            r.nf === item.nf &&
-            r.status === item.status
-          );
+      tbody.innerHTML = dados.map((item) => {
+        const campoValidacao =
+          item.status === "COLETADA E NÃO EMITIDA"
+            ? `
+              <div class="validacao-box">
+                <input
+                  type="text"
+                  id="validarNF_${item._index}"
+                  value="${item.nf || ""}"
+                  placeholder="Corrigir NF"
+                />
+                <button
+                  type="button"
+                  class="btn-validar"
+                  data-index="${item._index}"
+                >
+                  VALIDAR
+                </button>
+              </div>
+            `
+            : "-";
 
-          const campoValidacao =
-            item.status === "COLETADA E NÃO EMITIDA"
-              ? `
-                <div class="validacao-box">
-                  <input
-                    type="text"
-                    id="validarNF_${item.ordem}_${index}"
-                    value="${item.nf || ""}"
-                    placeholder="Corrigir NF"
-                  />
-                  <button
-                    type="button"
-                    class="btn-validar"
-                    onclick="validarNFManual(${indiceReal})"
-                  >
-                    VALIDAR
-                  </button>
-                </div>
-              `
-              : "-";
+        return `
+          <tr>
+            <td>${item.ordem}</td>
+            <td>${item.manifesto}</td>
+            <td>${item.nf}</td>
+            <td>${item.emitido}</td>
+            <td>${item.awb || "-"}</td>
+            <td class="${classeStatus(item.status)}">${item.status}</td>
+            <td>${item.observacao || "-"}</td>
+            <td>${campoValidacao}</td>
+          </tr>
+        `;
+      }).join("");
 
-          return `
-            <tr>
-              <td>${item.ordem}</td>
-              <td>${item.manifesto}</td>
-              <td>${item.nf}</td>
-              <td>${item.emitido}</td>
-              <td>${item.awb || "-"}</td>
-              <td class="${classeStatus(item.status)}">${item.status}</td>
-              <td>${item.observacao || "-"}</td>
-              <td>${campoValidacao}</td>
-            </tr>
-          `;
-        })
-        .join("");
+      tbody.querySelectorAll(".btn-validar").forEach((botao) => {
+        botao.addEventListener("click", function () {
+          const indice = Number(this.getAttribute("data-index"));
+          validarNFManual(indice);
+        });
+      });
     }
 
     function classeStatus(status) {
@@ -931,7 +933,7 @@
         }
 
         const item = estado.resultadoFinal[indice];
-        const input = document.getElementById(validarNF_${item.ordem}_${indice});
+        const input = document.getElementById(validarNF_${indice});
 
         if (!input) {
           alert("Campo de validação não encontrado.");
@@ -981,23 +983,25 @@
       const termo = document.getElementById("campoBusca").value.trim().toUpperCase();
 
       if (!termo) {
-        renderTabela(estado.resultadoFinal);
+        renderResultado();
         return;
       }
 
-      const filtrado = estado.resultadoFinal.filter(
-        (item) =>
-          String(item.nf).toUpperCase().includes(termo) ||
-          String(item.awb).toUpperCase().includes(termo) ||
-          String(item.status).toUpperCase().includes(termo)
-      );
+      const filtrado = estado.resultadoFinal
+        .map((item, index) => ({ ...item, _index: index }))
+        .filter(
+          (item) =>
+            String(item.nf).toUpperCase().includes(termo) ||
+            String(item.awb).toUpperCase().includes(termo) ||
+            String(item.status).toUpperCase().includes(termo)
+        );
 
       renderTabela(filtrado);
     }
 
     function limparBusca() {
       document.getElementById("campoBusca").value = "";
-      renderTabela(estado.resultadoFinal);
+      renderResultado();
     }
 
     function exportarExcel() {
