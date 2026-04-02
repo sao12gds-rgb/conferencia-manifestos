@@ -221,6 +221,37 @@
       color: #6b7280;
     }
 
+    .validacao-box {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .validacao-box input {
+      width: 120px;
+      padding: 6px 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      background: #ffffff;
+    }
+
+    .btn-validar {
+      border: none;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #7b8794;
+      color: #ffffff;
+    }
+
+    .btn-validar:hover {
+      opacity: 0.92;
+    }
+
     @media (max-width: 1100px) {
       .grid-inputs,
       .cards-resumo {
@@ -344,11 +375,12 @@
               <th>AWB</th>
               <th>Status</th>
               <th>Observação</th>
+              <th>Validação NF</th>
             </tr>
           </thead>
           <tbody id="tabelaResultado">
             <tr>
-              <td colspan="7" class="muted">Nenhum dado processado.</td>
+              <td colspan="8" class="muted">Nenhum dado processado.</td>
             </tr>
           </tbody>
         </table>
@@ -625,7 +657,7 @@
             );
 
             if (indiceNF === -1) {
-              reject(new Error(`Coluna de NF não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}`));
+              reject(new Error(Coluna de NF não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}));
               return;
             }
 
@@ -675,7 +707,7 @@
             resolve(mapaEDI);
           } catch (erro) {
             console.error("Erro interno ao ler Excel:", erro);
-            reject(new Error(`Erro ao ler a planilha EDI: ${erro.message}`));
+            reject(new Error(Erro ao ler a planilha EDI: ${erro.message}));
           }
         };
 
@@ -755,7 +787,7 @@
       document.getElementById("analise").innerHTML = "Sem análise disponível.";
       document.getElementById("tabelaResultado").innerHTML = `
         <tr>
-          <td colspan="7" class="muted">Nenhum dado processado.</td>
+          <td colspan="8" class="muted">Nenhum dado processado.</td>
         </tr>
       `;
     }
@@ -771,7 +803,7 @@
       document.getElementById("cardManifesto").textContent = totais.manifesto;
       document.getElementById("cardEmitido").textContent = totais.emitido;
       document.getElementById("cardDivergencias").textContent = totais.divergencias;
-      document.getElementById("cardAcuracidade").textContent = `${totais.acuracidade}%`;
+      document.getElementById("cardAcuracidade").textContent = ${totais.acuracidade}%;
     }
 
     function renderResumoGeral() {
@@ -807,14 +839,14 @@
 
       const mensagens = [];
 
-      mensagens.push(`Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`);
+      mensagens.push(Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length});
 
       if (faltantes.length) {
-        mensagens.push(`Existem ${faltantes.length} NF(s) com status COLETADA E NÃO EMITIDA.`);
+        mensagens.push(Existem ${faltantes.length} NF(s) com status COLETADA E NÃO EMITIDA.);
       }
 
       if (books.length) {
-        mensagens.push(`Existem ${books.length} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
+        mensagens.push(Existem ${books.length} NF(s) com status CARGA NÃO EMITIDA - BOOK.);
       }
 
       if (!faltantes.length && !books.length) {
@@ -822,7 +854,7 @@
       }
 
       document.getElementById("analise").innerHTML = mensagens
-        .map((texto) => `<div>• ${texto}</div>`)
+        .map((texto) => <div>• ${texto}</div>)
         .join("");
     }
 
@@ -832,26 +864,55 @@
       if (!dados.length) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="7" class="muted">Nenhum dado processado.</td>
+            <td colspan="8" class="muted">Nenhum dado processado.</td>
           </tr>
         `;
         return;
       }
 
       tbody.innerHTML = dados
-        .map(
-          (item) => `
-          <tr>
-            <td>${item.ordem}</td>
-            <td>${item.manifesto}</td>
-            <td>${item.nf}</td>
-            <td>${item.emitido}</td>
-            <td>${item.awb || "-"}</td>
-            <td class="${classeStatus(item.status)}">${item.status}</td>
-            <td>${item.observacao || "-"}</td>
-          </tr>
-        `
-        )
+        .map((item, index) => {
+          const indiceReal = estado.resultadoFinal.findIndex((r) =>
+            r.ordem === item.ordem &&
+            r.manifesto === item.manifesto &&
+            r.nf === item.nf &&
+            r.status === item.status
+          );
+
+          const campoValidacao =
+            item.status === "COLETADA E NÃO EMITIDA"
+              ? `
+                <div class="validacao-box">
+                  <input
+                    type="text"
+                    id="validarNF_${item.ordem}_${index}"
+                    value="${item.nf || ""}"
+                    placeholder="Corrigir NF"
+                  />
+                  <button
+                    type="button"
+                    class="btn-validar"
+                    onclick="validarNFManual(${indiceReal})"
+                  >
+                    VALIDAR
+                  </button>
+                </div>
+              `
+              : "-";
+
+          return `
+            <tr>
+              <td>${item.ordem}</td>
+              <td>${item.manifesto}</td>
+              <td>${item.nf}</td>
+              <td>${item.emitido}</td>
+              <td>${item.awb || "-"}</td>
+              <td class="${classeStatus(item.status)}">${item.status}</td>
+              <td>${item.observacao || "-"}</td>
+              <td>${campoValidacao}</td>
+            </tr>
+          `;
+        })
         .join("");
     }
 
@@ -860,6 +921,60 @@
       if (status === "COLETADA E NÃO EMITIDA") return "status-pendente";
       if (status === "CARGA NÃO EMITIDA - BOOK") return "status-alerta";
       return "status-alerta";
+    }
+
+    function validarNFManual(indice) {
+      try {
+        if (indice < 0 || !estado.resultadoFinal[indice]) {
+          alert("Linha não localizada para validação.");
+          return;
+        }
+
+        const item = estado.resultadoFinal[indice];
+        const input = document.getElementById(validarNF_${item.ordem}_${indice});
+
+        if (!input) {
+          alert("Campo de validação não encontrado.");
+          return;
+        }
+
+        const nfDigitada = input.value.trim();
+        const nfTratada = normalizarNF(nfDigitada, estado.cliente);
+
+        if (!nfTratada) {
+          alert("NF inválida. Verifique o número digitado.");
+          return;
+        }
+
+        item.nf = nfTratada;
+        item.emitido = "NÃO";
+        item.awb = "";
+        item.status = "COLETADA E NÃO EMITIDA";
+        item.observacao = "NF validada manualmente";
+
+        const registroEDI = estado.mapaEDI[nfTratada];
+
+        if (registroEDI) {
+          item.awb = registroEDI.awbFormatada || "";
+
+          if (registroEDI.booked) {
+            item.emitido = "NÃO";
+            item.status = "CARGA NÃO EMITIDA - BOOK";
+            item.observacao = "NF validada manualmente | ULTIMAOCORRENCIA = BKD - BOOKED";
+          } else if (registroEDI.emitido) {
+            item.emitido = "SIM";
+            item.status = "OK";
+            item.observacao = "NF validada manualmente";
+          }
+        } else {
+          item.observacao = "NF validada manualmente | Não localizada no EDI";
+        }
+
+        estado.totais = calcularTotais(estado.resultadoFinal);
+        renderResultado();
+      } catch (erro) {
+        exibirErro(erro.message || "Erro ao validar NF manualmente.");
+      }
     }
 
     function buscarNaTabela() {
@@ -908,7 +1023,7 @@
         XLSX.utils.book_append_sheet(workbook, worksheet, "CONFERENCIA");
         XLSX.writeFile(workbook, "resultado_conferencia_manifestos.xlsx");
       } catch (erro) {
-        exibirErro(`Erro ao exportar Excel: ${erro.message}`);
+        exibirErro(Erro ao exportar Excel: ${erro.message});
       }
     }
 
@@ -952,10 +1067,10 @@
         y += 8;
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        doc.text(`Cliente: ${clienteFormatado}`, 14, y);
+        doc.text(Cliente: ${clienteFormatado}, 14, y);
 
         y += 5;
-        doc.text(`Data de geração: ${dataGeracao}`, 14, y);
+        doc.text(Data de geração: ${dataGeracao}, 14, y);
 
         y += 8;
         doc.setFont("helvetica", "bold");
@@ -967,13 +1082,13 @@
         doc.setFontSize(10);
 
         const resumoLinhas = [
-          `Manifestos processados: ${estado.manifestos.length}`,
-          `Total de NFs no manifesto: ${estado.totais.manifesto}`,
-          `Total emitido no Excel: ${estado.totais.emitido}`,
-          `Faltante do manifesto não emitido: ${faltantesNaoEmitidos}`,
-          `Carga não emitida - book: ${faltantesBook}`,
-          `Divergências: ${estado.totais.divergencias}`,
-          `Percentual de acuracidade: ${estado.totais.acuracidade}%`
+          Manifestos processados: ${estado.manifestos.length},
+          Total de NFs no manifesto: ${estado.totais.manifesto},
+          Total emitido no Excel: ${estado.totais.emitido},
+          Faltante do manifesto não emitido: ${faltantesNaoEmitidos},
+          Carga não emitida - book: ${faltantesBook},
+          Divergências: ${estado.totais.divergencias},
+          Percentual de acuracidade: ${estado.totais.acuracidade}%
         ];
 
         resumoLinhas.forEach((linha) => {
@@ -991,15 +1106,15 @@
         doc.setFontSize(10);
 
         const analiseLinhas = [
-          `Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`
+          Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}
         ];
 
         if (faltantesNaoEmitidos > 0) {
-          analiseLinhas.push(`Existem ${faltantesNaoEmitidos} NF(s) com status COLETADA E NÃO EMITIDA.`);
+          analiseLinhas.push(Existem ${faltantesNaoEmitidos} NF(s) com status COLETADA E NÃO EMITIDA.);
         }
 
         if (faltantesBook > 0) {
-          analiseLinhas.push(`Existem ${faltantesBook} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
+          analiseLinhas.push(Existem ${faltantesBook} NF(s) com status CARGA NÃO EMITIDA - BOOK.);
         }
 
         if (faltantesNaoEmitidos === 0 && faltantesBook === 0) {
@@ -1048,7 +1163,7 @@
 
         doc.save("resultado_conferencia_manifestos.pdf");
       } catch (erro) {
-        exibirErro(`Erro ao exportar PDF: ${erro.message}`);
+        exibirErro(Erro ao exportar PDF: ${erro.message});
       }
     }
 
@@ -1117,8 +1232,8 @@
     }
 
     function exibirErro(mensagem) {
-      const mensagemFinal = `${mensagem} Se o arquivo estiver em .xls, salve como .xlsx e tente novamente.`;
-      document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagemFinal}</div>`;
+      const mensagemFinal = ${mensagem} Se o arquivo estiver em .xls, salve como .xlsx e tente novamente.;
+      document.getElementById("analise").innerHTML = <div class="status-pendente">${mensagemFinal}</div>;
       alert(mensagemFinal);
       console.error(mensagemFinal);
     }
