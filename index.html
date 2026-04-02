@@ -284,10 +284,10 @@
     </section>
 
     <section class="actions">
-      <button type="button" class="btn btn-primary" id="btnProcessar">▶ PROCESSAR CONFERÊNCIA</button>
-      <button type="button" class="btn btn-success" id="btnExportar">↓ BAIXAR EXCEL</button>
-      <button type="button" class="btn btn-primary" id="btnExportarPDF">🧾 BAIXAR PDF</button>
-      <button type="button" class="btn btn-secondary" id="btnLimpar">↻ LIMPAR</button>
+      <button type="button" class="btn btn-primary" id="btnProcessar" onclick="processarConferencia()">▶ PROCESSAR CONFERÊNCIA</button>
+      <button type="button" class="btn btn-success" id="btnExportar" onclick="exportarExcel()">↓ BAIXAR EXCEL</button>
+      <button type="button" class="btn btn-primary" id="btnExportarPDF" onclick="exportarPDF()">🧾 BAIXAR PDF</button>
+      <button type="button" class="btn btn-secondary" id="btnLimpar" onclick="limparSistema()">↻ LIMPAR</button>
     </section>
 
     <section class="cards-resumo">
@@ -326,8 +326,8 @@
       <h2>Busca</h2>
       <div class="search-box">
         <input type="text" id="campoBusca" placeholder="Buscar por NF ou AWB no manifesto carregado" />
-        <button type="button" class="btn btn-primary" id="btnBuscar">Buscar</button>
-        <button type="button" class="btn btn-secondary" id="btnLimparBusca">Limpar busca</button>
+        <button type="button" class="btn btn-primary" id="btnBuscar" onclick="buscarNaTabela()">Buscar</button>
+        <button type="button" class="btn btn-secondary" id="btnLimparBusca" onclick="limparBusca()">Limpar busca</button>
       </div>
     </section>
 
@@ -382,16 +382,14 @@
       }
     };
 
-    window.onload = function () {
-      renderTelaInicial();
-
-      document.getElementById("btnProcessar").addEventListener("click", processarConferencia);
-      document.getElementById("btnExportar").addEventListener("click", exportarExcel);
-      document.getElementById("btnExportarPDF").addEventListener("click", exportarPDF);
-      document.getElementById("btnLimpar").addEventListener("click", limparSistema);
-      document.getElementById("btnBuscar").addEventListener("click", buscarNaTabela);
-      document.getElementById("btnLimparBusca").addEventListener("click", limparBusca);
-    };
+    document.addEventListener("DOMContentLoaded", function () {
+      try {
+        renderTelaInicial();
+      } catch (erro) {
+        console.error("Erro ao iniciar tela:", erro);
+        alert("Erro ao iniciar a tela: " + erro.message);
+      }
+    });
 
     async function processarConferencia() {
       try {
@@ -405,8 +403,7 @@
 
         estado.resultadoFinal = compararManifestoComEDI(
           estado.nfsManifesto,
-          estado.mapaEDI,
-          estado.cliente
+          estado.mapaEDI
         );
 
         estado.totais = calcularTotais(estado.resultadoFinal);
@@ -608,11 +605,7 @@
             }
 
             if (linhaCabecalho === -1) {
-              reject(
-                new Error(
-                  "Não foi possível localizar o cabeçalho da planilha. Verifique se existe coluna Numero."
-                )
-              );
+              reject(new Error("Não foi possível localizar o cabeçalho da planilha. Verifique se existe coluna Numero."));
               return;
             }
 
@@ -632,11 +625,7 @@
             );
 
             if (indiceNF === -1) {
-              reject(
-                new Error(
-                  Coluna de NF não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}
-                )
-              );
+              reject(new Error(`Coluna de NF não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}`));
               return;
             }
 
@@ -679,18 +668,14 @@
             });
 
             if (!Object.keys(mapaEDI).length) {
-              reject(
-                new Error(
-                  "A planilha foi lida, mas nenhuma NF válida foi encontrada."
-                )
-              );
+              reject(new Error("A planilha foi lida, mas nenhuma NF válida foi encontrada."));
               return;
             }
 
             resolve(mapaEDI);
           } catch (erro) {
             console.error("Erro interno ao ler Excel:", erro);
-            reject(new Error(Erro ao ler a planilha EDI: ${erro.message}));
+            reject(new Error(`Erro ao ler a planilha EDI: ${erro.message}`));
           }
         };
 
@@ -766,12 +751,8 @@
         acuracidade: 0
       });
 
-      document.getElementById("resumoGeral").innerHTML =
-        "Nenhum processamento realizado até o momento.";
-
-      document.getElementById("analise").innerHTML =
-        "Sem análise disponível.";
-
+      document.getElementById("resumoGeral").innerHTML = "Nenhum processamento realizado até o momento.";
+      document.getElementById("analise").innerHTML = "Sem análise disponível.";
       document.getElementById("tabelaResultado").innerHTML = `
         <tr>
           <td colspan="7" class="muted">Nenhum dado processado.</td>
@@ -790,7 +771,7 @@
       document.getElementById("cardManifesto").textContent = totais.manifesto;
       document.getElementById("cardEmitido").textContent = totais.emitido;
       document.getElementById("cardDivergencias").textContent = totais.divergencias;
-      document.getElementById("cardAcuracidade").textContent = ${totais.acuracidade}%;
+      document.getElementById("cardAcuracidade").textContent = `${totais.acuracidade}%`;
     }
 
     function renderResumoGeral() {
@@ -826,14 +807,14 @@
 
       const mensagens = [];
 
-      mensagens.push(Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length});
+      mensagens.push(`Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`);
 
       if (faltantes.length) {
-        mensagens.push(Existem ${faltantes.length} NF(s) com status COLETADA E NÃO EMITIDA.);
+        mensagens.push(`Existem ${faltantes.length} NF(s) com status COLETADA E NÃO EMITIDA.`);
       }
 
       if (books.length) {
-        mensagens.push(Existem ${books.length} NF(s) com status CARGA NÃO EMITIDA - BOOK.);
+        mensagens.push(`Existem ${books.length} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
       }
 
       if (!faltantes.length && !books.length) {
@@ -841,7 +822,7 @@
       }
 
       document.getElementById("analise").innerHTML = mensagens
-        .map((texto) => <div>• ${texto}</div>)
+        .map((texto) => `<div>• ${texto}</div>`)
         .join("");
     }
 
@@ -905,162 +886,170 @@
     }
 
     function exportarExcel() {
-      if (!estado.resultadoFinal.length) {
-        alert("Não há resultado para exportar.");
-        return;
+      try {
+        if (!estado.resultadoFinal.length) {
+          alert("Não há resultado para exportar.");
+          return;
+        }
+
+        const dadosExportacao = estado.resultadoFinal.map((item) => ({
+          ORDEM: item.ordem,
+          MANIFESTO: item.manifesto,
+          NF: item.nf,
+          EMITIDO: item.emitido,
+          AWB: item.awb,
+          STATUS: item.status,
+          OBSERVACAO: item.observacao
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
+        const workbook = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, "CONFERENCIA");
+        XLSX.writeFile(workbook, "resultado_conferencia_manifestos.xlsx");
+      } catch (erro) {
+        exibirErro(`Erro ao exportar Excel: ${erro.message}`);
       }
-
-      const dadosExportacao = estado.resultadoFinal.map((item) => ({
-        ORDEM: item.ordem,
-        MANIFESTO: item.manifesto,
-        NF: item.nf,
-        EMITIDO: item.emitido,
-        AWB: item.awb,
-        STATUS: item.status,
-        OBSERVACAO: item.observacao
-      }));
-
-      const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
-      const workbook = XLSX.utils.book_new();
-
-      XLSX.utils.book_append_sheet(workbook, worksheet, "CONFERENCIA");
-      XLSX.writeFile(workbook, "resultado_conferencia_manifestos.xlsx");
     }
 
     function exportarPDF() {
-      if (!estado.resultadoFinal.length) {
-        alert("Não há resultado para exportar em PDF.");
-        return;
-      }
+      try {
+        if (!estado.resultadoFinal.length) {
+          alert("Não há resultado para exportar em PDF.");
+          return;
+        }
 
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF("p", "mm", "a4");
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF("p", "mm", "a4");
 
-      const clienteFormatado = formatarCliente(estado.cliente);
-      const dataGeracao = new Date().toLocaleString("pt-BR");
+        const clienteFormatado = formatarCliente(estado.cliente);
+        const dataGeracao = new Date().toLocaleString("pt-BR");
 
-      const faltantesNaoEmitidos = estado.resultadoFinal.filter(
-        (item) => item.status === "COLETADA E NÃO EMITIDA"
-      ).length;
+        const faltantesNaoEmitidos = estado.resultadoFinal.filter(
+          (item) => item.status === "COLETADA E NÃO EMITIDA"
+        ).length;
 
-      const faltantesBook = estado.resultadoFinal.filter(
-        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
-      ).length;
+        const faltantesBook = estado.resultadoFinal.filter(
+          (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
+        ).length;
 
-      const linhasTabela = estado.resultadoFinal.map((item) => [
-        item.ordem,
-        item.manifesto,
-        item.nf,
-        item.emitido,
-        item.awb || "-",
-        item.status,
-        item.observacao || "-"
-      ]);
+        const linhasTabela = estado.resultadoFinal.map((item) => [
+          item.ordem,
+          item.manifesto,
+          item.nf,
+          item.emitido,
+          item.awb || "-",
+          item.status,
+          item.observacao || "-"
+        ]);
 
-      let y = 15;
+        let y = 15;
 
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text("CONFERÊNCIA DE MANIFESTOS", 14, y);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.text("CONFERÊNCIA DE MANIFESTOS", 14, y);
 
-      y += 8;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      doc.text(Cliente: ${clienteFormatado}, 14, y);
+        y += 8;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`Cliente: ${clienteFormatado}`, 14, y);
 
-      y += 5;
-      doc.text(Data de geração: ${dataGeracao}, 14, y);
-
-      y += 8;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("RESUMO GERAL", 14, y);
-
-      y += 6;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-
-      const resumoLinhas = [
-        Manifestos processados: ${estado.manifestos.length},
-        Total de NFs no manifesto: ${estado.totais.manifesto},
-        Total emitido no Excel: ${estado.totais.emitido},
-        Faltante do manifesto não emitido: ${faltantesNaoEmitidos},
-        Carga não emitida - book: ${faltantesBook},
-        Divergências: ${estado.totais.divergencias},
-        Percentual de acuracidade: ${estado.totais.acuracidade}%
-      ];
-
-      resumoLinhas.forEach((linha) => {
-        doc.text(linha, 14, y);
         y += 5;
-      });
+        doc.text(`Data de geração: ${dataGeracao}`, 14, y);
 
-      y += 4;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("ANÁLISE", 14, y);
+        y += 8;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text("RESUMO GERAL", 14, y);
 
-      y += 6;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
+        y += 6;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
 
-      const analiseLinhas = [
-        Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}
-      ];
+        const resumoLinhas = [
+          `Manifestos processados: ${estado.manifestos.length}`,
+          `Total de NFs no manifesto: ${estado.totais.manifesto}`,
+          `Total emitido no Excel: ${estado.totais.emitido}`,
+          `Faltante do manifesto não emitido: ${faltantesNaoEmitidos}`,
+          `Carga não emitida - book: ${faltantesBook}`,
+          `Divergências: ${estado.totais.divergencias}`,
+          `Percentual de acuracidade: ${estado.totais.acuracidade}%`
+        ];
 
-      if (faltantesNaoEmitidos > 0) {
-        analiseLinhas.push(Existem ${faltantesNaoEmitidos} NF(s) com status COLETADA E NÃO EMITIDA.);
+        resumoLinhas.forEach((linha) => {
+          doc.text(linha, 14, y);
+          y += 5;
+        });
+
+        y += 4;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text("ANÁLISE", 14, y);
+
+        y += 6;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+
+        const analiseLinhas = [
+          `Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}`
+        ];
+
+        if (faltantesNaoEmitidos > 0) {
+          analiseLinhas.push(`Existem ${faltantesNaoEmitidos} NF(s) com status COLETADA E NÃO EMITIDA.`);
+        }
+
+        if (faltantesBook > 0) {
+          analiseLinhas.push(`Existem ${faltantesBook} NF(s) com status CARGA NÃO EMITIDA - BOOK.`);
+        }
+
+        if (faltantesNaoEmitidos === 0 && faltantesBook === 0) {
+          analiseLinhas.push("Conferência concluída sem alerta estrutural identificado.");
+        }
+
+        analiseLinhas.forEach((linha) => {
+          const textoQuebrado = doc.splitTextToSize(linha, 180);
+          doc.text(textoQuebrado, 14, y);
+          y += textoQuebrado.length * 5;
+        });
+
+        y += 4;
+
+        doc.autoTable({
+          startY: y,
+          head: [[
+            "ORDEM",
+            "MANIFESTO",
+            "NF",
+            "EMITIDO",
+            "AWB",
+            "STATUS",
+            "OBSERVAÇÃO"
+          ]],
+          body: linhasTabela,
+          styles: {
+            fontSize: 8,
+            cellPadding: 2,
+            overflow: "linebreak"
+          },
+          headStyles: {
+            fillColor: [23, 72, 140]
+          },
+          columnStyles: {
+            0: { cellWidth: 15 },
+            1: { cellWidth: 35 },
+            2: { cellWidth: 25 },
+            3: { cellWidth: 18 },
+            4: { cellWidth: 28 },
+            5: { cellWidth: 35 },
+            6: { cellWidth: 34 }
+          },
+          margin: { left: 14, right: 14 }
+        });
+
+        doc.save("resultado_conferencia_manifestos.pdf");
+      } catch (erro) {
+        exibirErro(`Erro ao exportar PDF: ${erro.message}`);
       }
-
-      if (faltantesBook > 0) {
-        analiseLinhas.push(Existem ${faltantesBook} NF(s) com status CARGA NÃO EMITIDA - BOOK.);
-      }
-
-      if (faltantesNaoEmitidos === 0 && faltantesBook === 0) {
-        analiseLinhas.push("Conferência concluída sem alerta estrutural identificado.");
-      }
-
-      analiseLinhas.forEach((linha) => {
-        const textoQuebrado = doc.splitTextToSize(linha, 180);
-        doc.text(textoQuebrado, 14, y);
-        y += textoQuebrado.length * 5;
-      });
-
-      y += 4;
-
-      doc.autoTable({
-        startY: y,
-        head: [[
-          "ORDEM",
-          "MANIFESTO",
-          "NF",
-          "EMITIDO",
-          "AWB",
-          "STATUS",
-          "OBSERVAÇÃO"
-        ]],
-        body: linhasTabela,
-        styles: {
-          fontSize: 8,
-          cellPadding: 2,
-          overflow: "linebreak"
-        },
-        headStyles: {
-          fillColor: [23, 72, 140]
-        },
-        columnStyles: {
-          0: { cellWidth: 15 },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 25 },
-          3: { cellWidth: 18 },
-          4: { cellWidth: 28 },
-          5: { cellWidth: 35 },
-          6: { cellWidth: 34 }
-        },
-        margin: { left: 14, right: 14 }
-      });
-
-      doc.save("resultado_conferencia_manifestos.pdf");
     }
 
     function limparSistema() {
@@ -1128,8 +1117,8 @@
     }
 
     function exibirErro(mensagem) {
-      const mensagemFinal = ${mensagem} Se o arquivo estiver em .xls, salve como .xlsx e tente novamente.;
-      document.getElementById("analise").innerHTML = <div class="status-pendente">${mensagemFinal}</div>;
+      const mensagemFinal = `${mensagem} Se o arquivo estiver em .xls, salve como .xlsx e tente novamente.`;
+      document.getElementById("analise").innerHTML = `<div class="status-pendente">${mensagemFinal}</div>`;
       alert(mensagemFinal);
       console.error(mensagemFinal);
     }
