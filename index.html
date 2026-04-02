@@ -282,7 +282,6 @@
 </head>
 <body>
   <div class="container">
-
     <header class="header">
       <div class="logo">Azul Cargo Express</div>
       <h1 class="title">Conferência de Manifestos</h1>
@@ -395,10 +394,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-  </script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }
 
-  <script>
     const estado = {
       cliente: "",
       manifestos: [],
@@ -414,18 +413,29 @@
       }
     };
 
+    function iniciarTela() {
+      renderTelaInicial();
+
+      const btnProcessar = document.getElementById("btnProcessar");
+      const btnExportar = document.getElementById("btnExportar");
+      const btnExportarPDF = document.getElementById("btnExportarPDF");
+      const btnLimpar = document.getElementById("btnLimpar");
+      const btnBuscar = document.getElementById("btnBuscar");
+      const btnLimparBusca = document.getElementById("btnLimparBusca");
+
+      btnProcessar.onclick = processarConferencia;
+      btnExportar.onclick = exportarExcel;
+      btnExportarPDF.onclick = exportarPDF;
+      btnLimpar.onclick = limparSistema;
+      btnBuscar.onclick = buscarNaTabela;
+      btnLimparBusca.onclick = limparBusca;
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
       try {
-        renderTelaInicial();
-
-        document.getElementById("btnProcessar").addEventListener("click", processarConferencia);
-        document.getElementById("btnExportar").addEventListener("click", exportarExcel);
-        document.getElementById("btnExportarPDF").addEventListener("click", exportarPDF);
-        document.getElementById("btnLimpar").addEventListener("click", limparSistema);
-        document.getElementById("btnBuscar").addEventListener("click", buscarNaTabela);
-        document.getElementById("btnLimparBusca").addEventListener("click", limparBusca);
+        iniciarTela();
       } catch (erro) {
-        console.error("Erro ao iniciar tela:", erro);
+        console.error("Erro ao iniciar a tela:", erro);
         alert("Erro ao iniciar a tela: " + erro.message);
       }
     });
@@ -439,12 +449,7 @@
 
         estado.nfsManifesto = await lerManifestos(estado.manifestos, estado.cliente);
         estado.mapaEDI = await lerPlanilhaEDI(estado.planilhaEDI, estado.cliente);
-
-        estado.resultadoFinal = compararManifestoComEDI(
-          estado.nfsManifesto,
-          estado.mapaEDI
-        );
-
+        estado.resultadoFinal = compararManifestoComEDI(estado.nfsManifesto, estado.mapaEDI);
         estado.totais = calcularTotais(estado.resultadoFinal);
 
         renderResultado();
@@ -478,7 +483,7 @@
       let ordemGlobal = 1;
 
       for (const arquivo of arquivos) {
-        const nomeManifesto = arquivo.name;
+        const nomeManifesto = arquivo.name || "";
         let textoExtraido = "";
 
         if (
@@ -486,23 +491,22 @@
           nomeManifesto.toLowerCase().endsWith(".pdf")
         ) {
           textoExtraido = await lerTextoPDF(arquivo);
-        } else if (arquivo.type.startsWith("image/")) {
+        } else if (arquivo.type && arquivo.type.startsWith("image/")) {
           textoExtraido = await lerTextoImagem(arquivo);
         } else {
           continue;
         }
 
         textoExtraido = limparRuidoOCR(textoExtraido);
-
         const nfs = extrairNFsDoTexto(textoExtraido, cliente);
 
-        nfs.forEach((nf) => {
+        for (const nf of nfs) {
           resultado.push({
             ordem: ordemGlobal++,
             manifesto: nomeManifesto,
             nf: nf
           });
-        });
+        }
       }
 
       return resultado;
@@ -516,9 +520,8 @@
 
       for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
         const page = await pdf.getPage(pagina);
-
         const textContent = await page.getTextContent();
-        const textoNativo = textContent.items.map((item) => item.str).join(" ").trim();
+        const textoNativo = (textContent.items || []).map((item) => item.str).join(" ").trim();
 
         if (textoNativo) {
           textoCompleto += "\n" + textoNativo;
@@ -537,9 +540,8 @@
           viewport: viewport
         }).promise;
 
-        const { data } = await Tesseract.recognize(canvas, "por");
-        const textoOCR = data.text || "";
-
+        const retornoOCR = await Tesseract.recognize(canvas, "por");
+        const textoOCR = (retornoOCR && retornoOCR.data && retornoOCR.data.text) ? retornoOCR.data.text : "";
         textoCompleto += "\n" + textoOCR;
       }
 
@@ -547,8 +549,8 @@
     }
 
     async function lerTextoImagem(arquivo) {
-      const { data } = await Tesseract.recognize(arquivo, "por");
-      return data.text || "";
+      const retornoOCR = await Tesseract.recognize(arquivo, "por");
+      return (retornoOCR && retornoOCR.data && retornoOCR.data.text) ? retornoOCR.data.text : "";
     }
 
     function extrairNFsDoTexto(texto, cliente) {
@@ -579,7 +581,6 @@
         leitor.onload = function (evento) {
           try {
             const dados = new Uint8Array(evento.target.result);
-
             const workbook = XLSX.read(dados, {
               type: "array",
               cellDates: false,
@@ -604,7 +605,7 @@
               return;
             }
 
-            const normalizarCabecalho = (texto) => {
+            const normalizarCabecalho = function (texto) {
               return String(texto || "")
                 .normalize("NFD")
                 .replace(/[\u0300-\u036f]/g, "")
@@ -626,11 +627,11 @@
                 ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
               );
 
-              const temAWB = linhaNorm.some((col) => col.includes("AWB"));
+              const temAWB = linhaNorm.some((col) => col.indexOf("AWB") > -1);
               const temUltimaOcorrencia = linhaNorm.some((col) =>
-                col.includes("ULTIMAOCORRENCIA") ||
-                col.includes("ULTIMA OCORRENCIA") ||
-                col.includes("ULT OCORRENCIA") ||
+                col.indexOf("ULTIMAOCORRENCIA") > -1 ||
+                col.indexOf("ULTIMA OCORRENCIA") > -1 ||
+                col.indexOf("ULT OCORRENCIA") > -1 ||
                 col === "OCORRENCIA"
               );
 
@@ -651,17 +652,17 @@
               ["NUMERO", "NF", "NFE", "NOTA FISCAL", "NOTA"].includes(col)
             );
 
-            const indiceAWB = cabecalhosNormalizados.findIndex((col) => col.includes("AWB"));
+            const indiceAWB = cabecalhosNormalizados.findIndex((col) => col.indexOf("AWB") > -1);
 
             const indiceUltimaOcorrencia = cabecalhosNormalizados.findIndex((col) =>
-              col.includes("ULTIMAOCORRENCIA") ||
-              col.includes("ULTIMA OCORRENCIA") ||
-              col.includes("ULT OCORRENCIA") ||
+              col.indexOf("ULTIMAOCORRENCIA") > -1 ||
+              col.indexOf("ULTIMA OCORRENCIA") > -1 ||
+              col.indexOf("ULT OCORRENCIA") > -1 ||
               col === "OCORRENCIA"
             );
 
             if (indiceNF === -1) {
-              reject(new Error(Coluna de NF não encontrada. Cabeçalhos lidos: ${cabecalhos.join(" | ")}));
+              reject(new Error("Coluna de NF não encontrada. Cabeçalhos lidos: " + cabecalhos.join(" | ")));
               return;
             }
 
@@ -677,7 +678,9 @@
               const awb = normalizarNumero(awbOriginal);
               const ultimaOcorrencia = String(ultimaOcorrenciaOriginal || "").trim().toUpperCase();
 
-              if (!nf) continue;
+              if (!nf) {
+                continue;
+              }
 
               if (!mapaEDI[nf]) {
                 mapaEDI[nf] = {
@@ -710,7 +713,7 @@
             resolve(mapaEDI);
           } catch (erro) {
             console.error("Erro interno ao ler Excel:", erro);
-            reject(new Error(Erro ao ler a planilha EDI: ${erro.message}));
+            reject(new Error("Erro ao ler a planilha EDI: " + erro.message));
           }
         };
 
@@ -750,10 +753,10 @@
           ordem: index + 1,
           manifesto: item.manifesto,
           nf: item.nf,
-          emitido,
-          awb,
-          status,
-          observacao
+          emitido: emitido,
+          awb: awb,
+          status: status,
+          observacao: observacao
         });
       });
 
@@ -774,7 +777,7 @@
         manifesto: totalManifesto,
         emitido: totalEmitido,
         divergencias: totalDivergencias,
-        acuracidade
+        acuracidade: acuracidade
       };
     }
 
@@ -788,69 +791,65 @@
 
       document.getElementById("resumoGeral").innerHTML = "Nenhum processamento realizado até o momento.";
       document.getElementById("analise").innerHTML = "Sem análise disponível.";
-      document.getElementById("tabelaResultado").innerHTML = `
-        <tr>
-          <td colspan="8" class="muted">Nenhum dado processado.</td>
-        </tr>
-      `;
+      document.getElementById("tabelaResultado").innerHTML = '<tr><td colspan="8" class="muted">Nenhum dado processado.</td></tr>';
     }
 
     function renderResultado() {
       atualizarCards(estado.totais);
       renderResumoGeral();
       renderAnalise();
-      renderTabela(
-        estado.resultadoFinal.map((item, index) => ({ ...item, _index: index }))
-      );
+
+      const dados = estado.resultadoFinal.map((item, index) => {
+        return {
+          ordem: item.ordem,
+          manifesto: item.manifesto,
+          nf: item.nf,
+          emitido: item.emitido,
+          awb: item.awb,
+          status: item.status,
+          observacao: item.observacao,
+          _index: index
+        };
+      });
+
+      renderTabela(dados);
     }
 
     function atualizarCards(totais) {
       document.getElementById("cardManifesto").textContent = totais.manifesto;
       document.getElementById("cardEmitido").textContent = totais.emitido;
       document.getElementById("cardDivergencias").textContent = totais.divergencias;
-      document.getElementById("cardAcuracidade").textContent = ${totais.acuracidade}%;
+      document.getElementById("cardAcuracidade").textContent = totais.acuracidade + "%";
     }
 
     function renderResumoGeral() {
-      const faltantesNaoEmitidos = estado.resultadoFinal.filter(
-        (item) => item.status === "COLETADA E NÃO EMITIDA"
-      ).length;
-
-      const faltantesBook = estado.resultadoFinal.filter(
-        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
-      ).length;
-
+      const faltantesNaoEmitidos = estado.resultadoFinal.filter((item) => item.status === "COLETADA E NÃO EMITIDA").length;
+      const faltantesBook = estado.resultadoFinal.filter((item) => item.status === "CARGA NÃO EMITIDA - BOOK").length;
       const quantidadeManifestos = estado.manifestos.length;
 
-      document.getElementById("resumoGeral").innerHTML = `
-        <strong>Cliente:</strong> ${formatarCliente(estado.cliente)}<br>
-        <strong>Manifestos processados:</strong> ${quantidadeManifestos}<br>
-        <strong>Total de NFs no manifesto:</strong> ${estado.totais.manifesto}<br>
-        <strong>Total emitido no Excel:</strong> ${estado.totais.emitido}<br>
-        <strong>Faltante do manifesto não emitido:</strong> ${faltantesNaoEmitidos}<br>
-        <strong>Carga não emitida - book:</strong> ${faltantesBook}<br>
-        <strong>Percentual de acuracidade:</strong> ${estado.totais.acuracidade}%
-      `;
+      document.getElementById("resumoGeral").innerHTML =
+        "<strong>Cliente:</strong> " + formatarCliente(estado.cliente) + "<br>" +
+        "<strong>Manifestos processados:</strong> " + quantidadeManifestos + "<br>" +
+        "<strong>Total de NFs no manifesto:</strong> " + estado.totais.manifesto + "<br>" +
+        "<strong>Total emitido no Excel:</strong> " + estado.totais.emitido + "<br>" +
+        "<strong>Faltante do manifesto não emitido:</strong> " + faltantesNaoEmitidos + "<br>" +
+        "<strong>Carga não emitida - book:</strong> " + faltantesBook + "<br>" +
+        "<strong>Percentual de acuracidade:</strong> " + estado.totais.acuracidade + "%";
     }
 
     function renderAnalise() {
-      const faltantes = estado.resultadoFinal.filter(
-        (item) => item.status === "COLETADA E NÃO EMITIDA"
-      );
-
-      const books = estado.resultadoFinal.filter(
-        (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
-      );
-
+      const faltantes = estado.resultadoFinal.filter((item) => item.status === "COLETADA E NÃO EMITIDA");
+      const books = estado.resultadoFinal.filter((item) => item.status === "CARGA NÃO EMITIDA - BOOK");
       const mensagens = [];
-      mensagens.push(Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length});
+
+      mensagens.push("Total de NFs extraídas do manifesto: " + estado.nfsManifesto.length);
 
       if (faltantes.length) {
-        mensagens.push(Existem ${faltantes.length} NF(s) com status COLETADA E NÃO EMITIDA.);
+        mensagens.push("Existem " + faltantes.length + " NF(s) com status COLETADA E NÃO EMITIDA.");
       }
 
       if (books.length) {
-        mensagens.push(Existem ${books.length} NF(s) com status CARGA NÃO EMITIDA - BOOK.);
+        mensagens.push("Existem " + books.length + " NF(s) com status CARGA NÃO EMITIDA - BOOK.");
       }
 
       if (!faltantes.length && !books.length) {
@@ -858,7 +857,7 @@
       }
 
       document.getElementById("analise").innerHTML = mensagens
-        .map((texto) => <div>• ${texto}</div>)
+        .map((texto) => "<div>• " + texto + "</div>")
         .join("");
     }
 
@@ -866,55 +865,43 @@
       const tbody = document.getElementById("tabelaResultado");
 
       if (!dados.length) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="8" class="muted">Nenhum dado processado.</td>
-          </tr>
-        `;
+        tbody.innerHTML = '<tr><td colspan="8" class="muted">Nenhum dado processado.</td></tr>';
         return;
       }
 
-      tbody.innerHTML = dados.map((item) => {
-        const campoValidacao =
-          item.status === "COLETADA E NÃO EMITIDA"
-            ? `
-              <div class="validacao-box">
-                <input
-                  type="text"
-                  id="validarNF_${item._index}"
-                  value="${item.nf || ""}"
-                  placeholder="Corrigir NF"
-                />
-                <button
-                  type="button"
-                  class="btn-validar"
-                  data-index="${item._index}"
-                >
-                  VALIDAR
-                </button>
-              </div>
-            `
-            : "-";
+      let html = "";
 
-        return `
-          <tr>
-            <td>${item.ordem}</td>
-            <td>${item.manifesto}</td>
-            <td>${item.nf}</td>
-            <td>${item.emitido}</td>
-            <td>${item.awb || "-"}</td>
-            <td class="${classeStatus(item.status)}">${item.status}</td>
-            <td>${item.observacao || "-"}</td>
-            <td>${campoValidacao}</td>
-          </tr>
-        `;
-      }).join("");
+      dados.forEach((item) => {
+        let campoValidacao = "-";
+
+        if (item.status === "COLETADA E NÃO EMITIDA") {
+          campoValidacao =
+            '<div class="validacao-box">' +
+              '<input type="text" id="validarNF_' + item._index + '" value="' + escaparHtml(item.nf || "") + '" placeholder="Corrigir NF" />' +
+              '<button type="button" class="btn-validar" data-index="' + item._index + '">VALIDAR</button>' +
+            '</div>';
+        }
+
+        html +=
+          "<tr>" +
+            "<td>" + item.ordem + "</td>" +
+            "<td>" + escaparHtml(item.manifesto) + "</td>" +
+            "<td>" + escaparHtml(item.nf) + "</td>" +
+            "<td>" + escaparHtml(item.emitido) + "</td>" +
+            "<td>" + escaparHtml(item.awb || "-") + "</td>" +
+            '<td class="' + classeStatus(item.status) + '">' + escaparHtml(item.status) + "</td>" +
+            "<td>" + escaparHtml(item.observacao || "-") + "</td>" +
+            "<td>" + campoValidacao + "</td>" +
+          "</tr>";
+      });
+
+      tbody.innerHTML = html;
 
       tbody.querySelectorAll(".btn-validar").forEach((botao) => {
-        botao.addEventListener("click", function () {
+        botao.onclick = function () {
           const indice = Number(this.getAttribute("data-index"));
           validarNFManual(indice);
-        });
+        };
       });
     }
 
@@ -927,13 +914,13 @@
 
     function validarNFManual(indice) {
       try {
-        if (indice < 0 || !estado.resultadoFinal[indice]) {
+        if (indice < 0 || typeof estado.resultadoFinal[indice] === "undefined") {
           alert("Linha não localizada para validação.");
           return;
         }
 
         const item = estado.resultadoFinal[indice];
-        const input = document.getElementById(validarNF_${indice});
+        const input = document.getElementById("validarNF_" + indice);
 
         if (!input) {
           alert("Campo de validação não encontrado.");
@@ -988,13 +975,25 @@
       }
 
       const filtrado = estado.resultadoFinal
-        .map((item, index) => ({ ...item, _index: index }))
-        .filter(
-          (item) =>
+        .map((item, index) => {
+          return {
+            ordem: item.ordem,
+            manifesto: item.manifesto,
+            nf: item.nf,
+            emitido: item.emitido,
+            awb: item.awb,
+            status: item.status,
+            observacao: item.observacao,
+            _index: index
+          };
+        })
+        .filter((item) => {
+          return (
             String(item.nf).toUpperCase().includes(termo) ||
             String(item.awb).toUpperCase().includes(termo) ||
             String(item.status).toUpperCase().includes(termo)
-        );
+          );
+        });
 
       renderTabela(filtrado);
     }
@@ -1011,23 +1010,24 @@
           return;
         }
 
-        const dadosExportacao = estado.resultadoFinal.map((item) => ({
-          ORDEM: item.ordem,
-          MANIFESTO: item.manifesto,
-          NF: item.nf,
-          EMITIDO: item.emitido,
-          AWB: item.awb,
-          STATUS: item.status,
-          OBSERVACAO: item.observacao
-        }));
+        const dadosExportacao = estado.resultadoFinal.map((item) => {
+          return {
+            ORDEM: item.ordem,
+            MANIFESTO: item.manifesto,
+            NF: item.nf,
+            EMITIDO: item.emitido,
+            AWB: item.awb,
+            STATUS: item.status,
+            OBSERVACAO: item.observacao
+          };
+        });
 
         const worksheet = XLSX.utils.json_to_sheet(dadosExportacao);
         const workbook = XLSX.utils.book_new();
-
         XLSX.utils.book_append_sheet(workbook, worksheet, "CONFERENCIA");
         XLSX.writeFile(workbook, "resultado_conferencia_manifestos.xlsx");
       } catch (erro) {
-        exibirErro(Erro ao exportar Excel: ${erro.message});
+        exibirErro("Erro ao exportar Excel: " + erro.message);
       }
     }
 
@@ -1038,29 +1038,30 @@
           return;
         }
 
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF("p", "mm", "a4");
+        const jsPDFRef = window.jspdf && window.jspdf.jsPDF ? window.jspdf.jsPDF : null;
 
+        if (!jsPDFRef) {
+          throw new Error("Biblioteca jsPDF não carregada.");
+        }
+
+        const doc = new jsPDFRef("p", "mm", "a4");
         const clienteFormatado = formatarCliente(estado.cliente);
         const dataGeracao = new Date().toLocaleString("pt-BR");
 
-        const faltantesNaoEmitidos = estado.resultadoFinal.filter(
-          (item) => item.status === "COLETADA E NÃO EMITIDA"
-        ).length;
+        const faltantesNaoEmitidos = estado.resultadoFinal.filter((item) => item.status === "COLETADA E NÃO EMITIDA").length;
+        const faltantesBook = estado.resultadoFinal.filter((item) => item.status === "CARGA NÃO EMITIDA - BOOK").length;
 
-        const faltantesBook = estado.resultadoFinal.filter(
-          (item) => item.status === "CARGA NÃO EMITIDA - BOOK"
-        ).length;
-
-        const linhasTabela = estado.resultadoFinal.map((item) => [
-          item.ordem,
-          item.manifesto,
-          item.nf,
-          item.emitido,
-          item.awb || "-",
-          item.status,
-          item.observacao || "-"
-        ]);
+        const linhasTabela = estado.resultadoFinal.map((item) => {
+          return [
+            item.ordem,
+            item.manifesto,
+            item.nf,
+            item.emitido,
+            item.awb || "-",
+            item.status,
+            item.observacao || "-"
+          ];
+        });
 
         let y = 15;
 
@@ -1071,10 +1072,10 @@
         y += 8;
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
-        doc.text(Cliente: ${clienteFormatado}, 14, y);
+        doc.text("Cliente: " + clienteFormatado, 14, y);
 
         y += 5;
-        doc.text(Data de geração: ${dataGeracao}, 14, y);
+        doc.text("Data de geração: " + dataGeracao, 14, y);
 
         y += 8;
         doc.setFont("helvetica", "bold");
@@ -1086,13 +1087,13 @@
         doc.setFontSize(10);
 
         const resumoLinhas = [
-          Manifestos processados: ${estado.manifestos.length},
-          Total de NFs no manifesto: ${estado.totais.manifesto},
-          Total emitido no Excel: ${estado.totais.emitido},
-          Faltante do manifesto não emitido: ${faltantesNaoEmitidos},
-          Carga não emitida - book: ${faltantesBook},
-          Divergências: ${estado.totais.divergencias},
-          Percentual de acuracidade: ${estado.totais.acuracidade}%
+          "Manifestos processados: " + estado.manifestos.length,
+          "Total de NFs no manifesto: " + estado.totais.manifesto,
+          "Total emitido no Excel: " + estado.totais.emitido,
+          "Faltante do manifesto não emitido: " + faltantesNaoEmitidos,
+          "Carga não emitida - book: " + faltantesBook,
+          "Divergências: " + estado.totais.divergencias,
+          "Percentual de acuracidade: " + estado.totais.acuracidade + "%"
         ];
 
         resumoLinhas.forEach((linha) => {
@@ -1110,15 +1111,15 @@
         doc.setFontSize(10);
 
         const analiseLinhas = [
-          Total de NFs extraídas do manifesto: ${estado.nfsManifesto.length}
+          "Total de NFs extraídas do manifesto: " + estado.nfsManifesto.length
         ];
 
         if (faltantesNaoEmitidos > 0) {
-          analiseLinhas.push(Existem ${faltantesNaoEmitidos} NF(s) com status COLETADA E NÃO EMITIDA.);
+          analiseLinhas.push("Existem " + faltantesNaoEmitidos + " NF(s) com status COLETADA E NÃO EMITIDA.");
         }
 
         if (faltantesBook > 0) {
-          analiseLinhas.push(Existem ${faltantesBook} NF(s) com status CARGA NÃO EMITIDA - BOOK.);
+          analiseLinhas.push("Existem " + faltantesBook + " NF(s) com status CARGA NÃO EMITIDA - BOOK.");
         }
 
         if (faltantesNaoEmitidos === 0 && faltantesBook === 0) {
@@ -1133,41 +1134,43 @@
 
         y += 4;
 
-        doc.autoTable({
-          startY: y,
-          head: [[
-            "ORDEM",
-            "MANIFESTO",
-            "NF",
-            "EMITIDO",
-            "AWB",
-            "STATUS",
-            "OBSERVAÇÃO"
-          ]],
-          body: linhasTabela,
-          styles: {
-            fontSize: 8,
-            cellPadding: 2,
-            overflow: "linebreak"
-          },
-          headStyles: {
-            fillColor: [23, 72, 140]
-          },
-          columnStyles: {
-            0: { cellWidth: 15 },
-            1: { cellWidth: 35 },
-            2: { cellWidth: 25 },
-            3: { cellWidth: 18 },
-            4: { cellWidth: 28 },
-            5: { cellWidth: 35 },
-            6: { cellWidth: 34 }
-          },
-          margin: { left: 14, right: 14 }
-        });
+        if (typeof doc.autoTable === "function") {
+          doc.autoTable({
+            startY: y,
+            head: [[
+              "ORDEM",
+              "MANIFESTO",
+              "NF",
+              "EMITIDO",
+              "AWB",
+              "STATUS",
+              "OBSERVAÇÃO"
+            ]],
+            body: linhasTabela,
+            styles: {
+              fontSize: 8,
+              cellPadding: 2,
+              overflow: "linebreak"
+            },
+            headStyles: {
+              fillColor: [23, 72, 140]
+            },
+            columnStyles: {
+              0: { cellWidth: 15 },
+              1: { cellWidth: 35 },
+              2: { cellWidth: 25 },
+              3: { cellWidth: 18 },
+              4: { cellWidth: 28 },
+              5: { cellWidth: 35 },
+              6: { cellWidth: 34 }
+            },
+            margin: { left: 14, right: 14 }
+          });
+        }
 
         doc.save("resultado_conferencia_manifestos.pdf");
       } catch (erro) {
-        exibirErro(Erro ao exportar PDF: ${erro.message});
+        exibirErro("Erro ao exportar PDF: " + erro.message);
       }
     }
 
@@ -1210,8 +1213,7 @@
 
     function limparRuidoOCR(texto) {
       if (!texto) return "";
-
-      return texto
+      return String(texto)
         .replace(/CANCELAO/gi, "")
         .replace(/CANCELADA/gi, "")
         .replace(/CANCEL/gi, "")
@@ -1222,10 +1224,14 @@
     function normalizarNF(nf, cliente) {
       let valor = normalizarNumero(nf);
 
-      if (!valor) return "";
+      if (!valor) {
+        return "";
+      }
 
       if (cliente === "riachuelo") {
-        if (!(valor.length === 8 || valor.length === 9)) return "";
+        if (!(valor.length === 8 || valor.length === 9)) {
+          return "";
+        }
       }
 
       if (cliente === "3coracoes") {
@@ -1235,9 +1241,18 @@
       return valor;
     }
 
+    function escaparHtml(texto) {
+      return String(texto || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
     function exibirErro(mensagem) {
-      const mensagemFinal = ${mensagem} Se o arquivo estiver em .xls, salve como .xlsx e tente novamente.;
-      document.getElementById("analise").innerHTML = <div class="status-pendente">${mensagemFinal}</div>;
+      const mensagemFinal = mensagem + " Se o arquivo estiver em .xls, salve como .xlsx e tente novamente.";
+      document.getElementById("analise").innerHTML = '<div class="status-pendente">' + escaparHtml(mensagemFinal) + '</div>';
       alert(mensagemFinal);
       console.error(mensagemFinal);
     }
